@@ -63,9 +63,11 @@ See `docs/ANDROID-COMPATIBLE-APK.md` for its exact path/hash, offline preparatio
 command, tests and recovery plan. Ordinary builds still use the isolated key.
 After explicit authorization, version 2.0.0-dev.1 / 15 is installed on Samsung;
 WoL settings survived, and real Wi-Fi HTTPS pairing/status and credential reload
-passed. See `docs/SAMSUNG-INSTALLATION.md`. Physical wake remains pending; PC
-shutdown/suspension requires separate confirmation. New builds are not implicitly
-authorized for installation.
+passed. See `docs/SAMSUNG-INSTALLATION.md`. A subsequent single authorized sleep
+test also passed: the user confirmed wake via the Android app, and fresh Android
+HTTPS status passed after resume. Windows reported an Unknown wake source; see
+`docs/SUSPEND-WOL-TEST.md`. Additional power actions and new APK installations
+require their own authorization. The inherited visual header saying 1.4 is pending.
 
 ## Safety and recovery
 

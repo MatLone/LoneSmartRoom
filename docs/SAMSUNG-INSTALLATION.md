@@ -1,5 +1,10 @@
 # Atualização e validação física do Samsung — 2026-10-23
 
+Validação posterior autorizada: o despertar após suspensão foi confirmado pelo
+usuário e seguido de nova consulta HTTPS no Samsung. Consulte
+[SUSPEND-WOL-TEST.md](SUSPEND-WOL-TEST.md). A pendência de despertar descrita abaixo
+refere-se ao momento da instalação.
+
 ## Resultado
 
 Após autorização expressa do usuário, foi executado exatamente o `adb install -r`
