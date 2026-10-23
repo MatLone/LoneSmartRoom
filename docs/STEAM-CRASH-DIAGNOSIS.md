@@ -1,5 +1,8 @@
 # Diagnóstico Steam — coleta de 23/10/2026
 
+Análise posterior autorizada dos dumps: [comparação local e evidências AMD/GameManager64](STEAM-DUMP-COMPARISON.md).
+O texto abaixo preserva as conclusões e limitações da coleta anterior à abertura dos dumps.
+
 A Steam sofreu duas falhas nativas durante a inicialização. A causa raiz ainda
 não está identificada. O pedido Android chegou ao agente, a associação Windows
 recebeu a URI correta e houve criação de processos Steam, seguida de crash.
