@@ -71,6 +71,12 @@ require their own authorization. The inherited visual header saying 1.4 is pendi
 
 ## Safety and recovery
 
+App-control cycle 1 is implemented and tested with injected executors only.
+Steam/CS2 require separate local per-device grants and native Android confirmation.
+See `docs/APP-CONTROL-CYCLE1.md` and `contracts/app-launch-v2.md` for the v16 build,
+security limits and proposed physical test. No new Samsung install, real app launch
+or production permission grant was performed. Power commands remain blocked.
+
 Do not run the legacy agent, legacy firewall/autostart installers, key-display
 script, or real energy actions during automated verification. Agent tests bind only
 to loopback on an ephemeral port and injects an executor that records actions.
