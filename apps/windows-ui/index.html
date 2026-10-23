@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141720">
+<title>Lone Smart Room — Etapa 1.4</title>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-frame" id="appFrame" data-voice="idle">
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="drag-region" title="Arraste para mover a janela no Windows">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="m3.8 11 8.2-7 8.2 7v8.6a1.2 1.2 0 0 1-1.2 1.2H5a1.2 1.2 0 0 1-1.2-1.2V11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.6 20.8v-7.2h4.8v7.2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="brand-title"><strong>LONE SMART ROOM</strong><span id="platformLabel">Widget Windows 11 <b class="small-dot">·</b> Versão 1.4</span></div>
+        </div>
+        <div class="window-ops">
+          <span class="demo-tag">DEMO</span>
+          <button class="win-btn" id="minimizeBtn" title="Minimizar" aria-label="Minimizar janela"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+          <button class="win-btn close" id="closeBtn" title="Fechar" aria-label="Fechar janela"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        </div>
+      </header>
+      <div class="nav" role="tablist" aria-label="Abas do aplicativo">
+        <button id="tab-controls" role="tab" aria-selected="true" aria-controls="panel-controls" class="nav-btn active" data-tab="controls">Controles</button>
+        <button id="tab-monitor" role="tab" aria-selected="false" aria-controls="panel-monitor" class="nav-btn" data-tab="monitor">Monitoramento PC</button>
+        <button id="tab-gamer" role="tab" aria-selected="false" aria-controls="panel-gamer" class="nav-btn" data-tab="gamer">Gamer Launcher</button>
+      </div>
+      <main class="view-scroll" id="viewScroll">
+        <section id="panel-controls" class="panel active" role="tabpanel" aria-labelledby="tab-controls">
+          <div class="section-header"><div><h1>Meu quarto</h1><p>Pressione e segure um cartão para ajustar</p></div><span class="mini-status"><i></i>Interface local</span></div>
+          <div class="device-grid" id="deviceGrid"></div>
+          <section class="remote-home" id="pcRemoteSection" aria-labelledby="pcRemoteHeading">
+            <div class="remote-kicker"><span class="remote-kicker-icon" data-icon="monitor"></span><div><h2 id="pcRemoteHeading">Meu computador</h2><p>Central de energia e acesso remoto</p></div><button type="button" class="remote-mobile-preview" id="mobilePreviewBtn" aria-pressed="false" title="Alternar prévia entre widget e Android"><span data-icon="smartphone"></span><span id="mobilePreviewText">Ver Android</span></button></div>
+            <div class="remote-main">
+              <div class="remote-status"><span class="remote-status-dot" id="remoteStatusDot"></span><div><strong id="remoteStatusText">PC desligado</strong><small id="remoteStatusDetails">Aguardando comando • simulação</small></div><span class="remote-demo-tag" id="remoteModeTag">DEMO</span></div>
+              <div class="remote-main-actions"><button type="button" id="pcWakeBtn" class="remote-wake"><span data-icon="power"></span><span id="pcWakeText">Simular ligar PC</span></button><button type="button" id="pcRemoteBtn" class="remote-secondary"><span data-icon="sliders"></span> Controle remoto</button></div>
+            </div>
+            <p class="remote-helper" id="remoteHelper">Ligar: envio Wake-on-LAN no app Android instalado. Outros comandos aguardam serviço Windows autenticado.</p>
+          </section>
+          <section class="scene-section">
+            <div class="section-line"><h2>Cenas rápidas</h2><span>Personalize depois</span></div>
+            <div class="scene-grid">
+              <button class="scene gamer" data-scene="gamer"><span class="scene-ico" data-icon="gamepad"></span><b>Gamer</b></button>
+              <button class="scene dormir" data-scene="dormir"><span class="scene-ico" data-icon="moon"></span><b>Dormir</b></button>
+              <button class="scene acordar" data-scene="acordar"><span class="scene-ico" data-icon="sun"></span><b>Acordar</b></button>
+            </div>
+          </section>
+          <button class="sync-rgb" id="syncRgb" title="Iguala as cores da lâmpada, fita LED e RGB do PC"><span data-icon="palette"></span><span>Sincronizar cores RGB</span><span data-icon="chevron"></span></button>
+          <div class="demo-note"><span data-icon="info"></span><span>Etapa 1: interface funcional com estados simulados. Nenhum aparelho real está conectado.</span></div>
+        </section>
+        <section id="panel-monitor" class="panel" role="tabpanel" aria-labelledby="tab-monitor" hidden>
+          <div class="section-header"><div><h1>Monitoramento do PC</h1><p>Visão dos sensores de hardware</p></div><span class="mini-status demo"><i></i>Dados simulados</span></div>
+          <button type="button" class="monitor-remote-shortcut" id="pcRemoteFromMonitor"><span data-icon="monitor"></span> Controle remoto e energia do PC <span data-icon="chevron"></span></button>
+          <div class="sensor-grid" id="sensorGrid"></div>
+          <section class="stats-box">
+            <div class="section-line"><h2>Uso de recursos</h2><span>Simulação em tempo real</span></div>
+            <div id="usageBars"></div>
+          </section>
+          <div class="monitor-extras" id="monitorExtras"></div>
+          <section class="monitor-section fan-center" aria-labelledby="fanControlTitle">
+            <div class="section-line"><h2 id="fanControlTitle">Controle das ventoinhas</h2><span class="section-pill">DEMO</span></div>
+            <p class="panel-description">Escolha um perfil ou personalize a refrigeração. O valor em RPM abaixo é simulado; a velocidade solicitada é expressa em %.</p>
+            <div class="profile-list" id="fanProfiles" role="group" aria-label="Perfil de refrigeração">
+              <button class="profile-btn" data-fan-profile="auto">Auto</button>
+              <button class="profile-btn" data-fan-profile="quiet">Silencioso</button>
+              <button class="profile-btn" data-fan-profile="balanced">Equilibrado</button>
+              <button class="profile-btn" data-fan-profile="performance">Desempenho</button>
+              <button class="profile-btn" data-fan-profile="manual">Manual</button>
+            </div>
+            <div class="fan-channel-list" id="fanChannels"></div>
+            <div class="fan-safety"><span data-icon="info"></span><span>Na integração real, os limites e o modo PWM/DC serão calibrados para seu hardware. A bomba do water cooler ficará protegida e não será reduzida por estes controles.</span></div>
+          </section>
+          <section class="monitor-section system-tools" aria-labelledby="toolsTitle">
+            <div class="section-line"><h2 id="toolsTitle">Manutenção do Windows</h2><span>Ferramentas seguras</span></div>
+            <div class="maintenance-grid">
+              <div class="maintenance-card">
+                <span class="maintenance-icon" data-icon="memory"></span>
+                <h3>Gerenciar RAM</h3>
+                <p>Identificar aplicativos que consomem memória e escolher o que revisar.</p>
+                <button id="ramToolsBtn" class="maintenance-action">Analisar memória <span data-icon="chevron"></span></button>
+              </div>
+              <div class="maintenance-card">
+                <span class="maintenance-icon" data-icon="settings"></span>
+                <h3>Otimizar Windows</h3>
+                <p>Conferir inicialização, arquivos temporários e modo de jogo.</p>
+                <button id="windowsToolsBtn" class="maintenance-action">Ver opções <span data-icon="chevron"></span></button>
+              </div>
+            </div>
+            <p class="panel-description maintenance-footnote">Limpar RAM indiscriminadamente não acelera o Windows: a memória de cache é aproveitada pelo próprio sistema. Nenhuma limpeza é executada nesta demonstração.</p>
+          </section>
+          <div class="demo-note"><span data-icon="info"></span><span>Temperaturas, RPM e uso da RAM são simulados. Fan Control e ferramentas do Windows serão conectados somente após testes e autorização.</span></div>
+        </section>
+
+        <section id="panel-gamer" class="panel" role="tabpanel" aria-labelledby="tab-gamer" hidden>
+          <div class="section-header gamer-header"><div><h1>Gamer Launcher</h1><p>Seus jogos, telemetria e perfis de desempenho</p></div><span class="mini-status demo"><i></i>DEMO</span></div>
+          <section class="game-section library-section">
+            <div class="section-line"><h2>Biblioteca de jogos</h2><span>Exemplos · não detectados</span></div>
+            <div class="game-library" id="gameLibrary" role="group" aria-label="Selecionar jogo"></div>
+            <div class="game-selected" id="gameSelected"></div>
+          </section>
+          <section class="game-section game-session" aria-labelledby="gameSessionHeading">
+            <div class="section-line"><h2 id="gameSessionHeading">Desempenho durante a partida</h2><span class="section-pill">DADOS FICTÍCIOS</span></div>
+            <div class="session-state"><span id="gameSessionLabel">Nenhum jogo em execução</span><span id="gameTime">00:00</span></div>
+            <div class="game-metrics" id="gameMetrics"></div>
+            <div class="frame-graph"><div class="frame-graph-top"><b>Histórico de FPS</b><small id="gameChartLabel">Aguardando sessão demonstrativa</small></div><svg id="fpsGraph" viewBox="0 0 300 100" preserveAspectRatio="none" role="img" aria-label="Gráfico demonstrativo de FPS"><path d="M0 85 L300 85" stroke="#454b5a" stroke-dasharray="3 5"/><polyline id="fpsLine" points="" fill="none" stroke="#f16a7e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg></div>
+            <div class="game-resources" id="gameResources"></div>
+            <label class="game-check overlay-check"><input type="checkbox" id="overlayPreference"><span><b>Overlay de FPS no jogo</b><small>Preferência para a integração real com AMD Adrenalin ou PresentMon</small></span></label>
+            <button id="gameSessionButton" class="game-primary" type="button"><span data-icon="gamepad"></span> Simular sessão de jogo</button>
+          </section>
+          <section class="game-section game-optimizer" aria-labelledby="optimizerHeading">
+            <div class="section-line"><h2 id="optimizerHeading">Otimização por jogo</h2><span>Perfil personalizável</span></div>
+            <p class="panel-description" id="optimizerHint"></p>
+            <div class="game-profile-row" id="gameProfiles" role="group" aria-label="Perfil de jogo">
+              <button class="game-profile" data-game-profile="competitive" type="button">Competitivo</button>
+              <button class="game-profile" data-game-profile="balanced" type="button">Equilibrado</button>
+              <button class="game-profile" data-game-profile="quality" type="button">Qualidade</button>
+            </div>
+            <div class="game-profile-detail" id="gameProfileDetail"></div>
+            <div class="game-checks" id="gameChecks"></div>
+            <button id="applyGameProfile" class="game-primary secondary" type="button"><span data-icon="shield"></span> Simular preparação do jogo</button>
+            <p class="game-log" id="gameLog" aria-live="polite">Nenhuma alteração será feita no Windows ou no jogo.</p>
+          </section>
+          <div class="demo-note"><span data-icon="info"></span><span>Etapa 1.4: jogos, FPS, temperaturas, overlay e otimizações são demonstrações. Abrir jogos e ler dados reais exigirão um serviço no Windows e integrações verificadas.</span></div>
+        </section>
+      </main>
+      <footer class="assistant-bar" id="assistantBar">
+        <div class="assistant-info"><div class="bot-mark" data-icon="bot"></div><div><strong>Assistente Lone</strong><span id="voiceStatus" aria-live="polite">Microfone desligado</span></div></div>
+        <button class="speak-btn" id="speakBtn"><span data-icon="mic"></span><span id="speakText">Falar</span></button>
+      </footer>
+      <div class="voice-panel" id="voicePanel" hidden>
+        <label for="demoCommand">Teste visual de um comando <span>(sem captar áudio)</span></label>
+        <div class="voice-input-row"><input id="demoCommand" placeholder="Ex.: apaga a lâmpada" autocomplete="off"><button id="executeCommand">Testar</button></div>
+        <div class="voice-examples"><button data-command="Modo gamer">Modo gamer</button><button data-command="Fita LED azul">LED azul</button><button data-command="Ventilador 3">Ventilador 3</button></div>
+      </div>
+      <div class="modal-layer" id="modalLayer" hidden>
+        <div class="modal-shade" id="modalShade"></div>
+        <section class="device-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" id="deviceModal">
+          <div class="modal-heading"><span class="modal-icon" id="modalIcon"></span><div><h2 id="modalTitle">Dispositivo</h2><p id="modalSub">Ajustes</p></div><button class="modal-close" id="modalClose" aria-label="Fechar ajustes" data-icon="x"></button></div>
+          <div class="modal-divider"></div>
+          <div class="modal-switch-row"><span>Alimentação</span><button class="toggle" id="modalPower" role="switch" aria-checked="false" aria-label="Ligar ou desligar"><i></i></button></div>
+          <div class="modal-rgb" id="modalRgb"><h3>Escolha uma cor</h3><div class="swatches" id="swatches"></div><div class="brightness-label"><h3>Intensidade do brilho</h3><output id="brightnessValue">75%</output></div><input class="brightness-range" id="brightnessRange" type="range" min="0" max="100" step="1" value="75" aria-label="Brilho"><div class="brightness-footer"><span>0%</span><span>100%</span></div></div>
+          <div class="modal-fan" id="modalFan" hidden><h3>Velocidade do ventilador</h3><div class="speed-grid" id="speedGrid"><button data-speed="1">1 <small>Baixa</small></button><button data-speed="2">2 <small>Média</small></button><button data-speed="3">3 <small>Alta</small></button></div><div class="fan-hint">O controle real de velocidade dependerá da integração com o ventilador.</div></div>
+          <p class="modal-footnote">Alterações demonstrativas — sem dispositivo conectado.</p>
+        </section>
+      </div>
+      <div class="modal-layer" id="toolModalLayer" hidden>
+        <div class="modal-shade" id="toolModalShade"></div>
+        <section class="device-modal tool-modal" role="dialog" aria-modal="true" aria-labelledby="toolModalTitle" id="toolModal">
+          <div class="modal-heading"><span class="modal-icon" id="toolModalIcon"></span><div><h2 id="toolModalTitle">Ferramenta</h2><p id="toolModalSub">Prévia demonstrativa</p></div><button class="modal-close" id="toolModalClose" aria-label="Fechar ferramenta" data-icon="x"></button></div>
+          <div class="modal-divider"></div>
+          <div id="toolModalBody"></div>
+          <p class="modal-footnote">Simulação — não modifica processos, arquivos nem configurações do Windows.</p>
+        </section>
+      </div>
+      <div class="modal-layer" id="pcRemoteModal" hidden>
+        <div class="modal-shade" id="pcRemoteShade"></div>
+        <section class="device-modal remote-modal" role="dialog" aria-modal="true" aria-labelledby="remoteModalTitle" id="remoteModalBox">
+          <div class="modal-heading"><span class="modal-icon" id="remoteModalIcon" data-icon="monitor"></span><div><h2 id="remoteModalTitle">Controle remoto</h2><p id="remoteModalSubtitle">Ações autorizadas do Windows</p></div><button class="modal-close" id="remoteModalClose" aria-label="Fechar central remota" data-icon="x"></button></div>
+          <div class="modal-divider"></div>
+          <div class="remote-dialog-status" id="remoteModalStatus"></div>
+          <div class="remote-dialog-main" id="remoteActionPanel">
+            <div class="remote-action-title">Energia e sessão</div>
+            <div class="remote-action-grid" id="remoteActionGrid">
+              <button type="button" class="remote-action-tile" data-remote-action="wake"><span data-icon="power"></span><b>Ligar</b><small>Wake-on-LAN</small></button>
+              <button type="button" class="remote-action-tile" data-remote-action="sleep"><span data-icon="moon"></span><b>Suspender</b><small>Modo repouso</small></button>
+              <button type="button" class="remote-action-tile" data-remote-action="restart"><span data-icon="refresh"></span><b>Reiniciar</b><small>Confirmação</small></button>
+              <button type="button" class="remote-action-tile danger" data-remote-action="shutdown"><span data-icon="power"></span><b>Desligar</b><small>Seguro</small></button>
+            </div>
+            <div class="remote-action-title">Aplicativos permitidos</div>
+            <div class="remote-app-actions"><button type="button" data-remote-action="steam"><span data-icon="gamepad"></span> Abrir Steam</button><button type="button" data-remote-action="cs2"><span data-icon="gamepad"></span> Iniciar CS2</button></div>
+            <div class="remote-sim-note"><span data-icon="shield"></span> <span id="remoteActionNote">No Android instalado, apenas Ligar/Despertar envia Wake-on-LAN real. Outras ações são simulações.</span></div>
+          </div>
+          <div class="remote-confirm" id="remoteConfirm" hidden>
+            <span class="remote-confirm-icon" data-icon="shield"></span>
+            <h3 id="remoteConfirmHeading">Confirmar comando?</h3>
+            <p id="remoteConfirmDescription">A ação afetaria o computador na versão real.</p>
+            <div class="remote-confirm-actions"><button type="button" id="remoteCancel" class="remote-cancel">Cancelar</button><button type="button" id="remoteConfirmYes" class="remote-danger-button">Confirmar simulação</button></div>
+          </div>
+          <section class="wol-config" aria-label="Configurações de rede Wake-on-LAN">
+            <div class="wol-config-head"><b>Wake-on-LAN • rede local</b><span class="wol-mode-badge" id="wolModeBadge">Modo demonstração</span></div>
+            <label class="wol-field">MAC Ethernet<input id="wolMac" type="text" inputmode="text" spellcheck="false" autocapitalize="off" value="02:00:00:C7:AC:53" maxlength="17" placeholder="AA:BB:CC:DD:EE:FF"></label>
+            <div class="wol-config-row"><label class="wol-field">Broadcast<input id="wolBroadcast" type="text" inputmode="decimal" value="172.31.250.255" maxlength="15" placeholder="172.31.250.255"></label><label class="wol-field wol-port">UDP<input id="wolPort" type="number" min="1" max="65535" value="9"></label></div>
+            <p class="wol-help">O Android e o PC devem estar na mesma rede local. Enviar um pacote não comprova que o PC ligou.</p>
+            <div id="wolFeedback" class="wol-feedback" role="status" aria-live="polite">Aguardando comando.</div>
+          </section>
+          <button type="button" class="remote-how-btn" id="remoteHowBtn"><span data-icon="info"></span> Como vamos conectar ao PC? <span data-icon="chevron"></span></button>
+          <div class="remote-setup-info" id="remoteSetupInfo" hidden>
+            <b>Checklist da integração real</b>
+            <ol><li>PC por cabo Ethernet e suporte Wake-on-LAN ativo na BIOS/adaptador de rede.</li><li>Dentro de casa, o app Android envia WoL diretamente; fora de casa, exige emissor confiável ou VPN e roteamento adequado.</li><li>Serviço Windows autenticado para suspender, reiniciar e iniciar apps autorizados.</li><li>Acesso fora de casa por VPN segura; sem encaminhar portas públicas para comandos de energia.</li></ol>
+            <p>O pacote Wake-on-LAN não prova que o PC ligou. Na v1.4 o envio real funciona apenas no aplicativo Android compilado e instalado; a versão HTML e o widget Windows permanecem demonstrativos.</p>
+          </div>
+        </section>
+      </div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

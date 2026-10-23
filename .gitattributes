@@ -1,0 +1,14 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.sh text eol=lf
+gradlew text eol=lf
+*.jar binary
+*.png binary
+*.ico binary
+# Preserve the audited runtime bytes across checkouts (hash regression guards).
+apps/android/app/src/** -text
+apps/windows-ui/*.js -text
+apps/windows-ui/*.cjs -text
+apps/windows-ui/*.html -text
+apps/windows-ui/*.css -text
+agent/windows/*.py -text
