@@ -68,7 +68,9 @@ No firewall, registry, existing app, or device is changed by that test.
 Existing legacy deployment scripts remain historical LAN configuration and were
 not applied. The secure agent has a separate per-user startup entry, independently
 of Electron, and refuses to listen before the configured interface is Private.
-No firewall exception was created. Android cleartext traffic remains disabled.
+The subsequent authorized LAN activation added a narrowly scoped Private-profile
+firewall rule; current activation evidence is in `docs/LAN-ACTIVATION.md`.
+Android cleartext traffic remains disabled.
 See `docs/STAGE2.md` for activation, revocation, signing and remaining physical tests.
 
 `recovery/manifest.json` identifies originals and copied files with SHA-256 hashes.

@@ -3,6 +3,11 @@
 Branch: `feature/secure-pairing-status`. Base preservada:
 `ed0fdae90db78d721444b29ee7d9ac49c21f73df`.
 
+Atualização operacional posterior: a LAN foi ativada após autorização explícita.
+Perfil Privado, firewall restrito e testes no listener ativo estão documentados em
+LAN-ACTIVATION.md. As observações de ausência de listener/firewall neste relatório
+descrevem o estado anterior à ativação.
+
 ## Implementação
 
 Agente Python separado em armazenamento DPAPI, protocolo/SQLite, identidade TLS,
