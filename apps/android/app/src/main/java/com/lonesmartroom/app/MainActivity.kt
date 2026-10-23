@@ -16,6 +16,7 @@ class MainActivity : Activity() {
     private lateinit var webView: WebView
     private val executor = Executors.newSingleThreadExecutor()
     private val assetsPrefix = "file:///android_asset/"
+    private lateinit var agentBridge: AgentBridge
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +36,10 @@ class MainActivity : Activity() {
             }
         }
         webView.addJavascriptInterface(WakeBridge(), "LoneAndroid")
+        agentBridge = AgentBridge(this) { result ->
+            webView.evaluateJavascript("window.onLoneAgentStatus && window.onLoneAgentStatus(${result})", null)
+        }
+        webView.addJavascriptInterface(agentBridge, "LoneAgent")
         setContentView(webView)
         if (Build.VERSION.SDK_INT >= 35) {
             webView.setOnApplyWindowInsetsListener { view, insets ->
@@ -66,6 +71,8 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         executor.shutdownNow()
+        agentBridge.close()
+        webView.removeJavascriptInterface("LoneAgent")
         webView.removeJavascriptInterface("LoneAndroid")
         webView.destroy()
         super.onDestroy()

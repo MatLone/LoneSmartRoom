@@ -1,5 +1,6 @@
 """HTTPS loopback integration tests; no power/app executor is imported or called."""
 import hashlib
+import datetime
 import hmac
 import http.client
 import json
@@ -8,10 +9,12 @@ import secrets
 import socket
 import ssl
 import sys
+import subprocess
 import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'agent/windows'))
@@ -19,6 +22,7 @@ from secure_protocol import Store, canonical, validate_lan
 from secure_store import DPAPI
 from secure_tls import create_identity, fingerprint, server_context
 from secure_http import StatusServer
+from secure_startup import private_profile
 
 
 class SecureAgentTests(unittest.TestCase):
@@ -159,6 +163,28 @@ class SecureAgentTests(unittest.TestCase):
                              ('127.0.0.1', '127.0.0.0/24'), ('172.31.250.8', '192.168.4.0/24')]:
             with self.assertRaises(ValueError): validate_lan(host, subnet)
 
+    def test_network_profile_fail_closed(self):
+        import subprocess
+        with patch('secure_startup.subprocess.run', return_value=subprocess.CompletedProcess([], 0, 'private', '')):
+            self.assertTrue(private_profile('172.31.250.8'))
+        with patch('secure_startup.subprocess.run', return_value=subprocess.CompletedProcess([], 0, '', '')):
+            self.assertFalse(private_profile('172.31.250.8'))
+        with patch('secure_startup.subprocess.run', side_effect=subprocess.TimeoutExpired('powershell', 8)):
+            self.assertFalse(private_profile('172.31.250.8'))
+
+    def test_profile_guard_blocks_tls(self):
+        server = StatusServer(('127.0.0.1', 0), server_context(self.directory, self.protector), self.store,
+                              '127.0.0.0/8', private_guard=lambda: False)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            connection = http.client.HTTPSConnection('127.0.0.1', server.server_port, context=self.context, timeout=2)
+            with self.assertRaises(OSError):
+                try: connection.request('GET', '/v2/status')
+                finally: connection.close()
+        finally:
+            server.shutdown(); server.server_close(); thread.join(timeout=5)
+
     def test_tls_only_and_identity_stable(self):
         old = fingerprint(self.directory)
         with self.assertRaises(FileExistsError): create_identity(self.directory, '127.0.0.1', self.protector)
@@ -169,6 +195,30 @@ class SecureAgentTests(unittest.TestCase):
                 connection.request('GET', '/v2/status')
                 connection.getresponse()
             finally: connection.close()
+
+    def test_android_production_pinner_and_status(self):
+        jdk = Path('C:/Program Files/Android/Android Studio/jbr/bin')
+        classes = ROOT / 'apps/android/app/build/tmp/kotlin-classes/debug'
+        self.assertTrue((classes / 'com/lonesmartroom/app/AgentStatus.class').exists(), 'Build Android before this integration suite')
+        stdlib = next((ROOT / '.cache/gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.0.21').rglob('kotlin-stdlib-2.0.21.jar'))
+        output = self.directory / 'java-tests'
+        output.mkdir()
+        classpath = str(classes) + ';' + str(stdlib)
+        subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '-classpath', classpath, '-d', str(output),
+            str(ROOT/'apps/android/app/src/main/java/com/lonesmartroom/app/PinnedTls.java'),
+            str(ROOT/'tests/AndroidSecurityTest.java')], check=True, capture_output=True)
+        expired = self.directory / 'expired'
+        create_identity(expired, '127.0.0.1', self.protector, now=datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=366))
+        server = StatusServer(('127.0.0.1', 0), server_context(expired, self.protector), self.store, '127.0.0.0/8')
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            result = subprocess.run([str(jdk/'java.exe'), '-classpath', str(output)+';'+classpath, 'AndroidSecurityTest',
+                str(self.port), fingerprint(self.directory), str(server.server_port), fingerprint(expired)],
+                capture_output=True, text=True, timeout=20)
+            self.assertEqual(result.returncode, 0, result.stderr)
+        finally:
+            server.shutdown(); server.server_close(); thread.join(timeout=5)
 
 
 if __name__ == '__main__':

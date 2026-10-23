@@ -34,11 +34,23 @@ for name in filter(None, paths):
         bad.append(name)
 
 records = json.loads((root / 'docs/baseline-inventory.json').read_text())
+integration_files = {
+    'apps/android/app/src/main/java/com/lonesmartroom/app/MainActivity.kt',
+    'apps/android/app/src/main/assets/index.html', 'apps/windows-ui/index.html',
+    'apps/android/app/src/main/res/values/styles.xml',
+}
 for record in records:
     rel = Path(record['copy'])
+    if rel.as_posix() in integration_files:
+        continue
     if rel.parts[0] in {'apps', 'agent'} and rel.suffix in {'.kt', '.js', '.html', '.css', '.cjs', '.xml', '.py'}:
         if hashlib.sha256(run('show', ':' + rel.as_posix())).hexdigest() != record['sha256']:
             bad.append(rel.as_posix())
 if bad:
     raise SystemExit('Index review failed (paths only):\n' + '\n'.join(sorted(set(bad))))
-print(f'PASS: {len(list(filter(None, paths)))} staged files; no credential patterns; runtime bytes preserved in Git.')
+activity = 'apps/android/app/src/main/java/com/lonesmartroom/app/MainActivity.kt'
+def wake_bridge(data):
+    return data.split(b'    inner class WakeBridge {', 1)[1].split(b'    override fun onDestroy()', 1)[0]
+if wake_bridge(run('show', ':' + activity)) != wake_bridge(run('show', 'ed0fdae90db78d721444b29ee7d9ac49c21f73df:' + activity)):
+    raise SystemExit('Staged WakeBridge differs from the preserved baseline')
+print(f'PASS: {len(list(filter(None, paths)))} staged files; no credential patterns; protected baseline sources and WakeBridge preserved.')

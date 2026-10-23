@@ -25,7 +25,8 @@
       "app.js",
       "main.cjs",
       "preload.cjs",
-      "assets/**/*"
+      "assets/**/*",
+      "agent-status.js"
     ],
     "directories": {
       "output": "dist"

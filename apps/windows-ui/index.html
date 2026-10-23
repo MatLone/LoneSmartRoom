@@ -33,6 +33,12 @@
         <section id="panel-controls" class="panel active" role="tabpanel" aria-labelledby="tab-controls">
           <div class="section-header"><div><h1>Meu quarto</h1><p>Pressione e segure um cartão para ajustar</p></div><span class="mini-status"><i></i>Interface local</span></div>
           <div class="device-grid" id="deviceGrid"></div>
+            <section class="remote-home" aria-label="Comunicação segura com o agente Windows">
+              <div class="section-line"><h2>Agente Windows</h2><strong id="agentState">Desconhecido</strong></div>
+              <p class="remote-helper" id="agentDetail">Sem confirmação do agente. Isso não indica que o PC está desligado.</p>
+              <p class="remote-helper" id="agentLast">Última comunicação: nenhuma registrada</p>
+              <div class="remote-main-actions"><button type="button" class="remote-wake" id="agentPair">Parear com Windows</button><button type="button" class="remote-secondary" id="agentRefresh">Consultar status</button></div>
+            </section>
           <section class="remote-home" id="pcRemoteSection" aria-labelledby="pcRemoteHeading">
             <div class="remote-kicker"><span class="remote-kicker-icon" data-icon="monitor"></span><div><h2 id="pcRemoteHeading">Meu computador</h2><p>Central de energia e acesso remoto</p></div><button type="button" class="remote-mobile-preview" id="mobilePreviewBtn" aria-pressed="false" title="Alternar prévia entre widget e Android"><span data-icon="smartphone"></span><span id="mobilePreviewText">Ver Android</span></button></div>
             <div class="remote-main">
@@ -199,5 +205,6 @@
     </div>
   </div>
   <script src="app.js"></script>
+  <script src="agent-status.js"></script>
 </body>
 </html>
