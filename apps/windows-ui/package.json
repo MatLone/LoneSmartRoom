@@ -9,11 +9,12 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "dist:win": "electron-builder --win nsis portable --x64"
+    "dist:win": "electron-builder --win nsis portable --x64",
+    "postinstall": "node node_modules/electron/install.js"
   },
   "devDependencies": {
-    "electron": "38.0.0",
-    "electron-builder": "26.0.0"
+    "electron": "45.0.0",
+    "electron-builder": "26.15.3"
   },
   "build": {
     "appId": "com.lone.smartroom",
