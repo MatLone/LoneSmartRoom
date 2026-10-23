@@ -12,9 +12,11 @@ android {
         applicationId = "com.lonesmartroom.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "2.0.0-dev.1"
+        versionCode = 16
+        versionName = "2.0.0-dev.2"
     }
+
+    buildFeatures { buildConfig = true }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

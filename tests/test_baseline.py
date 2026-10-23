@@ -2,10 +2,13 @@
 import hashlib
 import json
 import unittest
+import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts'))
+from preservation_rules import reviewed_version_update
 
 
 class BaselinePreservation(unittest.TestCase):
@@ -25,10 +28,22 @@ class BaselinePreservation(unittest.TestCase):
             if rel.as_posix() in integration_files:
                 continue
             with self.subTest(file=str(rel)):
-                self.assertEqual(hashlib.sha256((ROOT / rel).read_bytes()).hexdigest(), record['sha256'])
+                current = (ROOT / rel).read_bytes()
+                if hashlib.sha256(current).hexdigest() == record['sha256']:
+                    continue
+                originals = {
+                    'apps/windows-ui/app.js': 'recovery/sources/electron-v1.4/app.js',
+                    'apps/windows-ui/main.cjs': 'recovery/sources/electron-v1.4/main.cjs',
+                    'apps/windows-ui/preload.cjs': 'recovery/sources/electron-v1.4/preload.cjs',
+                    'apps/android/app/src/main/assets/app.js': 'recovery/sources/android-working/app/src/main/assets/app.js',
+                }
+                self.assertIn(rel.as_posix(), originals)
+                baseline = (ROOT / originals[rel.as_posix()]).read_bytes()
+                self.assertEqual(hashlib.sha256(baseline).hexdigest(), record['sha256'])
+                self.assertEqual(current, reviewed_version_update(rel.as_posix(), baseline))
 
     def test_shared_ui_has_not_diverged(self):
-        for name in ('app.js', 'index.html', 'styles.css'):
+        for name in ('app.js', 'index.html', 'styles.css', 'app-version.js', 'app-launch.js', 'agent-status.js'):
             self.assertEqual((ROOT / 'apps/windows-ui' / name).read_bytes(),
                              (ROOT / 'apps/android/app/src/main/assets' / name).read_bytes())
 

@@ -6,6 +6,8 @@ import java.net.URL
 import java.security.SecureRandom
 import javax.net.ssl.HttpsURLConnection
 
+class AgentRequestException(val statusCode: Int) : Exception("Agente recusou a requisição")
+
 class AgentClient {
     companion object {
         private fun ipv4(value: String): Long {
@@ -39,7 +41,8 @@ class AgentClient {
         require(value.getString("code").matches(Regex("[A-Za-z0-9_-]{32}")))
         return value
     }
-    private fun exchange(config: JSONObject, path: String, body: ByteArray? = null, headers: Map<String, String> = emptyMap()): JSONObject {
+    private fun exchange(config: JSONObject, path: String, body: ByteArray? = null,
+                         headers: Map<String, String> = emptyMap(), accepted: Set<Int> = setOf(200)): JSONObject {
         validateEndpoint(config)
         val connection = URL(config.getString("url") + path).openConnection() as HttpsURLConnection
         try {
@@ -56,7 +59,7 @@ class AgentClient {
                 connection.setFixedLengthStreamingMode(body.size)
                 connection.outputStream.use { it.write(body) }
             }
-            require(connection.responseCode == 200) { "Agente recusou a consulta ou o pareamento" }
+            if (connection.responseCode !in accepted) throw AgentRequestException(connection.responseCode)
             val data = connection.inputStream.use { it.readBytesBounded(4096) }
             return JSONObject(String(data, Charsets.UTF_8)).also { require(it.optBoolean("ok")) }
         } finally { connection.disconnect() }
@@ -82,5 +85,36 @@ class AgentClient {
         val nonce = ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it.toInt() and 255) }
         val result = exchange(config, "/v2/status", headers = AgentAuth.headers(device, config.getString("secret"), stamp, nonce))
         require(result.optString("agent") == "online" && result.optString("scope") == "status")
+    }
+
+    private fun authenticated(config: JSONObject, path: String, body: ByteArray? = null): JSONObject {
+        val stamp = (System.currentTimeMillis() / 1000).toString()
+        val nonce = ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it.toInt() and 255) }
+        val headers = AgentAuth.requestHeaders(config.getString("device_id"), config.getString("secret"),
+            stamp, nonce, if (body == null) "GET" else "POST", path, body ?: byteArrayOf())
+        return exchange(config, path, body, headers, if (body == null) setOf(200) else setOf(200, 202))
+    }
+    fun appPermissions(config: JSONObject): Set<String> {
+        val values = authenticated(config, "/v2/apps").getJSONArray("allowed_apps")
+        require(values.length() <= 2)
+        return (0 until values.length()).map { values.getString(it) }.toSet().also {
+            require(it.all { app -> app in setOf("steam", "cs2") })
+        }
+    }
+    fun launch(config: JSONObject, app: String, requestId: String): JSONObject {
+        require(app in setOf("steam", "cs2") && requestId.matches(Regex("[0-9a-f]{32}")))
+        val body = JSONObject().put("request_id", requestId).put("app", app).put("confirmed", true)
+            .toString().toByteArray(Charsets.UTF_8)
+        return validateLaunch(authenticated(config, "/v2/apps/commands", body), app, requestId)
+    }
+    fun launchResult(config: JSONObject, app: String, requestId: String): JSONObject {
+        require(app in setOf("steam", "cs2") && requestId.matches(Regex("[0-9a-f]{32}")))
+        return validateLaunch(authenticated(config, "/v2/apps/commands/$requestId"), app, requestId)
+    }
+    private fun validateLaunch(result: JSONObject, app: String, requestId: String): JSONObject {
+        require(result.getString("request_id") == requestId && result.getString("app") == app)
+        require(result.getString("state") in setOf("accepted", "executed", "failed"))
+        // Only these public fields can reach the WebView; no credential or raw error text.
+        return JSONObject().put("request_id", requestId).put("app", app).put("state", result.getString("state"))
     }
 }

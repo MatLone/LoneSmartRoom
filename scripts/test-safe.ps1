@@ -16,4 +16,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Preload syntax check failed.' }
     & node --check apps/windows-ui/agent-status.js
     if ($LASTEXITCODE -ne 0) { throw 'Status UI syntax check failed.' }
+    & node --check apps/windows-ui/app-launch.js
+    if ($LASTEXITCODE -ne 0) { throw 'App launch UI syntax check failed.' }
+    & node tests/version-launch-ui.cjs
+    if ($LASTEXITCODE -ne 0) { throw 'Version/app launch UI tests failed.' }
 } finally { Pop-Location }

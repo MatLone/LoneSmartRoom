@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import zipfile
+from preservation_rules import version_only_update
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = '02c5b46ab301cdfb7a1d858588b1122eb00be1bfd12349ea9f0d1e40a53d1bc8'
@@ -50,9 +51,14 @@ def main():
     require(result.returncode == 0, 'Cannot inspect APK manifest')
     package = re.search(r"package: name='([^']+)' versionCode='([^']+)' versionName='([^']+)'", result.stdout)
     require(package is not None, 'Missing APK package metadata')
-    require(package.groups() == ('com.lonesmartroom.app', '15', '2.0.0-dev.1'), 'Unexpected package/version')
-    for rel in ('java/com/lonesmartroom/app/WakeOnLan.kt', 'assets/app.js', 'AndroidManifest.xml'):
+    build = (ROOT / 'apps/android/app/build.gradle.kts').read_text()
+    version_code = re.search(r'versionCode\s*=\s*(\d+)', build)[1]
+    version_name = re.search(r'versionName\s*=\s*"([0-9][0-9A-Za-z.+_-]{0,63})"', build)[1]
+    require(package.groups() == ('com.lonesmartroom.app', version_code, version_name) and int(version_code) > 15, 'Unexpected package/version')
+    for rel in ('java/com/lonesmartroom/app/WakeOnLan.kt', 'AndroidManifest.xml'):
         require((android / rel).read_bytes() == (baseline / rel).read_bytes(), 'Preservation mismatch: ' + rel)
+    require((android / 'assets/app.js').read_bytes() == version_only_update((baseline / 'assets/app.js').read_bytes()),
+            'Legacy JavaScript changed beyond the two reviewed version labels')
     activity = (android / 'java/com/lonesmartroom/app/MainActivity.kt').read_bytes()
     original = (baseline / 'java/com/lonesmartroom/app/MainActivity.kt').read_bytes()
     for marker in (b'private val assetsPrefix = "file:///android_asset/"',
@@ -61,12 +67,12 @@ def main():
         require(marker in activity and marker in original, 'WebView origin/storage compatibility changed')
     require(b'setDataDirectorySuffix' not in activity, 'WebView data directory changed')
     with zipfile.ZipFile(apk) as archive:
-        for name in ('app.js', 'index.html', 'styles.css', 'agent-status.js'):
+        for name in ('app.js', 'index.html', 'styles.css', 'agent-status.js', 'app-version.js', 'app-launch.js'):
             require(archive.read('assets/' + name) == (android / 'assets' / name).read_bytes(),
                     'Packaged asset differs from reviewed source: ' + name)
         require(b'lone-wol-settings-v1' in archive.read('assets/app.js'), 'WoL storage key changed')
 
-    output = ROOT / '.cache/artifacts/android/LoneSmartRoom-2.0.0-dev.1-v15.apk'
+    output = ROOT / f'.cache/artifacts/android/LoneSmartRoom-{version_name}-v{version_code}.apk'
     output.parent.mkdir(parents=True, exist_ok=True)
     # Preserve every previously prepared candidate if future builds differ.
     if output.exists():

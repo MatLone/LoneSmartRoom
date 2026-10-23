@@ -261,7 +261,7 @@ function initNativeWol(){
   $('#wolModeBadge').textContent=nativeWake?'ENVIO REAL NO ANDROID':'DEMONSTRAÇÃO';
   $('#remoteModeTag').textContent=nativeWake?'WoL REAL':'DEMO';
   $('#remoteActionNote').textContent=nativeWake?'O botão Ligar envia um pacote real por Wi-Fi. As outras funções ainda NÃO controlam o Windows.':'No navegador e no Windows todas as ações são simuladas.';
-  if(nativeWake){document.body.classList.add('lone-android-native');$('#mobilePreviewBtn').hidden=true;$('#platformLabel').innerHTML='Android <b class="small-dot">·</b> Versão 1.4';$('#remoteHelper').textContent='Envio real de Wake-on-LAN no Android. Estado online, desligamento e jogos ainda não estão integrados.'}
+  if(nativeWake){document.body.classList.add('lone-android-native');$('#mobilePreviewBtn').hidden=true;window.loneVersion.render('Android');$('#remoteHelper').textContent='Envio real de Wake-on-LAN no Android. Estado online, desligamento e jogos ainda não estão integrados.'}
   for(const id of ['wolMac','wolBroadcast','wolPort'])$('#'+id).addEventListener('change',()=>{try{readWolFields();setWolFeedback('Configurações salvas neste dispositivo.')}catch(err){setWolFeedback(err.message)}});
   renderRemote();
 }
@@ -290,6 +290,6 @@ $('.remote-app-actions').addEventListener('click',e=>{const btn=e.target.closest
 $('#remoteCancel').addEventListener('click',()=>{remote.pending=null;$('#remoteActionPanel').hidden=false;$('#remoteConfirm').hidden=true});
 $('#remoteConfirmYes').addEventListener('click',()=>{const action=remote.pending;remote.pending=null;$('#remoteActionPanel').hidden=false;$('#remoteConfirm').hidden=true;if(action)simulateRemoteAction(action)});
 $('#remoteHowBtn').addEventListener('click',()=>{$('#remoteSetupInfo').hidden=!$('#remoteSetupInfo').hidden});
-$('#mobilePreviewBtn').addEventListener('click',()=>{remote.mobile=!remote.mobile;document.body.classList.toggle('mobile-preview',remote.mobile);$('#mobilePreviewBtn').setAttribute('aria-pressed',String(remote.mobile));$('#mobilePreviewText').textContent=remote.mobile?'Ver Windows':'Ver Android';$('#platformLabel').innerHTML=remote.mobile?'Prévia Android <b class="small-dot">·</b> Versão 1.4':'Widget Windows 11 <b class="small-dot">·</b> Versão 1.4';toast(remote.mobile?'Layout Android simulado; não é um APK':'Layout Windows restaurado')});
+$('#mobilePreviewBtn').addEventListener('click',()=>{remote.mobile=!remote.mobile;document.body.classList.toggle('mobile-preview',remote.mobile);$('#mobilePreviewBtn').setAttribute('aria-pressed',String(remote.mobile));$('#mobilePreviewText').textContent=remote.mobile?'Ver Windows':'Ver Android';window.loneVersion.render(remote.mobile?'Prévia Android':'Widget Windows 11');toast(remote.mobile?'Layout Android simulado; não é um APK':'Layout Windows restaurado')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#pcRemoteModal').hidden)hideRemoteModal()});
 initNativeWol();

@@ -1,7 +1,7 @@
 {
   "name": "lone-smart-room",
   "productName": "Lone Smart Room",
-  "version": "1.4.0",
+  "version": "2.0.0-dev.2",
   "private": true,
   "description": "Lone Smart Room: widget demonstrativo e fonte Android Wake-on-LAN real",
   "main": "main.cjs",
@@ -26,7 +26,9 @@
       "main.cjs",
       "preload.cjs",
       "assets/**/*",
-      "agent-status.js"
+      "agent-status.js",
+      "app-version.js",
+      "app-launch.js"
     ],
     "directories": {
       "output": "dist"

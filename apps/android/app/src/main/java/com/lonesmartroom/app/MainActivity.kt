@@ -11,7 +11,7 @@ import android.webkit.WebViewClient
 import org.json.JSONObject
 import java.util.concurrent.Executors
 
-/** WebView local, sem navegação externa. A ponte nativa expõe SOMENTE Wake-on-LAN. */
+/** Local WebView; isolated native bridges for WoL, secure status and confirmed apps. */
 class MainActivity : Activity() {
     private lateinit var webView: WebView
     private val executor = Executors.newSingleThreadExecutor()
@@ -36,9 +36,12 @@ class MainActivity : Activity() {
             }
         }
         webView.addJavascriptInterface(WakeBridge(), "LoneAndroid")
-        agentBridge = AgentBridge(this) { result ->
+        webView.addJavascriptInterface(AppInfoBridge(), "LoneAppInfo")
+        agentBridge = AgentBridge(this, deliver = { result ->
             webView.evaluateJavascript("window.onLoneAgentStatus && window.onLoneAgentStatus(${result})", null)
-        }
+        }, deliverApps = { result ->
+            webView.evaluateJavascript("window.onLoneAppLaunch && window.onLoneAppLaunch(${result})", null)
+        })
         webView.addJavascriptInterface(agentBridge, "LoneAgent")
         setContentView(webView)
         if (Build.VERSION.SDK_INT >= 35) {
@@ -49,6 +52,10 @@ class MainActivity : Activity() {
             }
         }
         webView.loadUrl(assetsPrefix + "index.html")
+    }
+
+    class AppInfoBridge {
+        @JavascriptInterface fun getVersionName(): String = BuildConfig.VERSION_NAME
     }
 
     inner class WakeBridge {
@@ -73,6 +80,7 @@ class MainActivity : Activity() {
         executor.shutdownNow()
         agentBridge.close()
         webView.removeJavascriptInterface("LoneAgent")
+        webView.removeJavascriptInterface("LoneAppInfo")
         webView.removeJavascriptInterface("LoneAndroid")
         webView.destroy()
         super.onDestroy()

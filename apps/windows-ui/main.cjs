@@ -24,6 +24,7 @@ function createWidget(){
   });
 }
 app.whenReady().then(()=>{
+  ipcMain.handle('widget:version',()=>app.getVersion());
   ipcMain.on('widget:minimize',()=>win?.minimize());
   ipcMain.on('widget:close',()=>win?.close());
   createWidget();

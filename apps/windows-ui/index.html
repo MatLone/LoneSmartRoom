@@ -16,7 +16,7 @@
           <div class="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none"><path d="m3.8 11 8.2-7 8.2 7v8.6a1.2 1.2 0 0 1-1.2 1.2H5a1.2 1.2 0 0 1-1.2-1.2V11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.6 20.8v-7.2h4.8v7.2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
           </div>
-          <div class="brand-title"><strong>LONE SMART ROOM</strong><span id="platformLabel">Widget Windows 11 <b class="small-dot">·</b> Versão 1.4</span></div>
+          <div class="brand-title"><strong>LONE SMART ROOM</strong><span id="platformLabel">Obtendo versão…</span></div>
         </div>
         <div class="window-ops">
           <span class="demo-tag">DEMO</span>
@@ -38,6 +38,12 @@
               <p class="remote-helper" id="agentDetail">Sem confirmação do agente. Isso não indica que o PC está desligado.</p>
               <p class="remote-helper" id="agentLast">Última comunicação: nenhuma registrada</p>
               <div class="remote-main-actions"><button type="button" class="remote-wake" id="agentPair">Parear com Windows</button><button type="button" class="remote-secondary" id="agentRefresh">Consultar status</button></div>
+            </section>
+            <section class="remote-home" aria-label="Aplicativos autorizados no Windows">
+              <div class="section-line"><h2>Abrir no Windows</h2><strong id="launchState">Nenhuma solicitação</strong></div>
+              <p class="remote-helper" id="launchDetail">Autorize cada aplicativo no Windows antes de solicitar a abertura.</p>
+              <div class="remote-main-actions"><button type="button" class="remote-wake" id="launchSteam" disabled>Abrir Steam</button><button type="button" class="remote-secondary" id="launchCs2" disabled>Abrir CS2</button></div>
+              <div class="remote-main-actions"><button type="button" class="remote-secondary" id="launchPermissions">Verificar permissões</button><button type="button" class="remote-secondary" id="launchQuery">Consultar solicitação</button></div>
             </section>
           <section class="remote-home" id="pcRemoteSection" aria-labelledby="pcRemoteHeading">
             <div class="remote-kicker"><span class="remote-kicker-icon" data-icon="monitor"></span><div><h2 id="pcRemoteHeading">Meu computador</h2><p>Central de energia e acesso remoto</p></div><button type="button" class="remote-mobile-preview" id="mobilePreviewBtn" aria-pressed="false" title="Alternar prévia entre widget e Android"><span data-icon="smartphone"></span><span id="mobilePreviewText">Ver Android</span></button></div>
@@ -204,7 +210,9 @@
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
   </div>
+  <script src="app-version.js"></script>
   <script src="app.js"></script>
   <script src="agent-status.js"></script>
+  <script src="app-launch.js"></script>
 </body>
 </html>

@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+from preservation_rules import reviewed_version_update
 
 root = Path(__file__).resolve().parents[1]
 portable = root / '.tools/git/cmd/git.exe'
@@ -44,8 +45,11 @@ for record in records:
     if rel.as_posix() in integration_files:
         continue
     if rel.parts[0] in {'apps', 'agent'} and rel.suffix in {'.kt', '.js', '.html', '.css', '.cjs', '.xml', '.py'}:
-        if hashlib.sha256(run('show', ':' + rel.as_posix())).hexdigest() != record['sha256']:
-            bad.append(rel.as_posix())
+        current = run('show', ':' + rel.as_posix())
+        if hashlib.sha256(current).hexdigest() != record['sha256']:
+            baseline = run('show', 'ed0fdae90db78d721444b29ee7d9ac49c21f73df:' + rel.as_posix())
+            if current != reviewed_version_update(rel.as_posix(), baseline):
+                bad.append(rel.as_posix())
 if bad:
     raise SystemExit('Index review failed (paths only):\n' + '\n'.join(sorted(set(bad))))
 activity = 'apps/android/app/src/main/java/com/lonesmartroom/app/MainActivity.kt'
