@@ -291,16 +291,57 @@ class AppCommandTests(unittest.TestCase):
         self.terminal(device, rid)
         self.assertEqual(self.calls, ['steam'])
 
-    def test_v15_adapter_calls_only_two_fixed_uris_without_shell(self):
+    def test_adapter_steam_direct_cs2_legacy_and_no_arbitrary_action(self):
         import agent
-        with patch.object(agent.os, 'startfile', create=True) as start, patch.object(agent.subprocess, 'run') as shell:
+        with patch('steam_launcher.launch_steam', return_value='dispatch only') as direct, \
+                patch.object(agent.os, 'startfile', create=True) as start, patch.object(agent.subprocess, 'run') as shell:
             launch_allowed('steam')
             launch_allowed('cs2')
             for app in ('shutdown', 'restart', 'sleep', 'powershell', 'steam://open/other'):
                 with self.assertRaises(ValueError):
                     launch_allowed(app)
-            self.assertEqual([call.args[0] for call in start.call_args_list], ['steam://open/main', 'steam://rungameid/730'])
+            direct.assert_called_once_with()
+            self.assertEqual([call.args[0] for call in start.call_args_list], ['steam://rungameid/730'])
             shell.assert_not_called()
+
+    def test_https_production_adapter_requires_grant_and_dispatches_direct_once(self):
+        import steam_launcher
+        self.apps.executor = launch_allowed
+        device = self.device()
+        executable = Path(self.temp.name)/'steam.exe'
+        with patch('secure_apps.require_interactive_user'), \
+                patch.object(steam_launcher, 'validated_steam_executable', return_value=executable) as resolver, \
+                patch.object(steam_launcher, '_canonical_executable', return_value=executable), \
+                patch.object(steam_launcher.subprocess, 'Popen') as process, patch('os.startfile') as uri:
+            self.assertEqual(self.post(device)[0][0], 403)
+            resolver.assert_not_called(); process.assert_not_called()
+            self.registry.set_permission(device['device_id'], ['steam'], True)
+            response, rid = self.post(device)
+            self.assertEqual(response[0], 202)
+            result = self.terminal(device, rid)
+            self.assertEqual(result['state'], 'executed')
+            self.assertFalse(result['process_running_verified'])
+            self.assertEqual(self.post(device, request_id=rid)[0][1]['state'], 'executed')
+            self.assertEqual(self.post(device, app='cs2')[0][0], 403)
+            process.assert_called_once()
+            self.assertEqual(process.call_args.args, ([str(executable)],))
+            self.assertEqual(process.call_args.kwargs['cwd'], str(executable.parent))
+            self.assertFalse(process.call_args.kwargs['shell'])
+            uri.assert_not_called()
+
+    def test_https_production_adapter_missing_executable_is_failure_without_retry(self):
+        import steam_launcher
+        self.apps.executor = launch_allowed
+        device = self.device(('steam',))
+        with patch('secure_apps.require_interactive_user'), \
+                patch.object(steam_launcher, 'validated_steam_executable', side_effect=FileNotFoundError) as resolver, \
+                patch.object(steam_launcher.subprocess, 'Popen') as process, patch('os.startfile') as uri:
+            _, rid = self.post(device)
+            result = self.terminal(device, rid)
+            self.assertEqual((result['state'], result['error']), ('failed', 'launcher_failed'))
+            self.post(device, request_id=rid)
+            resolver.assert_called_once()
+            process.assert_not_called(); uri.assert_not_called()
 
     def test_admin_and_noninteractive_sessions_cannot_launch(self):
         import ctypes
