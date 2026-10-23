@@ -1,6 +1,11 @@
 # Local tools, caches, outputs, and recovery (preserved outside Git).
 .tools/
 .cache/
+.runtime/
+*.db
+*.db-wal
+*.db-shm
+*.dpapi
 recovery/
 node_modules/
 dist/
