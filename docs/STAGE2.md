@@ -30,6 +30,11 @@ Protocolo completo: `contracts/secure-status-v2.md`.
 
 ## Assinatura e dados do Samsung
 
+Atualização de 2026-10-23: o Samsung foi identificado via ADB sem fio; seu APK é
+idêntico ao recuperado. O APK 2.0 atual tem outra assinatura e não foi instalado.
+Resultado atual e plano de compatibilização: [SAMSUNG-VALIDATION.md](SAMSUNG-VALIDATION.md).
+O relato abaixo descreve a investigação anterior à conexão do aparelho.
+
 A chave debug original em `.android` está disponível e seu certificado corresponde
 ao APK de recuperação. Nenhum conteúdo privado ou senha foi copiado para o Git.
 ADB não encontrou dispositivo conectado: não foi possível verificar o certificado

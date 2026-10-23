@@ -38,6 +38,10 @@ Recibos sem credenciais: `docs/lan-firewall-receipt.json` e
 
 ## Limites da validação
 
+Atualização posterior: o Samsung foi conectado por ADB e teve sua assinatura
+verificada, sem instalação. Consulte [SAMSUNG-VALIDATION.md](SAMSUNG-VALIDATION.md).
+Os limites abaixo descrevem o momento dos testes de ativação da LAN.
+
 O cliente JVM foi executado no próprio Windows, usando o endereço da Ethernet.
 Isso comprova o protocolo e a identidade TLS do serviço ativo, mas não comprova
 travessia da regra de firewall a partir de um segundo dispositivo. A regra foi
