@@ -1,5 +1,8 @@
 # Development boundary
 
+Historical stage-0/1 design below. Implemented stage-2 architecture, activation
+gates and remaining risks are documented in STAGE2.md and the v2 wire contract.
+
 Current modules: `apps/android` (Kotlin/WebView), `apps/windows-ui` (Electron),
 `agent/windows` (Python stdlib agent 1.5). Existing runtime sources are preserved.
 

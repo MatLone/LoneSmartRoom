@@ -1,15 +1,19 @@
-# Lone Smart Room 2.0 — development baseline
+# Lone Smart Room 2.0 — secure pairing and status
 
-This is an isolated development copy. Product/runtime versions remain Android and
-Electron 1.4.0 and Python agent 1.5.0. No new control, telemetry, AI, or network
-integration is implemented. Existing functional source files are byte-preserved.
+This is an isolated development copy. Stage 2 adds status-only HTTPS pairing in
+Python/Kotlin. Product package versions remain 1.4.0 pending the signing/update
+plan; the legacy agent 1.5 remains intact. Electron runtime is now 45.0.0 and
+electron-builder 26.15.3 after security remediation. WoL, its bridge/storage contract
+and legacy action implementations are preserved. No new power/AI/telemetry command
+is enabled. Current report: `docs/STAGE2.md`; stage-0/1 reports are historical.
 
 ## Layout
 
 - `apps/android`: functional Kotlin/WebView Android source, working build toolchain.
 - `apps/windows-ui`: Electron 1.4 interface; exact direct dependency versions + npm lock.
 - `agent/windows`: unchanged real Windows agent 1.5 and its mocked-executor tests.
-- `contracts`: future protocol boundary; no implementation.
+- `agent/windows/secure_*.py`: HTTPS status service, DPAPI, pairing and local management.
+- `contracts`: implemented v2 status/pairing contract and legacy boundary.
 - `scripts`: repeatable build and safe-test commands.
 - `tests`: source-integrity, interface, identity, security, and storage regression guards.
 - `docs`: baseline inventory, toolchain checksums, architecture and validation results.
@@ -24,27 +28,26 @@ and Gradle checksum pins are in `docs/toolchain.json`. No global tool installati
 or PATH mutation is required by these scripts.
 
 ```powershell
-.\scripts\test-safe.ps1
+.\scripts\prepare-agent.ps1
 .\scripts\android-build.ps1
+.\scripts\test-safe.ps1
 .\scripts\test-android-packet.ps1
 .\scripts\android-build.ps1 -Tasks @('lintDebug')
 .\scripts\windows-build.ps1
+.\scripts\test-electron.ps1
 python -B scripts/verify-preservation.py
 ```
 
 Android script accepts `-JavaHome`, `-SdkRoot`, and `-Tasks`. Gradle 8.11.1 wrapper
 is committed; AGP is 8.10.1, Kotlin 2.0.21. Dependency downloads require network.
-The default task assembles the APK; lint is a separate check that currently fails
-on an inherited API-26 style issue, documented in `docs/VALIDATION.md`. It is not
-disabled or suppressed. Gradle artifact checksums are committed in
+The default task assembles the APK; lint is a separate check. The inherited API-26
+style error was fixed in values-v27 without changing the WoL emitter or disabling
+lint. Gradle artifact checksums are committed in
 `apps/android/gradle/verification-metadata.xml`.
 The Windows build uses `npm ci` and does not install or launch the generated app.
-Application dependencies are unchanged; exact baseline versions were selected
-from the original ranges, without an upgrade/security-remediation campaign.
+Current exact npm versions remediate the recorded advisories; see the stage-2 audit.
 The Windows helper verifies the vendor bundle checksum and extracts Windows tools
 only, avoiding macOS symlinks without requiring Developer Mode or admin privileges.
-The npm lock also pins a transitive Git dependency to its commit; npm warns that
-this dependency does not carry the usual registry integrity field.
 
 Outputs: Android `apps/android/app/build/outputs/apk/debug/`; Windows
 `apps/windows-ui/dist/`. Recovery files and generated binaries stay outside Git.
@@ -57,14 +60,16 @@ clear data, alter application ID, WebView origin, or WoL storage keys.
 
 ## Safety and recovery
 
-Do not run the agent, firewall/autostart installers, key-display script, or real
-energy actions during automated verification. The existing agent test binds only
+Do not run the legacy agent, legacy firewall/autostart installers, key-display
+script, or real energy actions during automated verification. Agent tests bind only
 to loopback on an ephemeral port and injects an executor that records actions.
 No firewall, registry, existing app, or device is changed by that test.
 
-Existing defaults in the agent and its deployment scripts remain historical LAN
-configuration; they are not applied here. Security limitations are documented in
-`docs/ARCHITECTURE.md`. Android cleartext traffic remains disabled.
+Existing legacy deployment scripts remain historical LAN configuration and were
+not applied. The secure agent has a separate per-user startup entry, independently
+of Electron, and refuses to listen before the configured interface is Private.
+No firewall exception was created. Android cleartext traffic remains disabled.
+See `docs/STAGE2.md` for activation, revocation, signing and remaining physical tests.
 
 `recovery/manifest.json` identifies originals and copied files with SHA-256 hashes.
 `docs/baseline-inventory.json` is its shareable, path-independent inventory.
