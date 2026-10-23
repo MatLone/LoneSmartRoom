@@ -1,6 +1,7 @@
 param(
-    [Parameter(Mandatory)][ValidateSet('pair','devices','revoke','serve','install-startup','remove-startup')][string]$Action,
-    [ValidatePattern('^[0-9a-f]{32}$')][string]$DeviceId
+    [Parameter(Mandatory)][ValidateSet('pair','devices','revoke','serve','install-startup','remove-startup','grant-apps','revoke-apps','app-permissions')][string]$Action,
+    [ValidatePattern('^[0-9a-f]{32}$')][string]$DeviceId,
+    [ValidateSet('steam','cs2')][string[]]$Apps
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
@@ -18,7 +19,14 @@ if ($Action -eq 'serve') {
     Write-Output 'Inicialização em segundo plano solicitada; confirme a disponibilidade por HTTPS.'
     return
 }
-if ($Action -eq 'revoke') {
+if ($Action -in @('grant-apps','revoke-apps','app-permissions')) {
+    if (!$DeviceId) { throw 'Provide the explicitly selected device ID.' }
+    if ($Action -eq 'app-permissions') { & $python -B $agent $Action $DeviceId }
+    else {
+        if (!$Apps) { throw 'Explicitly select Steam and/or CS2.' }
+        & $python -B $agent $Action $DeviceId --apps @Apps
+    }
+} elseif ($Action -eq 'revoke') {
     if (!$DeviceId) { throw 'Provide -DeviceId from the devices list.' }
     & $python -B $agent revoke $DeviceId
 } else {

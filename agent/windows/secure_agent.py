@@ -1,4 +1,4 @@
-"""Local Windows management and status-only HTTPS service; never imports legacy actions."""
+"""Local management: HTTPS status and separately granted allowlisted applications."""
 import argparse
 import base64
 import json
@@ -12,6 +12,7 @@ from secure_protocol import Store, validate_lan
 from secure_tls import create_identity, fingerprint, server_context
 from secure_http import StatusServer
 from secure_startup import private_profile
+from secure_apps import APPS, AppRegistry, AppDispatcher, launch_allowed
 
 ROOT = Path(__file__).resolve().parents[2]
 STATE = ROOT / '.runtime' / 'secure-agent'
@@ -35,6 +36,11 @@ def main():
     for command in ('serve', 'pair', 'devices', 'install-startup', 'remove-startup'):
         sub.add_parser(command)
     sub.add_parser('revoke').add_argument('device')
+    for permission in ('grant-apps', 'revoke-apps'):
+        command = sub.add_parser(permission)
+        command.add_argument('device')
+        command.add_argument('--apps', nargs='+', choices=sorted(APPS), required=True)
+    sub.add_parser('app-permissions').add_argument('device')
     args = parser.parse_args()
     protector = DPAPI()
     config_file = STATE / 'config.dpapi'
@@ -65,6 +71,11 @@ def main():
             print(device, label, 'revogado' if revoked else 'status autorizado')
     elif args.command == 'revoke':
         print('Revogado.' if store.revoke(args.device) else 'Dispositivo não encontrado.')
+    elif args.command in ('grant-apps', 'revoke-apps', 'app-permissions'):
+        registry = AppRegistry(store)
+        if args.command != 'app-permissions':
+            registry.set_permission(args.device, args.apps, args.command == 'grant-apps')
+        print('Aplicativos autorizados:', ', '.join(registry.permissions(args.device)) or 'nenhum')
     elif args.command in ('install-startup', 'remove-startup'):
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Run', 0, winreg.KEY_SET_VALUE) as key:
@@ -84,6 +95,10 @@ def main():
                     time.sleep(10)
                 with StatusServer((config['host'], config['port']), server_context(STATE, protector), store,
                                   config['network'], private_guard=lambda: private_profile(config['host'])) as server:
+                    # Bind succeeds before startup recovery, so a second serve
+                    # process cannot invalidate work owned by the active listener.
+                    server.apps = AppDispatcher(AppRegistry(store), launch_allowed,
+                                                lambda: private_profile(config['host']))
                     worker = threading.Thread(target=server.serve_forever, daemon=True)
                     worker.start()
                     try:
@@ -92,6 +107,7 @@ def main():
                     finally:
                         server.shutdown()
                         worker.join(timeout=6)
+                        server.apps.close()
             except KeyboardInterrupt:
                 return
 
