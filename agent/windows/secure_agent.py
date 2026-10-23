@@ -5,10 +5,13 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import threading
+import time
 from secure_store import DPAPI
 from secure_protocol import Store, validate_lan
 from secure_tls import create_identity, fingerprint, server_context
 from secure_http import StatusServer
+from secure_startup import private_profile
 
 ROOT = Path(__file__).resolve().parents[2]
 STATE = ROOT / '.runtime' / 'secure-agent'
@@ -53,6 +56,8 @@ def main():
         payload = {'url': f"https://{config['host']}:{config['port']}", 'network': config['network'],
                    'sha256': fingerprint(STATE), 'code': code, 'expires': expires}
         # Only explicit local pairing prints this short-lived credential. Never log it.
+        print('Servidor:', payload['url'])
+        print('SHA-256 do certificado:', payload['sha256'])
         print('No Android, use Parear e copie SOMENTE este código diretamente desta tela Windows confiável:')
         print('LSR2.' + base64.urlsafe_b64encode(json.dumps(payload, separators=(',', ':')).encode()).decode().rstrip('='))
     elif args.command == 'devices':
@@ -72,12 +77,24 @@ def main():
                     pass
         print('Inicialização por login configurada; independente do Electron.')
     elif args.command == 'serve':
-        with StatusServer((config['host'], config['port']), server_context(STATE, protector), store, config['network']) as server:
+        # Login can precede network availability. Wait without opening a listener.
+        while True:
             try:
-                server.serve_forever()
+                while not private_profile(config['host']):
+                    time.sleep(10)
+                with StatusServer((config['host'], config['port']), server_context(STATE, protector), store,
+                                  config['network'], private_guard=lambda: private_profile(config['host'])) as server:
+                    worker = threading.Thread(target=server.serve_forever, daemon=True)
+                    worker.start()
+                    try:
+                        while worker.is_alive() and private_profile(config['host']):
+                            time.sleep(5)
+                    finally:
+                        server.shutdown()
+                        worker.join(timeout=6)
             except KeyboardInterrupt:
-                pass
+                return
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

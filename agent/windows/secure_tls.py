@@ -11,14 +11,14 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 
-def create_identity(directory, host, protector):
+def create_identity(directory, host, protector, now=None):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     cert_path, key_path, pass_path = [directory / name for name in ('server.crt', 'server.key', 'tls.dpapi')]
     if any(p.exists() for p in (cert_path, key_path, pass_path)):
         raise FileExistsError('TLS identity already exists; never rotate implicitly')
     key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = now or datetime.datetime.now(datetime.timezone.utc)
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'Lone Smart Room Agent')])
     cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(key.public_key())
             .serial_number(x509.random_serial_number()).not_valid_before(now - datetime.timedelta(minutes=5))

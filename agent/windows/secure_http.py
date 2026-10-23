@@ -11,9 +11,10 @@ class StatusServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = False
 
-    def __init__(self, address, context, store, network):
+    def __init__(self, address, context, store, network, private_guard=None):
         self.tls, self.store = context, store
         self.network = ipaddress.ip_network(network)
+        self.private_guard = private_guard
         self.slots = threading.BoundedSemaphore(12)
         self.rate_lock, self.rates = threading.Lock(), {}
         super().__init__(address, Handler)
@@ -31,6 +32,8 @@ class StatusServer(ThreadingHTTPServer):
 
     def process_request_thread(self, request, address):
         try:
+            if self.private_guard is not None and not self.private_guard():
+                return
             request.settimeout(5)
             with self.tls.wrap_socket(request, server_side=True) as secured:
                 self.finish_request(secured, address)
@@ -57,6 +60,13 @@ class Handler(BaseHTTPRequestHandler):
         pass  # No request, authentication header, pair code or secret in logs.
 
     def reply(self, status, value):
+        # Drain only bounded bodies before early rejections, avoiding TCP resets
+        # that can discard the error response. Never consume an unbounded upload.
+        length = self.headers.get('Content-Length', '0')
+        if not getattr(self, '_body_read', False) and length.isascii() and length.isdecimal() and len(length) <= 4:
+            if 0 < int(length) <= 4096:
+                self.rfile.read(int(length))
+            self._body_read = True
         body = json.dumps(value, separators=(',', ':')).encode()
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
@@ -89,6 +99,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(400, {'ok': False})
         try:
             raw = self.rfile.read(int(length))
+            self._body_read = True
             if len(raw) != int(length):
                 return self.reply(400, {'ok': False})
             data = json.loads(raw)
