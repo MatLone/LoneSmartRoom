@@ -1,5 +1,9 @@
 # Validação do Samsung — 2026-10-23
 
+Atualização posterior: um novo candidato compatível foi preparado com a chave
+original, sem instalação. Consulte [ANDROID-COMPATIBLE-APK.md](ANDROID-COMPATIBLE-APK.md).
+As referências abaixo ao APK incompatível descrevem a compilação anterior.
+
 ## Identificação e verificação somente leitura
 
 ADB sem fio encontrou o Samsung SM-S731B (Galaxy S25 FE informado pelo usuário),
