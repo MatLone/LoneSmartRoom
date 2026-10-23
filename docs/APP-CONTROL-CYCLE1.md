@@ -1,5 +1,8 @@
 # Controle remoto seguro — primeiro ciclo, 2026-10-23
 
+Validação posterior autorizada: [atualização v16 e testes físicos](APP-CONTROL-PHYSICAL-VALIDATION.md).
+O registro abaixo descreve a implementação e os testes anteriores à instalação.
+
 ## Implementado
 
 Branch `feature/secure-pairing-status`, preservando como ancestral o checkpoint
