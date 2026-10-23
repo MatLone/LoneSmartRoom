@@ -6,6 +6,8 @@ Branch: `feature/secure-pairing-status`; checkpoint preservado:
 
 Recibo público verificável: [app-control-physical-results.json](app-control-physical-results.json).
 
+Investigação posterior, sem novas aberturas: [diagnóstico do crash Steam](STEAM-CRASH-DIAGNOSIS.md).
+
 ## Resultado
 
 A atualização Android e a preservação de dados passaram. O agente recebeu e
