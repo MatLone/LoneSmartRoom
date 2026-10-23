@@ -25,7 +25,7 @@ do commit `af89e9a61a622ef58811c472247554496f2e7bff`.
   Isso não equivale a um log completo de acessos: o agente evita registrar
   requisições e cabeçalhos de autenticação.
 
-## Samsung: reconexão parcial, validação final pendente
+## Samsung: reconexão confirmada manualmente
 
 Galaxy S25 FE identificado por ADB sem fio na mesma LAN. Aplicativo instalado
 continua `com.lonesmartroom.app`, 2.0.0-dev.2, código 16; não houve instalação.
@@ -41,8 +41,12 @@ atividade não confirmou o Lone Smart Room como atividade retomada. Isso **não
 comprova** causa de rede, TLS, credenciais ou segundo erro do endpoint. A tentativa
 de observação foi encerrada, e o encaminhamento temporário foi removido.
 Solicitada confirmação no próprio celular, desbloqueado, usando apenas atualizar
-status. Não se declara reconexão estável nem prontidão para teste remoto enquanto
-essa confirmação estiver pendente. Nenhum mecanismo de segurança foi reduzido.
+status. Após a entrega inicial deste relatório, o usuário respondeu **Conectado**.
+Essa confirmação manual conclui a validação de reconexão com o pareamento
+existente; não representa um teste prolongado de estabilidade e não elimina a
+falha intermediária registrada acima, cuja causa permanece inconclusiva.
+Nenhum mecanismo de segurança foi reduzido. Não foram executados novos comandos,
+concedidos grants ou iniciados aplicativos em decorrência dessa confirmação.
 
 ## Agente anteriormente offline
 
