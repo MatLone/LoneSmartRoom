@@ -12,8 +12,8 @@ android {
         applicationId = "com.lonesmartroom.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.4.0"
+        versionCode = 15
+        versionName = "2.0.0-dev.1"
     }
 
     compileOptions {
@@ -22,11 +22,17 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
 
-    // Isolate development signing from the existing Android installation.
-    // Never install this APK over the Samsung app without verifying its signer.
+    // Ordinary builds stay isolated. The opt-in local build uses the original
+    // debug keystore in place, with AGP's in-memory debug signing defaults.
+    // No passwords or private signing files belong in this repository.
     signingConfigs {
         getByName("debug") {
-            storeFile = rootProject.file("../../.cache/android/debug.keystore")
+            val original = providers.environmentVariable("LONE_ANDROID_SIGNING_KEYSTORE").orNull
+            storeFile = if (original == null) {
+                rootProject.file("../../.cache/android/debug.keystore")
+            } else {
+                file(original).also { require(it.isFile) { "Original signing keystore is unavailable" } }
+            }
         }
     }
 }
