@@ -1,5 +1,9 @@
 # Ativação autorizada da LAN — 2026-10-23
 
+Validação física posterior: o Samsung atualizado pareou e consultou status HTTPS
+pelo Wi-Fi da LAN. Consulte [SAMSUNG-INSTALLATION.md](SAMSUNG-INSTALLATION.md).
+Os limites de testes locais abaixo descrevem a ativação anterior.
+
 ## Estado atual
 
 - Ethernet confirmada como Privada, IP 172.31.161.169, sub-rede autorizada 172.31.145.10/24.

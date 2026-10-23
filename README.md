@@ -58,10 +58,14 @@ The new debug signing key is isolated in `.cache/android/`. Do NOT install its A
 over the Samsung app until signing compatibility is verified. Do NOT uninstall,
 clear data, alter application ID, WebView origin, or WoL storage keys.
 
-An opt-in original-signed 2.0 candidate (versionCode 15) is now prepared and verified,
-without installation. See `docs/ANDROID-COMPATIBLE-APK.md` for its exact path/hash,
-offline preparation command, tests and recovery plan. Ordinary builds still use
-the isolated key. Installation on Samsung requires explicit user authorization.
+An opt-in original-signed 2.0 candidate (versionCode 15) was prepared and verified.
+See `docs/ANDROID-COMPATIBLE-APK.md` for its exact path/hash, offline preparation
+command, tests and recovery plan. Ordinary builds still use the isolated key.
+After explicit authorization, version 2.0.0-dev.1 / 15 is installed on Samsung;
+WoL settings survived, and real Wi-Fi HTTPS pairing/status and credential reload
+passed. See `docs/SAMSUNG-INSTALLATION.md`. Physical wake remains pending; PC
+shutdown/suspension requires separate confirmation. New builds are not implicitly
+authorized for installation.
 
 ## Safety and recovery
 

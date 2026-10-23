@@ -1,5 +1,9 @@
 # Atualização controlada — verificação antes da autorização
 
+Atualização posterior: o usuário autorizou expressamente o comando; instalação,
+preservação WoL e comunicação HTTPS reais foram validadas. Consulte
+[SAMSUNG-INSTALLATION.md](SAMSUNG-INSTALLATION.md). O restante registra o preflight histórico.
+
 Data: 2026-10-23. Branch: `feature/secure-pairing-status`.
 **Procedimento interrompido antes da instalação. Autorização expressa pendente.**
 

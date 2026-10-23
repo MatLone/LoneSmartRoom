@@ -1,5 +1,9 @@
 # APK Android 2.0 compatível — 2026-10-23
 
+Atualização posterior: este candidato foi instalado após autorização expressa,
+com WoL preservado e HTTPS validado no Samsung. Veja
+[SAMSUNG-INSTALLATION.md](SAMSUNG-INSTALLATION.md). Abaixo permanece o registro da preparação.
+
 ## Artefato preparado, sem instalação
 
 - Pacote: `com.lonesmartroom.app`.
