@@ -46,6 +46,11 @@ Plano obrigatório antes de atualizar:
 
 ## Inicialização e rede
 
+Atualização após autorização do usuário: a Ethernet foi alterada para o perfil
+Privado e a mudança foi confirmada pelo Windows. Não foi criada regra de firewall
+nem iniciado o listener de produção. As observações sobre perfil Público abaixo
+descrevem a situação encontrada durante a implementação, antes dessa autorização.
+
 Identidade HTTPS local criada em `.runtime/secure-agent`. Entrada por usuário
 `LoneSmartRoomSecureAgent` registrada no Run do Windows com pythonw da .venv.
 Não depende do widget ou Electron. O caminho do projeto/.venv deve permanecer
