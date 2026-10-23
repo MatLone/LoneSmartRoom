@@ -185,6 +185,19 @@ class SecureAgentTests(unittest.TestCase):
         finally:
             server.shutdown(); server.server_close(); thread.join(timeout=5)
 
+    def test_peer_outside_authorized_network_is_rejected(self):
+        server = StatusServer(('127.0.0.1', 0), server_context(self.directory, self.protector),
+                              self.store, '172.31.250.0/24')
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            connection = http.client.HTTPSConnection('127.0.0.1', server.server_port, context=self.context, timeout=2)
+            with self.assertRaises(OSError):
+                try: connection.request('GET', '/v2/status')
+                finally: connection.close()
+        finally:
+            server.shutdown(); server.server_close(); thread.join(timeout=5)
+
     def test_tls_only_and_identity_stable(self):
         old = fingerprint(self.directory)
         with self.assertRaises(FileExistsError): create_identity(self.directory, '127.0.0.1', self.protector)
@@ -213,9 +226,10 @@ class SecureAgentTests(unittest.TestCase):
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         try:
+            device = self.device()
             result = subprocess.run([str(jdk/'java.exe'), '-classpath', str(output)+';'+classpath, 'AndroidSecurityTest',
                 str(self.port), fingerprint(self.directory), str(server.server_port), fingerprint(expired)],
-                capture_output=True, text=True, timeout=20)
+                input=device['device_id']+'\n'+device['secret']+'\n', capture_output=True, text=True, timeout=20)
             self.assertEqual(result.returncode, 0, result.stderr)
         finally:
             server.shutdown(); server.server_close(); thread.join(timeout=5)

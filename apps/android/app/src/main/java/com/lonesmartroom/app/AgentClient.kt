@@ -4,8 +4,6 @@ import android.util.Base64
 import org.json.JSONObject
 import java.net.URL
 import java.security.SecureRandom
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
 import javax.net.ssl.HttpsURLConnection
 
 class AgentClient {
@@ -82,12 +80,7 @@ class AgentClient {
         val device = config.getString("device_id")
         val stamp = (System.currentTimeMillis() / 1000).toString()
         val nonce = ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it.toInt() and 255) }
-        val key = config.getString("secret").chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-        val canonical = "LSR2\n$device\n$stamp\n$nonce\nGET\n/v2/status\n".toByteArray(Charsets.US_ASCII)
-        val signature = Mac.getInstance("HmacSHA256").apply { init(SecretKeySpec(key, "HmacSHA256")) }
-            .doFinal(canonical).joinToString("") { "%02x".format(it.toInt() and 255) }
-        val result = exchange(config, "/v2/status", headers = mapOf("X-Lone-Device" to device, "X-Lone-Timestamp" to stamp,
-            "X-Lone-Nonce" to nonce, "X-Lone-Signature" to signature))
+        val result = exchange(config, "/v2/status", headers = AgentAuth.headers(device, config.getString("secret"), stamp, nonce))
         require(result.optString("agent") == "online" && result.optString("scope") == "status")
     }
 }
