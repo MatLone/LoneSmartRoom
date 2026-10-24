@@ -12,5 +12,5 @@ apps/windows-ui/*.cjs -text
 apps/windows-ui/*.html -text
 apps/windows-ui/*.css -text
 agent/windows/*.py -text
-# Preserve the exact superseded brand files for visual rollback and provenance.
-docs/design/brand/official-board-2026-10-24/previous-dev4/** -text
+# Preserve review and archived-brand bytes so checksum receipts survive checkouts.
+docs/design/brand/official-board-2026-10-24/** -text
