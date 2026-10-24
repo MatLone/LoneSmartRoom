@@ -35,7 +35,7 @@ app.whenReady().then(async()=>{
     await evaluate(`document.getElementById('brandAsset').click()`);
     await check(`document.getElementById('brandDialog').open`);
     await check(`[...document.querySelectorAll('#brandDialog img')].every(img=>img.complete&&img.naturalWidth>0)`);
-    await check(`document.querySelector('#brandDialog img').getAttribute('src')`,'brand/app-icon.svg');
+    await check(`document.querySelector('#brandDialog img').getAttribute('src')`,'brand/nex-app-icon.png');
     await evaluate(`document.querySelector('#brandDialog [data-close]').click()`);
     await check(`[...document.scripts].some(s=>s.src.endsWith('/app.js'))`,false);
     await check(`new Set([...document.querySelectorAll('[id]')].map(n=>n.id)).size===document.querySelectorAll('[id]').length`);

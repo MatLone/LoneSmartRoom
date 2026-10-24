@@ -1,7 +1,8 @@
-"""The only permitted changes to legacy app.js: replace two fixed version labels.
+"""Narrow, explicitly reviewed changes to preserved presentation sources.
 
-All other bytes, including WoL settings, event bindings and packet callbacks,
-must continue matching the recovered baseline.
+Legacy app.js permits only two version labels; the Android manifest permits
+only the native icon resource references. All other baseline bytes, including
+WoL settings, event bindings, permissions and packet callbacks, are preserved.
 """
 
 
@@ -22,6 +23,10 @@ def version_only_update(source):
 
 def reviewed_version_update(path, source):
     newline = b'\r\n' if b'\r\n' in source else b'\n'
+    if path == 'apps/android/app/src/main/AndroidManifest.xml':
+        return source.replace(b'android:icon="@drawable/ic_launcher"',
+                              b'android:icon="@mipmap/ic_launcher"' + newline
+                              + b'        android:roundIcon="@mipmap/ic_launcher_round"', 1)
     if path.endswith('/app.js'):
         return version_only_update(source)
     if path == 'apps/windows-ui/main.cjs':

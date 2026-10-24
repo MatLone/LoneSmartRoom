@@ -12,8 +12,8 @@ android {
         applicationId = "com.lonesmartroom.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 17
-        versionName = "2.0.0-dev.3"
+        versionCode = 18
+        versionName = "2.0.0-dev.4"
     }
 
     buildFeatures { buildConfig = true }

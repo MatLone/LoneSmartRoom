@@ -36,6 +36,7 @@ class BaselinePreservation(unittest.TestCase):
                     'apps/windows-ui/main.cjs': 'recovery/sources/electron-v1.4/main.cjs',
                     'apps/windows-ui/preload.cjs': 'recovery/sources/electron-v1.4/preload.cjs',
                     'apps/android/app/src/main/assets/app.js': 'recovery/sources/android-working/app/src/main/assets/app.js',
+                    'apps/android/app/src/main/AndroidManifest.xml': 'recovery/sources/android-working/app/src/main/AndroidManifest.xml',
                 }
                 self.assertIn(rel.as_posix(), originals)
                 baseline = (ROOT / originals[rel.as_posix()]).read_bytes()
