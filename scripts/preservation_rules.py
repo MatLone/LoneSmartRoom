@@ -4,14 +4,15 @@ Legacy app.js permits two version labels and one exact gear outline; the Android
 only the native icon resource references. All other baseline bytes, including
 WoL settings, event bindings, permissions and packet callbacks, are preserved.
 The authorized Windows visual migration pins its two reviewed entry/bridge files
-by exact hash; it does not broaden exceptions for Android or legacy handlers.
+by exact hash. The authorized Tray extension adds only a fixed zero-argument
+window action; it does not broaden exceptions for Android or legacy handlers.
 """
 import hashlib
 from pathlib import Path
 
 DESKTOP_VISUAL_SOURCES = {
     'apps/windows-ui/main.cjs': '9f98b6fb5b721792a545a85b27147c4f9b7efed14ebffe9a5a4e502b65cb6df9',
-    'apps/windows-ui/preload.cjs': 'b51fa0a364b934b210af2f5081d11af01a048cda45c98458d1b5a95f0a454dd0',
+    'apps/windows-ui/preload.cjs': 'cd11bfac2defd774f05fb3d0c31e4372a91002f20b2ffb79618a01e9e6257a2f',
 }
 
 

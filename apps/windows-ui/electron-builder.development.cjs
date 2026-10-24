@@ -4,7 +4,7 @@ const path = require('node:path');
 const existing = require('./package.json').build;
 module.exports = {
   ...existing,
-  directories: {...existing.directories, output: '../../.cache/artifacts/windows/desktop-dev3-distribution'},
+  directories: {...existing.directories, output: '../../.cache/artifacts/windows/desktop-dev4-tray-distribution'},
   electronDist: 'node_modules/electron/dist',
   npmRebuild: false,
   publish: null,

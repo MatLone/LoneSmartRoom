@@ -2,7 +2,7 @@ param([ValidateSet('1','1.25','1.5')][string]$Scale = '1')
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $electron = Join-Path $root 'apps/windows-ui/node_modules/electron/dist/electron.exe'
-$output = Join-Path $root '.cache/validation/windows-desktop-integration'
+$output = Join-Path $root '.cache/validation/windows-tray-dev4'
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 $previousOptions = $env:NODE_OPTIONS
 $previousScale = $env:LONE_TEST_SCALE

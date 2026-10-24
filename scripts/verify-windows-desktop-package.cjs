@@ -6,11 +6,11 @@ const asar=require(path.join(app,'node_modules/@electron/asar'));
 const bundle=path.resolve(process.argv[2]||path.join(root,'.cache/artifacts/windows/desktop-dev3/win-unpacked'));
 const exe=path.join(bundle,'Lone Smart Room.exe'),archive=path.join(bundle,'resources/app.asar');
 const hash=buffer=>crypto.createHash('sha256').update(buffer).digest('hex');
-const files=['main.cjs','desktop-main.cjs','desktop-policy.cjs','preload.cjs','index.html','desktop.css','desktop.js','app-version.js','assets/brand/windows-icon.ico','assets/brand/windows-icon.svg','assets/brand/windows-icon.png','assets/brand/logo-horizontal.svg','assets/brand/logo-header-small.svg'];
+const files=['main.cjs','desktop-main.cjs','desktop-policy.cjs','desktop-window.cjs','desktop-preferences.cjs','preload.cjs','index.html','desktop.css','desktop.js','app-version.js','assets/brand/windows-icon.ico','assets/brand/windows-icon.svg','assets/brand/windows-icon.png','assets/brand/logo-horizontal.svg','assets/brand/logo-header-small.svg'];
 for(const name of files)assert(asar.extractFile(archive,name.split('/').join(path.sep)).equals(fs.readFileSync(path.join(app,name))),name);
 const pkg=JSON.parse(asar.extractFile(archive,'package.json'));
 const sourcePackage=JSON.parse(fs.readFileSync(path.join(app,'package.json'),'utf8'));
-assert.equal(pkg.version,'2.0.0-dev.3');assert.equal(pkg.name,'lone-smart-room');
+assert.equal(pkg.version,'2.0.0-dev.4');assert.equal(pkg.name,'lone-smart-room');
 // electron-builder strips its build configuration from packaged package.json.
 assert.equal(sourcePackage.build.appId,'com.lone.smartroom');
 const raw=fs.readFileSync(exe),u16=p=>raw.readUInt16LE(p),u32=p=>raw.readUInt32LE(p);
@@ -25,5 +25,5 @@ const ico=fs.readFileSync(path.join(app,'assets/brand/windows-icon.ico')),count=
 for(let i=0;i<count;i++){const p=6+16*i,size=ico.readUInt32LE(p+8),start=ico.readUInt32LE(p+12),image=ico.subarray(start,start+size);assert(icons.some(icon=>icon.equals(image)),'Official ICO image missing from PE');}
 assert(groups.length>0);
 const result={ok:true,version:pkg.version,appIdFromBuildConfiguration:sourcePackage.build.appId,packagedName:pkg.name,resourcesVerified:files,exeSha256:hash(raw),asarSha256:hash(fs.readFileSync(archive)),peIconGroups:groups.length,peIconImages:icons.length,officialIconImagesMatched:count,generatedExecutableRun:false,installerExecuted:false};
-const output=path.join(root,'.cache/validation/windows-desktop-integration/package-inspection.json');fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(result,null,2)+'\n');
+const output=path.join(root,'.cache/validation/windows-tray-dev4/package-inspection.json');fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(result,null,2)+'\n');
 console.log(`PASS: ${files.length} ASAR files, package identity and ${count} official PE icon images; executable not run.`);

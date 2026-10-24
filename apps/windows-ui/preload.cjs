@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('loneDesktop', Object.freeze({
   getVersion: () => ipcRenderer.invoke('widget:version'),
   minimize: () => ipcRenderer.send('widget:minimize'),
   close: () => ipcRenderer.send('widget:close'),
+  minimizeToTray: () => ipcRenderer.invoke('window:tray'),
   getWindowState: () => ipcRenderer.invoke('window:state'),
   setWindowMode: mode => {
     if (mode !== 'dashboard' && mode !== 'widget') return Promise.reject(new Error('Invalid window mode'));

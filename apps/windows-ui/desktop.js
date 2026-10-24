@@ -19,6 +19,7 @@
     smartphone:'<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 5h4m-3 14h2"/>',
     globe:'<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
     chart:'<path d="M3 3v18h18M6 15l4-5 4 3 5-7"/>',
+    tray:'<path d="M4 14v6h16v-6M8 14l4 4 4-4M12 3v14"/>',
     widget:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M14 3v18m0-11h7"/>',
     chevron:'<path d="m9 6 6 6-6 6"/>',arrow:'<path d="M4 12h16m-6-6 6 6-6 6"/>',minus:'<path d="M5 12h14"/>',maximize:'<rect x="5" y="5" width="14" height="14" rx="1"/>',close:'<path d="m6 6 12 12M18 6 6 18"/>',
     gear:'<path stroke-linejoin="bevel" d="M9.836 4.923 L10.514 2.617 L13.486 2.617 L14.164 4.923 L15.474 5.466 L17.584 4.314 L19.686 6.416 L18.534 8.526 L19.077 9.836 L21.383 10.514 L21.383 13.486 L19.077 14.164 L18.534 15.474 L19.686 17.584 L17.584 19.686 L15.474 18.534 L14.164 19.077 L13.486 21.383 L10.514 21.383 L9.836 19.077 L8.526 18.534 L6.416 19.686 L4.314 17.584 L5.466 15.474 L4.923 14.164 L2.617 13.486 L2.617 10.514 L4.923 9.836 L5.466 8.526 L4.314 6.416 L6.416 4.314 L8.526 5.466 Z"/><circle cx="12" cy="12" r="3.1"/>'
@@ -59,6 +60,7 @@
     root.dataset.mode=compact?'widget':'dashboard';
     toggle.setAttribute('aria-pressed',String(value.mode==='widget'));
     document.getElementById('maximizeBtn').disabled=value.mode==='widget';
+    document.getElementById('trayMinimizeBtn').disabled=!value.trayAvailable;
     document.getElementById('runtimeLabel').textContent=value.reviewProfile?'Electron · desenvolvimento isolado':value.development?'Electron · desenvolvimento':'Electron · integração visual';
     document.getElementById('communicationState').title='Cliente autenticado ainda não implementado. Nenhuma consulta ao agente.';
   }
@@ -68,6 +70,10 @@
     toggle.disabled=true;
     try{renderWindow(await native.setWindowMode(windowState.mode==='widget'?'dashboard':'widget'));}
     finally{toggle.disabled=false;}
+  });
+  document.getElementById('trayMinimizeBtn').addEventListener('click',async()=>{
+    if(!native||!windowState?.trayAvailable)return;
+    const result=await native.minimizeToTray();renderWindow(result.state);
   });
   document.getElementById('minimizeBtn').addEventListener('click',()=>native?.minimize());
   document.getElementById('closeBtn').addEventListener('click',()=>native?.close());

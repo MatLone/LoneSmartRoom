@@ -5,8 +5,19 @@ const {app,session}=require('electron');
 const path=require('node:path'),fs=require('node:fs'),assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'..'),scale=process.env.LONE_TEST_SCALE;
 if(!['1','1.25','1.5'].includes(scale)||!process.argv.includes('--lone-development-review'))throw new Error('Explicit isolated development review required');
-const out=path.join(root,'docs/design/windows-desktop-integration/review',scale.replace('.','_'));fs.mkdirSync(out,{recursive:true});
+const out=path.join(root,'docs/windows-tray-dev4/review',scale.replace('.','_'));fs.mkdirSync(out,{recursive:true});
 let checks=0,started=false;const cases=[],errors=[],network=[];
+let observedTray, observedMenu, result;
+const windowModule=require('../apps/windows-ui/desktop-window.cjs');
+const originalCreate=windowModule.createController;
+windowModule.createController=options=>{
+ const NativeTray=options.Tray;
+ class ObservedTray extends NativeTray {
+  constructor(...args){super(...args);observedTray=this;}
+ }
+ const ObservedMenu={buildFromTemplate:template=>{observedMenu=options.Menu.buildFromTemplate(template);return observedMenu;}};
+ return originalCreate({...options,Tray:ObservedTray,Menu:ObservedMenu});
+};
 const check=(value,message)=>{assert(value,message);checks++;};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 setTimeout(()=>{console.error('Native test timeout');app.exit(2);},90000).unref();
@@ -32,19 +43,37 @@ app.on('browser-window-created',(_event,win)=>{
   }
   try{
    check(path.resolve(app.getAppPath())===path.join(root,'apps/windows-ui'),'Actual Electron package is running');
-   check(app.getVersion()==='2.0.0-dev.3','Actual package version');
-   check(app.getPath('userData').startsWith(path.join(root,'.cache/windows-desktop-review')),'Production profile untouched');
+   check(app.getVersion()==='2.0.0-dev.4','Actual package version');
+   check(app.getPath('userData').startsWith(path.join(root,'.cache/windows-tray-review/dev4')),'Production profile untouched');
    const prefs=win.webContents.getLastWebPreferences();
    console.log('Native webPreferences:',JSON.stringify({contextIsolation:prefs.contextIsolation,sandbox:prefs.sandbox,nodeIntegration:prefs.nodeIntegration,preloadListed:prefs.preload!==undefined,exposedWindowApi:await ev('typeof window.loneDesktop')}));
    check(prefs.contextIsolation&&prefs.sandbox&&!prefs.nodeIntegration,'Actual sandbox and isolation');
    await until(()=>win.isVisible(),'Native window ready');
-   await until(()=>ev(`document.getElementById('platformLabel').textContent.includes('2.0.0-dev.3')`),'Native version label');
+   const initialState=await ev('window.loneDesktop.getWindowState()');
+   const initialFile=path.join(app.getPath('userData'),'desktop-window-state.json');
+   let initialRestoration={mode:initialState.mode,persistedFilePresent:fs.existsSync(initialFile)};
+   if(initialRestoration.persistedFilePresent){
+    const prior=JSON.parse(fs.readFileSync(initialFile,'utf8'));
+    check(initialState.mode===prior.mode,'Actual restart restores persisted mode');
+    if(prior.bounds[prior.mode]){
+     const nativeScreen=require('electron').screen,windowPolicy=require('../apps/windows-ui/desktop-policy.cjs');
+     const expected=windowPolicy.restoreBounds(prior.bounds[prior.mode],nativeScreen.getAllDisplays().map(d=>d.workArea),nativeScreen.getPrimaryDisplay().workArea);
+     console.log('Initial restored bounds:',JSON.stringify({expected,actual:win.getNormalBounds()}));
+     check(['x','y','width','height'].every(k=>Math.abs(expected[k]-win.getNormalBounds()[k])<=2),'Actual restart restores validated bounds');
+    }
+   }
+   await ev("window.loneDesktop.setWindowMode('dashboard')");
+   await until(()=>ev(`document.getElementById('platformLabel').textContent.includes('2.0.0-dev.4')`),'Native version label');
    await ev('Promise.all([...document.images].map(i=>i.decode()))');
    const metadata=await ev(`({api:Object.keys(window.loneDesktop),node:typeof require,agent:typeof LoneAgent,dpr:devicePixelRatio})`);
-   check(metadata.api.length===7&&metadata.node==='undefined'&&metadata.agent==='undefined','Limited real bridge; no agent');
+   check(metadata.api.length===8&&metadata.node==='undefined'&&metadata.agent==='undefined','Limited real bridge; no agent');
    check(Math.abs(metadata.dpr-Number(scale))<.03,'Per-process DPI factor applied');
    check(await ev(`document.querySelector('h1').textContent.includes('sob controle')`),'Neutral heading');
    check(await ev(`document.getElementById('communicationState').textContent.includes('NÃO INTEGRADA')`),'Separate honest communication state');
+   check(observedTray&&!observedTray.isDestroyed(),'Real Windows Tray created');
+   check(observedTray.getBounds().width>0&&observedTray.getBounds().height>0,'Windows shell allocated visible Tray bounds');
+   check(observedMenu.items.filter(n=>n.type!=='separator').map(n=>n.label).join(',')==='Abrir dashboard,Modo Widget,Sair','Real restricted native menu');
+   check(await ev(`!document.getElementById('trayMinimizeBtn').disabled`),'Explicit Tray action available in real renderer');
    session.defaultSession.webRequest.onCompleted(details=>{if(/^https?:/.test(details.url))network.push(details.url);});
    for(const name of ['controls','monitor','gamer']){await tab(name);await geometry('dashboard-'+name);await snap('dashboard-'+name);}
    for(const id of ['connection','lamp','permissions','sensors','about'])await panel(id);
@@ -76,10 +105,34 @@ app.on('browser-window-created',(_event,win)=>{
    check(await ev(`document.getElementById('grantsCount').textContent==='—'`),'No stale audit grant count used as live state');
    await ev('document.getElementById("minimizeBtn").click()');await until(()=>win.isMinimized(),'Native minimize');check(win.isMinimized(),'Minimize to taskbar');win.restore();await until(()=>!win.isMinimized(),'Restore taskbar window');
    check(network.length===0,'No completed HTTP/HTTPS requests');check(errors.length===0,'No renderer errors');
-   const result={ok:true,scale:Number(scale),checks,cases,appVersion:app.getVersion(),actualPackageMain:true,actualPreload:true,appPath:'apps/windows-ui',developmentProfileIsolated:true,offscreen:false,windowVisible:true,dashboardBounds,widgetBounds,metadata,completedHttpRequests:network.length,rendererErrors:errors,windowsSystemScaleChanged:false,actualAppsLaunched:0,grantsChanged:false};
+   await ev('window.loneDesktop.minimizeToTray()');await until(()=>!win.isVisible(),'Real hide to Tray');
+   check(!win.isVisible()&&!observedTray.isDestroyed(),'Hidden window retains real Tray');
+   observedMenu.getMenuItemById('dashboard').click();await until(()=>win.isVisible()&&!win.isMinimized(),'Native menu dashboard restore');
+   check((await ev('window.loneDesktop.getWindowState()')).mode==='dashboard','Tray menu opens full dashboard');
+   observedMenu.getMenuItemById('widget').click();await until(()=>ev(`document.getElementById('dashboard').dataset.mode==='widget'`),'Tray menu Widget');
+   await ev('window.loneDesktop.minimizeToTray()');await until(()=>!win.isVisible(),'Hide Widget to Tray');
+   observedTray.emit('click');await until(()=>win.isVisible(),'Native Tray click callback restores Widget');
+   check((await ev('window.loneDesktop.getWindowState()')).mode==='widget'&&win.isVisible(),'Current mode retained on Tray click');
+   const {spawn}=require('node:child_process');
+   const childEnvironment={...process.env};delete childEnvironment.NODE_OPTIONS;
+   const duplicate=spawn(process.execPath,['apps/windows-ui','--lone-development-review','--force-device-scale-factor='+scale,'--ignored-review-data'],{cwd:root,env:childEnvironment,windowsHide:true,stdio:'ignore',shell:false});
+   const duplicateCode=await Promise.race([new Promise((resolve,reject)=>{duplicate.once('error',reject);duplicate.once('exit',resolve);}),new Promise((_,reject)=>setTimeout(()=>reject(Error('Duplicate process did not exit')),8000).unref())]);
+   check(duplicateCode===0&&require('electron').BrowserWindow.getAllWindows().length===1,'Actual second process exits with no duplicate window/Tray');
+   check(observedTray&&!observedTray.isDestroyed()&&win.isVisible(),'Primary session remains usable after second launch');
+   const visualFile=path.join(app.getPath('userData'),'desktop-window-state.json');
+   result={ok:true,scale:Number(scale),checks,cases,appVersion:app.getVersion(),actualPackageMain:true,actualPreload:true,appPath:'apps/windows-ui',developmentProfileIsolated:true,offscreen:false,windowVisible:true,dashboardBounds,widgetBounds,metadata,completedHttpRequests:network.length,rendererErrors:errors,windowsSystemScaleChanged:false,actualAppsLaunched:0,grantsChanged:false,realTray:true,trayBounds:observedTray.getBounds(),realSecondProcessExitCode:duplicateCode,quitByTrayMenu:true,initialRestoration};
+   app.once('will-quit',()=>{
+    try {
+     check(observedTray.isDestroyed(),'Tray destroyed before native application exit');
+     const persisted=JSON.parse(fs.readFileSync(visualFile,'utf8'));
+     check(persisted.schema===1&&persisted.mode==='widget'&&persisted.minimizeToTray===false,'Visual state safely persisted on native exit');
+     result.checks=checks;result.trayDestroyedOnQuit=true;result.persistedState=persisted;
+     fs.writeFileSync(path.join(out,'result.json'),JSON.stringify(result,null,2)+'\n');
+    }catch(error){console.error(error.stack);process.exitCode=1;}
+   });
    fs.writeFileSync(path.join(out,'result.json'),JSON.stringify(result,null,2)+'\n');
    console.log(`PASS: native Electron ${scale}x, ${checks} checks, ${cases.length} layouts; real main/preload/window; no agent client.`);
-   await ev('document.getElementById("closeBtn").click()');
+   observedMenu.getMenuItemById('exit').click();
   }catch(error){console.error(error.stack);app.exit(1);}
  });
 });

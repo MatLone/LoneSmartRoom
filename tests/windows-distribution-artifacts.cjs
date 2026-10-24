@@ -2,8 +2,8 @@
 // Offline NSIS/7z/ASAR/PE inspection. Does not launch any generated executable.
 const fs = require('node:fs'), path = require('node:path'), cp = require('node:child_process'), crypto = require('node:crypto'), zlib = require('node:zlib'), assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..'), app = path.join(root, 'apps/windows-ui');
-const output = path.join(root, '.cache/artifacts/windows/desktop-dev3-distribution');
-const evidence = path.join(root, '.cache/validation/windows-distribution');
+const output = path.join(root, '.cache/artifacts/windows/desktop-dev4-tray-distribution');
+const evidence = path.join(root, '.cache/validation/windows-tray-dev4');
 const asar = require(path.join(app, 'node_modules/@electron/asar'));
 const seven = path.join(root, '.cache/electron-builder/7zip@1.0.0/7zip-win-x64-a34pt/bin/7za.exe');
 const sha = b => crypto.createHash('sha256').update(b).digest('hex');
@@ -52,7 +52,7 @@ function inspectAsar(archive) {
     check(!/(?:^|\/)(?:\.env(?:\..*)?|agent_config\.json|credentials\.json|secrets\.json|local\.properties)$|\.(?:pem|key|crt|cer|pfx|p12|jks|keystore|db|sqlite3?)$/i.test(name), 'No credentials, certificates or local databases');
     const data = asar.extractFile(archive, name.split('/').join(path.sep));fileCount++;
     if (name === 'package.json') {
-      const pkg = JSON.parse(data);check(pkg.name === 'lone-smart-room' && pkg.productName === 'Lone Smart Room' && pkg.version === '2.0.0-dev.3', 'Packaged product/version');continue;
+      const pkg = JSON.parse(data);check(pkg.name === 'lone-smart-room' && pkg.productName === 'Lone Smart Room' && pkg.version === '2.0.0-dev.4', 'Packaged product/version');continue;
     }
     check(!name.startsWith('node_modules/') && !name.startsWith('build/') && !name.startsWith('electron-builder.'), 'No build-only tools in app');
     const source = path.join(app, name);check(fs.existsSync(source) && data.equals(fs.readFileSync(source)), 'Packaged resources equal source');
@@ -72,7 +72,7 @@ const application = peInfo(sharedExe);check(application.machine === '8664', 'App
 const appFileCount = inspectAsar(path.join(output, 'win-unpacked/resources/app.asar'));
 const packages = [];
 for (const kind of ['Setup', 'Portable']) {
-  const name = `Lone-Smart-Room-2.0.0-dev.3-x64-${kind}-DEV.exe`, raw = fs.readFileSync(path.join(output, name));
+  const name = `Lone-Smart-Room-2.0.0-dev.4-x64-${kind}-DEV.exe`, raw = fs.readFileSync(path.join(output, name));
   const pe = peInfo(raw), blocks = nsisBlocks(raw);
   const archives = blocks.filter(data => data.subarray(0, 6).equals(Buffer.from('377abcaf271c', 'hex')));
   check(archives.length === 1, 'Exactly one embedded 7z application archive');
@@ -98,7 +98,7 @@ for (const kind of ['Setup', 'Portable']) {
 }
 const execution = JSON.parse(fs.readFileSync(path.join(evidence, 'build-execution.json')));
 check(execution.ok && execution.staticUninstallerExtractions === 1 && !execution.generatedExecutablesRun, 'Non-executing build receipt');
-const result = {ok: true, checks, version: '2.0.0-dev.3', appId: 'com.lone.smartroom', application, appFileCount, applicationSha256: sha(sharedExe), asarSha256: sha(sharedAsar), packages,
+const result = {ok: true, checks, version: '2.0.0-dev.4', appId: 'com.lone.smartroom', application, appFileCount, applicationSha256: sha(sharedExe), asarSha256: sha(sharedAsar), packages,
   credentialsFound: false, operationalClient: false, packagedApplicationRun: false, installerRun: false};
 fs.writeFileSync(path.join(evidence, 'artifact-inspection.json'), JSON.stringify(result, null, 2)+'\n');
 console.log(`PASS: ${checks} offline checks; NSIS/portable payloads, x64 app, icons, metadata, credential scan; no generated executables run.`);

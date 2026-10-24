@@ -1,9 +1,9 @@
 {
   "name": "lone-smart-room",
   "productName": "Lone Smart Room",
-  "version": "2.0.0-dev.3",
+  "version": "2.0.0-dev.4",
   "private": true,
-  "description": "Lone Smart Room: dashboard e widget Windows; cliente operacional ainda indisponível",
+  "description": "Lone Smart Room: dashboard, widget e bandeja Windows; cliente operacional indisponível",
   "main": "main.cjs",
   "author": "Lone Smart Room",
   "license": "UNLICENSED",
@@ -33,7 +33,9 @@
       "desktop.css",
       "desktop.js",
       "desktop-main.cjs",
-      "desktop-policy.cjs"
+      "desktop-policy.cjs",
+      "desktop-preferences.cjs",
+      "desktop-window.cjs"
     ],
     "directories": {
       "output": "dist"

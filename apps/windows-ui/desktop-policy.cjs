@@ -1,6 +1,7 @@
 'use strict';
 const path = require('node:path');
 const {pathToFileURL} = require('node:url');
+const {validBounds} = require('./desktop-preferences.cjs');
 const entryUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
 const resources = new Set([
   'index.html', 'desktop.css', 'desktop.js', 'app-version.js',
@@ -29,4 +30,14 @@ function initialBounds(mode, workArea) {
     x: workArea.x + (mode === 'widget' ? workArea.width - size.width - 18 : (workArea.width - size.width) / 2),
     y: workArea.y + (workArea.height - size.height) / 2}, workArea);
 }
-module.exports = {entryUrl, trustedSender, validMode, allowedResource, clampBounds, initialBounds};
+function restoreBounds(bounds, workAreas, primary) {
+  if (!validBounds(bounds)) return initialBounds('dashboard', primary);
+  let selected = primary, overlap = 0;
+  for (const area of workAreas) {
+    const intersection = Math.max(0, Math.min(bounds.x + bounds.width, area.x + area.width) - Math.max(bounds.x, area.x)) *
+      Math.max(0, Math.min(bounds.y + bounds.height, area.y + area.height) - Math.max(bounds.y, area.y));
+    if (intersection > overlap) {overlap = intersection;selected = area;}
+  }
+  return clampBounds(bounds, selected);
+}
+module.exports = {entryUrl, trustedSender, validMode, allowedResource, clampBounds, initialBounds, restoreBounds, validBounds};
