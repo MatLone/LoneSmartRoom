@@ -42,10 +42,32 @@ class BaselinePreservation(unittest.TestCase):
                 self.assertEqual(hashlib.sha256(baseline).hexdigest(), record['sha256'])
                 self.assertEqual(current, reviewed_version_update(rel.as_posix(), baseline))
 
-    def test_shared_ui_has_not_diverged(self):
-        for name in ('app.js', 'index.html', 'styles.css', 'app-version.js', 'app-launch.js', 'agent-status.js'):
+    def test_shared_clients_and_recovery_assets_have_not_diverged(self):
+        # Android now has an approved independent entry point. Shared native clients
+        # and the recoverable legacy presentation must still be byte-identical.
+        for name in ('app.js', 'styles.css', 'app-version.js', 'app-launch.js', 'agent-status.js'):
             self.assertEqual((ROOT / 'apps/windows-ui' / name).read_bytes(),
                              (ROOT / 'apps/android/app/src/main/assets' / name).read_bytes())
+
+    def test_android_entry_point_uses_real_clients_without_legacy_simulations(self):
+        from html.parser import HTMLParser
+        class Scripts(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.sources = []
+            def handle_starttag(self, tag, attrs):
+                if tag == 'script':
+                    self.sources.append(dict(attrs).get('src'))
+        html = (ROOT / 'apps/android/app/src/main/assets/index.html').read_text(encoding='utf-8')
+        parser = Scripts()
+        parser.feed(html)
+        self.assertEqual(parser.sources, ['mobile-shell.js', 'app-version.js', 'agent-status.js',
+                                          'app-launch.js', 'wol-ui.js', 'mobile-bindings.js'])
+        self.assertIn("connect-src 'none'", html)
+        self.assertNotIn('icon-home', html)
+        source = (ROOT / 'apps/android/app/src/main/assets/wol-ui.js').read_text(encoding='utf-8')
+        for marker in ('lone-wol-settings-v1', 'window.LoneAndroid.sendWake', 'window.onLoneWakeResult'):
+            self.assertIn(marker, source)
 
     def test_android_identity_and_security(self):
         build = (ROOT / 'apps/android/app/build.gradle.kts').read_text()

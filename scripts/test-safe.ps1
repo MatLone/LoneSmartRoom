@@ -20,4 +20,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'App launch UI syntax check failed.' }
     & node tests/version-launch-ui.cjs
     if ($LASTEXITCODE -ne 0) { throw 'Version/app launch UI tests failed.' }
+    foreach ($name in @('mobile-shell.js','mobile-bindings.js','wol-ui.js')) {
+        & node --check "apps/android/app/src/main/assets/$name"
+        if ($LASTEXITCODE -ne 0) { throw "Android UI syntax check failed: $name" }
+    }
+    & node tests/android-wol-ui.cjs
+    if ($LASTEXITCODE -ne 0) { throw 'Android WoL persistence tests failed.' }
 } finally { Pop-Location }
