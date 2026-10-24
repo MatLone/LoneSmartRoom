@@ -16,13 +16,13 @@ async function main(){
   for(const name of ['ic_launcher','ic_launcher_round']){
     const xml=fs.readFileSync(path.join(res,'mipmap-anydpi-v26',name+'.xml'),'utf8');
     assert(xml.includes('<adaptive-icon'));
-    assert(xml.includes('@mipmap/ic_nex_foreground'));
-    assert(xml.includes('@color/ic_nex_background'));
+    assert(xml.includes('@mipmap/ic_lone_foreground'));
+    assert(xml.includes('@color/ic_lone_background'));
     assert(!xml.includes('@drawable/ic_launcher'));
   }
   const measurements=[];
   for(const [density,scale]of [['mdpi',1],['hdpi',1.5],['xhdpi',2],['xxhdpi',3],['xxxhdpi',4]]){
-    const file=path.join(res,'mipmap-'+density,'ic_nex_foreground.png');
+    const file=path.join(res,'mipmap-'+density,'ic_lone_foreground.png');
     const {data,info}=await sharp(file).ensureAlpha().raw().toBuffer({resolveWithObject:true});
     assert.equal(info.width,108*scale);assert.equal(info.height,108*scale);
     let visible=0,maxRadius=0,red=0,bright=0;
@@ -33,7 +33,7 @@ async function main(){
       if(data[n]>150&&data[n]>data[n+1]*1.5)red++;
       if(data[n]>210&&data[n+1]>180&&data[n+2]>150)bright++;
     }
-    assert(visible>0&&red>0&&bright>0,'Neon red emblem and bright core must survive scaling');
+    assert(visible>0&&red>0&&bright>0,'Red angular symbol and white LONE lettering must survive scaling');
     assert(maxRadius<=33,'Visible foreground must fit the conservative 66dp safe circle');
     assert.equal(data[3],0,'Foreground corners must be transparent, without a baked tile');
     measurements.push({density,visiblePixels:visible,maxVisibleRadiusDp:maxRadius,redPixels:red,brightPixels:bright});checked++;
@@ -47,7 +47,7 @@ async function main(){
     const bytes=fs.readFileSync(path.join(root,'apps/android/app/src/main/assets/brand',name));
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),hash);checked++;
   }
-  console.log(JSON.stringify({ok:true,checkedImageAndVectorFiles:checked,measurements,originalVectorsPreserved:true,
+  console.log(JSON.stringify({ok:true,checkedImageAndVectorFiles:checked,measurements,officialVectorsVerified:true,
     actualSamsungTested:false,alphaThreshold:8,realDeviceOperations:0},null,2));
 }
 main().catch(error=>{console.error(error.message);process.exit(1);});

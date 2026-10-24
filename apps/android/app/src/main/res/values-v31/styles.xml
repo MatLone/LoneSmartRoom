@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.LoneSmartRoom" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#F04759</item>
+        <item name="android:statusBarColor">#080a0d</item>
+        <item name="android:navigationBarColor">#080a0d</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">@drawable/lone_launch_background</item>
+        <item name="android:windowSplashScreenBackground">@color/ic_lone_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/lone_splash_safe</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/ic_lone_background</item>
+    </style>
+</resources>

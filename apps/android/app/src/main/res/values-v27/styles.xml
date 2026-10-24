@@ -3,11 +3,11 @@
     <style name="Theme.LoneSmartRoom" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:colorAccent">#F04759</item>
-        <item name="android:statusBarColor">#141720</item>
-        <item name="android:navigationBarColor">#141720</item>
+        <item name="android:statusBarColor">#080a0d</item>
+        <item name="android:navigationBarColor">#080a0d</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowLightNavigationBar">false</item>
-        <item name="android:windowBackground">#141720</item>
+        <item name="android:windowBackground">@drawable/lone_launch_background</item>
     </style>
 </resources>

@@ -1,20 +1,16 @@
 {
-  "purpose": "Small Android headers: symbol and LONE, no unreadable subtitle",
-  "source": "logo-horizontal.svg",
-  "sourceSha256": "a4afdaf8c63bf6d50a2ab85a24069c103ff7d06789726713a3e2437882c1bb45",
-  "variantSha256": "a9371ad434e97062e89c552c8841573ab50ec9ef33ebb81c6e656c6206eddbb5",
-  "originalAssetsUnchanged": {
-    "logo-horizontal.svg": "a4afdaf8c63bf6d50a2ab85a24069c103ff7d06789726713a3e2437882c1bb45",
-    "logo-compact.svg": "5baeeb024cd58a5a1ce5fa68df032c8150c2944dbda4dae7783fa280e477f5f8",
-    "symbol.svg": "414a899cb59fbed82d3a3d1b5b8992671af509b4af7ad2d59a424886adaf8710",
-    "app-icon.svg": "86769c65b90682eea9f840bb591e8406071da8c0dd4ff03d9a1bd1cc8a4d59a7",
-    "splash-screen.svg": "83e73713d3f5d823f9d4c6bca79861cd9573275ba68d43ec139597b60677750a"
+  "source": "new official board",
+  "subtitleRetained": true,
+  "viewBox": [
+    360,
+    100
+  ],
+  "subtitleHeightUnits": 13,
+  "renderedWidthCss": {
+    "default": 244,
+    "narrow": 224
   },
-  "symbolGeometryChanged": false,
-  "wordGeometryChanged": false,
-  "compositionChange": "Remove subtitle and vertically center original word at y=37",
-  "fullLogoRetainedFor": [
-    "splash",
-    "larger layouts"
-  ]
+  "minimumSubtitleHeightCss": 8.088888888888889,
+  "variantSha256": "e1d08e624d369fdbd944cac9d267c92a711f50783e88cbd5e3edd3e811ea80d0",
+  "olderVectorsArchivedAt": "docs/design/brand/official-board-2026-10-24/previous-dev4"
 }
