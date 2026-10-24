@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0b0e">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Lone Smart Room · proposta Windows</title>
+  <link rel="stylesheet" href="visual.css">
+</head>
+<body data-platform="windows">
+  <div class="preview-bar"><span>PRÉVIA VISUAL · SEM CONEXÃO</span><a href="android.html">Ver Android <span aria-hidden="true">↗</span></a></div>
+  <div class="app-layout">
+    <header class="app-header"><div class="brand"><span class="brand-slot" title="Logo aprovada pendente">MARCA<br>PENDENTE</span><div><strong>LONE<span>SMART ROOM</span></strong><small>Interface 2.0 · Windows</small></div></div><button class="icon-button" data-open="connection" aria-label="Configurações de conexão"><span data-icon="settings"></span></button></header>
+    <nav class="navigation" role="tablist" aria-label="Áreas do aplicativo">
+      <p class="nav-caption">SEU AMBIENTE</p>
+      <button id="tab-controls" role="tab" aria-selected="true" aria-controls="panel-controls" data-tab="controls"><span data-icon="sliders"></span><span>Controles</span></button>
+      <button id="tab-monitor" role="tab" aria-selected="false" aria-controls="panel-monitor" data-tab="monitor"><span data-icon="activity"></span><span>Monitoramento PC</span></button>
+      <button id="tab-gamer" role="tab" aria-selected="false" aria-controls="panel-gamer" data-tab="gamer"><span data-icon="gamepad"></span><span>Gamer Launcher</span></button>
+      <div class="nav-foot"><span data-icon="shield"></span><span>Permissões controladas<br><small>Nenhuma ação nesta prévia</small></span></div>
+    </nav>
+    <main id="workspace"></main>
+    <aside class="desktop-context" id="desktopContext"></aside>
+  </div>
+  <dialog id="settingsDialog" aria-labelledby="settingsTitle"><div id="dialogContent"></div></dialog>
+  <script src="prototype.js"></script>
+</body>
+</html>
