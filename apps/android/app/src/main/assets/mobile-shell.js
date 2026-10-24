@@ -1,8 +1,8 @@
 'use strict';
 // Android presentation only. Native actions remain in the existing narrow bridge clients.
 (() => {
-  // Shared six-tooth outline: centered, balanced and legible at 17–22 px.
-  const settingsGear = '<path d="M9.384 5.185 L10.368 2.743 L13.632 2.743 L14.616 5.185 L16.594 6.327 L19.201 5.958 L20.833 8.785 L19.210 10.858 L19.210 13.142 L20.833 15.215 L19.201 18.042 L16.594 17.673 L14.616 18.815 L13.632 21.257 L10.368 21.257 L9.384 18.815 L7.406 17.673 L4.799 18.042 L3.167 15.215 L4.790 13.142 L4.790 10.858 L3.167 8.785 L4.799 5.958 L7.406 6.327 Z"/><circle cx="12" cy="12" r="3"/>';
+  // Shared machined eight-tooth outline; beveled corners stay clear at 17–22 px.
+  const settingsGear = '<path stroke-linejoin="bevel" d="M9.836 4.923 L10.514 2.617 L13.486 2.617 L14.164 4.923 L15.474 5.466 L17.584 4.314 L19.686 6.416 L18.534 8.526 L19.077 9.836 L21.383 10.514 L21.383 13.486 L19.077 14.164 L18.534 15.474 L19.686 17.584 L17.584 19.686 L15.474 18.534 L14.164 19.077 L13.486 21.383 L10.514 21.383 L9.836 19.077 L8.526 18.534 L6.416 19.686 L4.314 17.584 L5.466 15.474 L4.923 14.164 L2.617 13.486 L2.617 10.514 L4.923 9.836 L5.466 8.526 L4.314 6.416 L6.416 4.314 L8.526 5.466 Z"/><circle cx="12" cy="12" r="3.1"/>';
   const icons = {
     settings:settingsGear,
     sliders:'<path d="M4 7h6m4 0h6M4 17h10m4 0h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/>',

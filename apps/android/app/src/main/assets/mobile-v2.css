@@ -19,9 +19,25 @@ body[data-platform="windows"] .app-layout{display:grid;grid-template-columns:234
 .page-heading>div{min-width:0;flex:1}.page-number{flex-shrink:0}.status-badge svg{width:11px;height:11px}.fine-print{font-size:11px}.status-line{font-size:12px}.status-line b{font-size:11px}.button{font-size:12px}.security-line{font-size:11px}.device-card strong{font-size:14px}.device-card small,.device-card .device-state{font-size:10px}.game-title span{display:inline;font-size:1em;font-style:italic;letter-spacing:-2px;font-weight:850;margin:0 0 0 8px}.game-aside>.button{margin-top:10px}.nex-card{flex-wrap:wrap}.nex-copy{min-width:0}.nex-copy p{font-size:11px}
 body[data-platform="android"] .page-number{display:none}body[data-platform="android"] .sensor-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}body[data-platform="android"] .sensor{padding:14px 11px}body[data-platform="android"] .sensor-title{gap:6px}body[data-platform="android"] .sensor small{font-size:10px;line-height:1.5}body[data-platform="android"] .navigation button{font-size:11px}body[data-platform="android"] .field input,body[data-platform="android"] .field select{font-size:16px}
 
-/* Android production shell: native Activity owns system-bar insets. */
+/* Android production shell. Native inset behavior is preserved. */
 body[data-platform="android"] .app-layout{height:100dvh;min-height:0}.app-header{padding-top:20px}.status-badge[data-state="connected"]{color:#91e0c2;border-color:#315448}.status-badge[data-state="connected"] i{background:#91e0c2}.status-badge[data-state="disconnected"]{color:#ffb6bf;border-color:#65333e}.status-badge[data-state="disconnected"] i{background:#ff2945}.status-badge[data-state="unknown"] i{background:#9999a3}.feedback{padding:12px;border-radius:10px;background:#202027;font-size:11px;line-height:1.6;color:#c4c4ce;margin-top:12px}.feedback[data-success="true"]{color:#91e0c2;border:1px solid #315448}.command-steps .active{border-color:#923247;color:#ff9cae}.connection-value{overflow-wrap:anywhere}.secondary-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.secondary-actions .button{flex:1}.paired-note{font-size:11px;color:var(--muted);line-height:1.6}.field-help{font-size:10px;line-height:1.6;color:var(--muted);margin-top:-6px}.dialog-fallback[open]{display:block;position:fixed;inset:50% auto auto 50%;transform:translate(-50%,-50%);z-index:20;margin:0}.settings-shade{position:fixed;inset:0;z-index:19;background:#000b}.permission-state{font-size:9px}.brand-slot img{max-width:100%;max-height:100%;object-fit:contain}.device-top{pointer-events:none}.actions-unavailable{margin-top:20px;padding:15px;border:1px solid var(--border);border-radius:14px}.actions-unavailable span{display:block;color:var(--muted);font-size:11px;line-height:1.6}.actions-unavailable strong{display:block;font-size:12px;margin-bottom:7px}
 
 /* Reference-based brand artwork; presentation only, no native behavior. */
 .app-header .brand{flex-direction:column;align-items:flex-start;gap:2px;min-width:0}.app-header .brand-lockup{display:block;width:min(244px,100%);height:auto;background:transparent;border:0;padding:0;text-align:left;line-height:0}.brand-lockup img{display:block;width:100%;height:auto;max-width:244px}.app-header .brand small{margin:2px 0 0 8px;font-size:9px;line-height:1.5}.brand-app-identity{display:flex;align-items:center;gap:16px;margin:20px 0 26px}.brand-app-identity img{flex-shrink:0;border-radius:15px}.brand-app-identity strong{display:block;font-size:13px;font-weight:600}.brand-app-identity small{display:block;color:var(--muted);font-size:11px;line-height:1.6;margin-top:6px}.brand-splash-preview{display:block;width:min(100%,236px);height:auto;margin:18px auto;border:1px solid #3b2830;border-radius:20px}.brand-lockup:focus-visible{outline:2px solid #fff;outline-offset:4px;border-radius:4px}
 @media(max-width:360px){.app-header .brand-lockup{width:224px}.app-header .brand small{font-size:8px}}
+
+/* Android header: reserve reported safe area once, with a conservative floor
+   for WebViews that report zero. The additional 12px is visual breathing room.
+   Do not add another status-bar offset to the logo or the settings button. */
+body[data-platform="android"] .app-header{
+  padding-top:calc(max(32px,env(safe-area-inset-top,0px)) + 12px);
+  padding-right:max(18px,env(safe-area-inset-right,0px));
+  padding-bottom:14px;
+  padding-left:max(18px,env(safe-area-inset-left,0px));
+  align-items:flex-start;
+}
+body[data-platform="android"] .app-header .brand{flex:1;max-width:224px}
+body[data-platform="android"] .app-header .brand-lockup{width:min(224px,100%)}
+body[data-platform="android"] .app-header .brand-lockup img{max-width:224px}
+body[data-platform="android"] .app-header .brand small{margin:4px 0 0 4px;font-size:9px;line-height:1.4}
+body[data-platform="android"] .app-header>.icon-button{margin-top:8px}
