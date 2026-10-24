@@ -89,6 +89,8 @@ app.whenReady().then(async()=>{
     await evaluate(`document.querySelector('#settingsDialog [data-close]').click()`);
     for(const width of [320,360,390,412,800]){
       win.setContentSize(width,900);
+      await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>document.querySelector('#brandAsset img').decode().then(resolve)))`);
+      await check(`document.querySelector('#brandAsset img').currentSrc.endsWith('${width<=600?'logo-header-small.svg':'logo-horizontal.svg'}')`);
       for(const tab of ['controls','monitor','gamer']){
         await evaluate(`document.querySelector('[data-tab="${tab}"]').click()`);
         await check(`(()=>{const m=document.querySelector('main');const p=document.getElementById('panel-${tab}');return document.documentElement.scrollWidth<=innerWidth+1 && m.scrollWidth<=m.clientWidth+1 && p.scrollWidth<=p.clientWidth+1})()`);
