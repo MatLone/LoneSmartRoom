@@ -1,8 +1,10 @@
 'use strict';
 // Android presentation only. Native actions remain in the existing narrow bridge clients.
 (() => {
+  // Shared six-tooth outline: centered, balanced and legible at 17–22 px.
+  const settingsGear = '<path d="M9.384 5.185 L10.368 2.743 L13.632 2.743 L14.616 5.185 L16.594 6.327 L19.201 5.958 L20.833 8.785 L19.210 10.858 L19.210 13.142 L20.833 15.215 L19.201 18.042 L16.594 17.673 L14.616 18.815 L13.632 21.257 L10.368 21.257 L9.384 18.815 L7.406 17.673 L4.799 18.042 L3.167 15.215 L4.790 13.142 L4.790 10.858 L3.167 8.785 L4.799 5.958 L7.406 6.327 Z"/><circle cx="12" cy="12" r="3"/>';
   const icons = {
-    settings:'<path d="m9 3-1 3-3 1-2 3 2 2v3l2 3 3-1 3 1 3-2 1-3 3-2-1-3-3-1-2-3Z"/><circle cx="12" cy="12" r="3"/>',
+    settings:settingsGear,
     sliders:'<path d="M4 7h6m4 0h6M4 17h10m4 0h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/>',
     monitor:'<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/>',
     activity:'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
@@ -22,7 +24,7 @@
     close:'<path d="m6 6 12 12M18 6 6 18"/>',
     refresh:'<path d="M20 7V3l-3 3a8 8 0 1 0 3 9M20 3h-5"/>',
     globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a18 18 0 0 1 0 18 18 18 0 0 1 0-18Z"/>',
-    gear:'<path d="M6 4h12v16H6zM9 8h6m-6 4h6m-6 4h3"/>',
+    gear:settingsGear,
   };
   const svg = name => `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[name] || icons.gear}</svg>`;
   const badge = (label, locked = false) => `<span class="status-badge${locked ? ' locked' : ''}">${locked ? svg('lock') : '<i></i>'}${label}</span>`;

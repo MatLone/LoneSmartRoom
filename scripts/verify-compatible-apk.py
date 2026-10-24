@@ -7,7 +7,7 @@ import re
 import shutil
 import subprocess
 import zipfile
-from preservation_rules import version_only_update, reviewed_version_update
+from preservation_rules import reviewed_version_update
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = '02c5b46ab301cdfb7a1d858588b1122eb00be1bfd12349ea9f0d1e40a53d1bc8'
@@ -60,8 +60,8 @@ def main():
         if rel == 'AndroidManifest.xml':
             expected = reviewed_version_update('apps/android/app/src/main/AndroidManifest.xml', expected)
         require((android / rel).read_bytes() == expected, 'Preservation mismatch: ' + rel)
-    require((android / 'assets/app.js').read_bytes() == version_only_update((baseline / 'assets/app.js').read_bytes()),
-            'Legacy JavaScript changed beyond the two reviewed version labels')
+    require((android / 'assets/app.js').read_bytes() == reviewed_version_update('apps/android/app/src/main/assets/app.js', (baseline / 'assets/app.js').read_bytes()),
+            'Legacy JavaScript changed beyond reviewed version labels and static gear artwork')
     activity = (android / 'java/com/lonesmartroom/app/MainActivity.kt').read_bytes()
     original = (baseline / 'java/com/lonesmartroom/app/MainActivity.kt').read_bytes()
     for marker in (b'private val assetsPrefix = "file:///android_asset/"',

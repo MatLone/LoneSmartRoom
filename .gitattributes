@@ -14,3 +14,4 @@ apps/windows-ui/*.css -text
 agent/windows/*.py -text
 # Preserve review and archived-brand bytes so checksum receipts survive checkouts.
 docs/design/brand/official-board-2026-10-24/** -text
+docs/design/gear-review-dev6-2026-10-24/** -text

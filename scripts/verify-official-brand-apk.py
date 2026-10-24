@@ -8,6 +8,7 @@ ROOT=Path(__file__).resolve().parents[1]
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sdk-root',type=Path,required=True)
+    parser.add_argument('--output',type=Path,default=ROOT/'.cache/validation/official-brand-dev5/apk-inspection.json')
     args=parser.parse_args()
     build=(ROOT/'apps/android/app/build.gradle.kts').read_text()
     code=re.search(r'versionCode\s*=\s*(\d+)',build)[1]
@@ -62,7 +63,8 @@ def main():
     result={'ok':True,'version':version,'versionCode':int(code),'apkSha256':hashlib.sha256(apk.read_bytes()).hexdigest(),
             'compiledAdaptiveIconsAndNativeSplashVerified':True,'resourceIds':ids,'inspectedResources':inspected,
             'installedOnSamsung':False,'deviceAccess':False}
-    out=ROOT/'.cache/validation/official-brand-dev5/apk-inspection.json'
+    out=args.output
+    out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8',newline='\n')
     print(f'PASS: {len(inspected)} compiled icon/splash resources and system splash attributes verified; no device access.')
 
