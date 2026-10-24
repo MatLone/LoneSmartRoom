@@ -291,9 +291,10 @@ class AppCommandTests(unittest.TestCase):
         self.terminal(device, rid)
         self.assertEqual(self.calls, ['steam'])
 
-    def test_adapter_steam_direct_cs2_legacy_and_no_arbitrary_action(self):
+    def test_adapter_steam_preserved_cs2_direct_and_no_arbitrary_action(self):
         import agent
         with patch('steam_launcher.launch_steam', return_value='dispatch only') as direct, \
+                patch('cs2_launcher.launch_cs2', return_value='dispatch only') as cs2, \
                 patch.object(agent.os, 'startfile', create=True) as start, patch.object(agent.subprocess, 'run') as shell:
             launch_allowed('steam')
             launch_allowed('cs2')
@@ -301,7 +302,8 @@ class AppCommandTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     launch_allowed(app)
             direct.assert_called_once_with()
-            self.assertEqual([call.args[0] for call in start.call_args_list], ['steam://rungameid/730'])
+            cs2.assert_called_once_with()
+            start.assert_not_called()
             shell.assert_not_called()
 
     def test_https_production_adapter_requires_grant_and_dispatches_direct_once(self):
@@ -341,6 +343,48 @@ class AppCommandTests(unittest.TestCase):
             self.assertEqual((result['state'], result['error']), ('failed', 'launcher_failed'))
             self.post(device, request_id=rid)
             resolver.assert_called_once()
+            process.assert_not_called(); uri.assert_not_called()
+
+    def test_https_cs2_requires_separate_grant_fixed_arguments_and_never_claims_readiness(self):
+        import cs2_launcher
+        self.apps.executor = launch_allowed
+        device = self.device(('steam',))
+        executable = Path(self.temp.name)/'steam.exe'
+        with patch('secure_apps.require_interactive_user'), \
+                patch.object(cs2_launcher.steam, 'validated_steam_executable', return_value=executable) as resolver, \
+                patch.object(cs2_launcher.steam, '_canonical_executable', return_value=executable), \
+                patch.object(cs2_launcher, 'validated_cs2_installation') as installation, \
+                patch.object(cs2_launcher.subprocess, 'Popen') as process, patch('os.startfile') as uri:
+            self.assertEqual(self.post(device, app='cs2')[0][0], 403)
+            resolver.assert_not_called(); installation.assert_not_called(); process.assert_not_called()
+            self.registry.set_permission(device['device_id'], ['cs2'], True)
+            for extra in ({'args': ['-insecure']}, {'path': 'cmd.exe'}, {'command': 'ignored'}):
+                self.assertEqual(self.post(device, app='cs2', **extra)[0][0], 400)
+            response, rid = self.post(device, app='cs2')
+            self.assertEqual(response[0], 202)
+            result = self.terminal(device, rid)
+            self.assertEqual(result['state'], 'executed')
+            self.assertFalse(result['process_running_verified'])
+            self.assertEqual(self.post(device, app='cs2', request_id=rid)[0][1]['state'], 'executed')
+            process.assert_called_once_with([str(executable), '-applaunch', '730'], executable=str(executable),
+                cwd=str(executable.parent), shell=False, close_fds=True, stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.registry.set_permission(device['device_id'], ['cs2'], False)
+            self.assertEqual(self.post(device, app='cs2')[0][0], 403)
+            uri.assert_not_called()
+
+    def test_https_cs2_installation_failure_is_terminal_and_not_retried(self):
+        import cs2_launcher
+        self.apps.executor = launch_allowed
+        device = self.device(('cs2',))
+        with patch('secure_apps.require_interactive_user'), \
+                patch.object(cs2_launcher.steam, 'validated_steam_executable', return_value=Path(self.temp.name)/'steam.exe'), \
+                patch.object(cs2_launcher, 'validated_cs2_installation', side_effect=FileNotFoundError), \
+                patch.object(cs2_launcher.subprocess, 'Popen') as process, patch('os.startfile') as uri:
+            _, rid = self.post(device, app='cs2')
+            result = self.terminal(device, rid)
+            self.assertEqual((result['state'], result['error']), ('failed', 'launcher_failed'))
+            self.post(device, app='cs2', request_id=rid)
             process.assert_not_called(); uri.assert_not_called()
 
     def test_admin_and_noninteractive_sessions_cannot_launch(self):

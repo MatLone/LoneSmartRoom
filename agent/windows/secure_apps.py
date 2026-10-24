@@ -1,7 +1,7 @@
 """Two explicit application IDs, local per-device grants, durable command results.
 
-No path, URI, arguments or shell text is accepted from the network. Steam uses
-a validated local executable; the preserved v1.5 executor remains for CS2 only.
+No path, URI, arguments or shell text is accepted from the network. Both apps
+use the validated local Steam executable, with fixed arguments for CS2 only.
 """
 import queue
 import re
@@ -34,8 +34,8 @@ def launch_allowed(app):
     if app == 'steam':
         from steam_launcher import launch_steam
         return launch_steam()
-    from agent import execute_action
-    return execute_action(app)
+    from cs2_launcher import launch_cs2
+    return launch_cs2()
 
 
 class AppRegistry:
