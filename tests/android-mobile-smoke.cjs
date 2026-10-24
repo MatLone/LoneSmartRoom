@@ -30,7 +30,13 @@ app.whenReady().then(async()=>{
     await check(`document.getElementById('platformLabel').textContent`,'Android · Versão 2.0.0-fixture');
     await check(`localStorage.length`,0);
     await check(`[...document.querySelectorAll('[role="tab"]')].map(e=>e.textContent.trim())`,['Controles','Monitoramento PC','Gamer Launcher']);
-    await check(`document.querySelector('.brand-slot').textContent.replace(/\\s/g,'')`,'MARCAPENDENTE');
+    await check(`document.querySelector('#brandAsset img').getAttribute('src')`,'brand/logo-horizontal.svg');
+    await check(`document.querySelector('#brandAsset img').naturalWidth>0`);
+    await evaluate(`document.getElementById('brandAsset').click()`);
+    await check(`document.getElementById('brandDialog').open`);
+    await check(`[...document.querySelectorAll('#brandDialog img')].every(img=>img.complete&&img.naturalWidth>0)`);
+    await check(`document.querySelector('#brandDialog img').getAttribute('src')`,'brand/app-icon.svg');
+    await evaluate(`document.querySelector('#brandDialog [data-close]').click()`);
     await check(`[...document.scripts].some(s=>s.src.endsWith('/app.js'))`,false);
     await check(`new Set([...document.querySelectorAll('[id]')].map(n=>n.id)).size===document.querySelectorAll('[id]').length`);
     await evaluate(`localStorage.setItem('lone-wol-settings-v1', JSON.stringify({mac:'AA:BB:CC:DD:EE:FF',broadcast:'192.0.2.255',port:7,extension:'keep'}));localStorage.setItem('unrelated-data','preserve')`);

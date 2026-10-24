@@ -1,0 +1,16 @@
+{
+  "method": "vector recreation from approved raster reference",
+  "approval": "reference approved; recreated assets awaiting visual approval",
+  "primaryRed": "#ff0033",
+  "graphite": "#080a0d",
+  "lettering": "custom vector contours; original typeface not identified",
+  "fontsRequired": false,
+  "svgSha256": {
+    "logo-horizontal.svg": "a4afdaf8c63bf6d50a2ab85a24069c103ff7d06789726713a3e2437882c1bb45",
+    "logo-compact.svg": "5baeeb024cd58a5a1ce5fa68df032c8150c2944dbda4dae7783fa280e477f5f8",
+    "symbol.svg": "414a899cb59fbed82d3a3d1b5b8992671af509b4af7ad2d59a424886adaf8710",
+    "app-icon.svg": "86769c65b90682eea9f840bb591e8406071da8c0dd4ff03d9a1bd1cc8a4d59a7",
+    "splash-screen.svg": "83e73713d3f5d823f9d4c6bca79861cd9573275ba68d43ec139597b60677750a"
+  },
+  "referenceSha256": "f758299f140b8bcf6c9916eb7c34144c94828c082747704b3a67064d5026a2ad"
+}
