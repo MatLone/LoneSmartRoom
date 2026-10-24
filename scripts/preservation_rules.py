@@ -3,7 +3,16 @@
 Legacy app.js permits two version labels and one exact gear outline; the Android manifest permits
 only the native icon resource references. All other baseline bytes, including
 WoL settings, event bindings, permissions and packet callbacks, are preserved.
+The authorized Windows visual migration pins its two reviewed entry/bridge files
+by exact hash; it does not broaden exceptions for Android or legacy handlers.
 """
+import hashlib
+from pathlib import Path
+
+DESKTOP_VISUAL_SOURCES = {
+    'apps/windows-ui/main.cjs': '9f98b6fb5b721792a545a85b27147c4f9b7efed14ebffe9a5a4e502b65cb6df9',
+    'apps/windows-ui/preload.cjs': 'b51fa0a364b934b210af2f5081d11af01a048cda45c98458d1b5a95f0a454dd0',
+}
 
 
 def version_only_update(source):
@@ -22,6 +31,11 @@ def version_only_update(source):
 
 
 def reviewed_version_update(path, source):
+    if path in DESKTOP_VISUAL_SOURCES:
+        current = (Path(__file__).resolve().parents[1] / path).read_bytes()
+        if hashlib.sha256(current).hexdigest() != DESKTOP_VISUAL_SOURCES[path]:
+            raise ValueError('Windows visual entry/bridge differs from reviewed revision')
+        return current
     newline = b'\r\n' if b'\r\n' in source else b'\n'
     if path == 'apps/android/app/src/main/AndroidManifest.xml':
         return source.replace(b'android:icon="@drawable/ic_launcher"',
@@ -29,12 +43,6 @@ def reviewed_version_update(path, source):
                               + b'        android:roundIcon="@mipmap/ic_launcher_round"', 1)
     if path.endswith('/app.js'):
         return gear_only_update(version_only_update(source))
-    if path == 'apps/windows-ui/main.cjs':
-        old = b'app.whenReady().then(()=>{'
-        return source.replace(old, old + newline + b"  ipcMain.handle('widget:version',()=>app.getVersion());", 1)
-    if path == 'apps/windows-ui/preload.cjs':
-        old = b"contextBridge.exposeInMainWorld('loneDesktop',{"
-        return source.replace(old, old + newline + b"  getVersion:()=>ipcRenderer.invoke('widget:version'),", 1)
     return source
 
 

@@ -1,16 +1,17 @@
 {
   "name": "lone-smart-room",
   "productName": "Lone Smart Room",
-  "version": "2.0.0-dev.2",
+  "version": "2.0.0-dev.3",
   "private": true,
-  "description": "Lone Smart Room: widget demonstrativo e fonte Android Wake-on-LAN real",
+  "description": "Lone Smart Room: dashboard e widget Windows; cliente operacional ainda indisponível",
   "main": "main.cjs",
   "author": "Lone Smart Room",
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
     "dist:win": "electron-builder --win nsis portable --x64",
-    "postinstall": "node node_modules/electron/install.js"
+    "postinstall": "node node_modules/electron/install.js",
+    "start:review": "electron . --lone-development-review"
   },
   "devDependencies": {
     "electron": "45.0.0",
@@ -28,7 +29,11 @@
       "assets/**/*",
       "agent-status.js",
       "app-version.js",
-      "app-launch.js"
+      "app-launch.js",
+      "desktop.css",
+      "desktop.js",
+      "desktop-main.cjs",
+      "desktop-policy.cjs"
     ],
     "directories": {
       "output": "dist"
@@ -48,7 +53,7 @@
           ]
         }
       ],
-      "icon": "assets/icon.ico"
+      "icon": "assets/brand/windows-icon.ico"
     },
     "nsis": {
       "oneClick": false,

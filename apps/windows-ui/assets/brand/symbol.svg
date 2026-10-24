@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="116" height="120" viewBox="0 0 116 120" role="img" aria-labelledby="title description">
+<title id="title">Lone Smart Room — símbolo angular</title>
+<desc id="description">Recriação vetorial baseada na prancha oficial aprovada em 24/10/2026; símbolo angular vermelho, LONE e SMART ROOM.</desc>
+<defs>
+<linearGradient id="markRed" x1="0" y1="0" x2="1" y2="0.7"><stop stop-color="#ff3654"/><stop offset="0.32" stop-color="#ff6680"/><stop offset="0.48" stop-color="#ff173d"/><stop offset="1" stop-color="#ff0033"/></linearGradient>
+<linearGradient id="wordWhite" x2="0" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#dedee4"/></linearGradient>
+<radialGradient id="baseGlow"><stop stop-color="#360812"/><stop offset="0.68" stop-color="#100a0e"/><stop offset="1" stop-color="#080a0d"/></radialGradient>
+<filter id="neon" x="-70%" y="-70%" width="240%" height="240%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="2.1"/></filter>
+</defs>
+<g transform="" fill="none" stroke="url(#markRed)" stroke-width="4.2" stroke-linejoin="miter" stroke-miterlimit="5"><g filter="url(#neon)" opacity="0.34"><path d="M8 6 V96 L23 111 H106 L89 94 H41 L28 81 V27 Z"/><path d="M41 43 V73 L52 84 H75 Z"/></g><path d="M8 6 V96 L23 111 H106 L89 94 H41 L28 81 V27 Z"/><path d="M41 43 V73 L52 84 H75 Z"/></g>
+</svg>
