@@ -10,6 +10,14 @@ Após recuperação e nova autorização, uma única sessão física de 80,4 s f
 O runner físico opt-in terminou; não há coleta permanente, autostart, serviço, endpoint TCP, named pipe aberto ou ligação
 com o Electron/Android. Importar o pacote não inicia threads nem coleta dados.
 
+**Atualização de desenvolvimento:** Named Pipe nativo e indicadores Electron foram
+implementados depois desta fundação. Uma única sessão real de 68,1 s validou CPU,
+RAM e espaço no dashboard/widget; montagem PDH corrigida posteriormente apenas com
+testes simulados. [Arquitetura, capturas e limitações](../docs/monitoring-electron-development-2026-10-25/README.md).
+Não há coleta ativa agora nem integração na instalação dev.4 ou Android.
+O restante deste documento descreve o contrato original; `ipc.py` continua sendo
+a fronteira lógica e o novo adaptador nativo está em `winpipe.py`/`pipe_server.py`.
+
 ## Componentes implementados
 
 | Arquivo | Responsabilidade |

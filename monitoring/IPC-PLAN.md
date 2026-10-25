@@ -1,4 +1,4 @@
-# IPC local de monitoramento — fronteira implementada, transporte pendente
+# IPC local de monitoramento — Named Pipe em desenvolvimento isolado
 
 ## Atualização de implementação — desenvolvimento isolado, 25/10/2026
 
