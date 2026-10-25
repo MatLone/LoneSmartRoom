@@ -70,4 +70,4 @@ async function lifecycle(){
   check(main.includes("../../.cache/windows-monitoring-development")&&main.includes('process.env.LONE_MONITORING_RUN_ID'),'Unique isolated profile path');
 }
 if(require.main===module)(async()=>{contract();await lifecycle();console.log(JSON.stringify({ok:true,checks,simulated:true,realSensors:false,nativeProcesses:false}));})().catch(e=>{console.error(e.stack);process.exitCode=1;});
-module.exports={snapshot};
+module.exports={snapshot,fixture};

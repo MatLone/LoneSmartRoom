@@ -157,4 +157,5 @@ async function ownedShutdown(){
   check(failed.quits===0&&failed.win.visible&&!failed.trays[0].destroyed,'Stop failure preserves a visible app and live Tray, no orphaning');
 }
 async function main(){lifecycle();failuresAndMonitors();diskState();await ownedShutdown();await mainWiring(false);await mainWiring(true);await mainWiring(true,true);console.log(`PASS: ${checks} Tray, lifecycle, instance, persistence, monitor and IPC assertions; no native applications opened.`);}
-main().catch(error=>{console.error(error.stack);process.exitCode=1;});
+if(require.main===module)main().catch(error=>{console.error(error.stack);process.exitCode=1;});
+module.exports={fixture};
