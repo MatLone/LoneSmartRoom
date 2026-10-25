@@ -1,5 +1,22 @@
 # Gate de liberação da sessão legada — 24/10/2026
 
+## Decisão posterior aprovada pelo usuário
+
+**Alternativa A escolhida: manter o agente legado ativo e adiar o teste físico.**
+Não estão autorizados parada forçada, nova inicialização, alteração de HKCU Run,
+logoff ou reinicialização do Windows. O estado desejado continua sendo agente HTTPS
+funcionando e Samsung conectado. A confirmação anterior de conectividade permanece
+como evidência histórica; a auditoria de monitoramento não executou outra consulta.
+
+Quando o teste de encerramento for retomado, o objetivo aprovado para planejamento
+é **terminar novamente com agente ativo e Samsung conectado**. A liberação da sessão,
+o teste e a partida adicional necessária ao estado final exigem autorização específica
+futura. Esta decisão não autoriza nenhuma dessas ações agora. As alternativas e os
+recibos abaixo ficam preservados como histórico do diagnóstico.
+
+Próxima fase autorizada: somente pesquisa, auditoria e planejamento de
+[monitoramento real](../monitoring-audit-2026-10-24/README.md), sem coleta de sensores.
+
 **Decisão: não liberar a sessão e não executar o teste físico novo.** Não foi
 encontrado um caminho de encerramento gracioso disponível e especificamente
 autorizado para os processos legados atuais. Nenhum processo foi encerrado,
