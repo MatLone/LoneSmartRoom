@@ -1,0 +1,20 @@
+/* Real monitoring additions; existing tabs, window controls and brand preserved. */
+.monitoring-status{font-size:12px;line-height:1.7;color:#c3c3cd;overflow-wrap:anywhere}
+#monitoringNotice[data-connection=connected]{border-color:#773043}
+.sensor .value{font-size:30px;white-space:normal;overflow-wrap:anywhere}
+.sensor small,.mini-sensor small{line-height:1.5}
+.sensor[data-availability=stale],.metric-row[data-availability=stale]{opacity:.75}
+.metric-meta{margin-top:13px;color:var(--muted);font-size:10px;line-height:1.6;overflow-wrap:anywhere}
+.metric-meta summary{cursor:pointer;color:#c5c5cf}
+.metric-meta p{margin-top:8px;white-space:pre-line;font-variant-numeric:tabular-nums}
+.ram-detail{font-size:11px;line-height:1.7;color:var(--muted);margin-top:10px}
+progress{display:block;appearance:none;width:100%;height:5px;border:0;border-radius:4px;overflow:hidden;background:#303039;margin-top:14px}
+progress::-webkit-progress-bar{background:#303039;border-radius:4px}
+progress::-webkit-progress-value{background:#ff153f;border-radius:4px}
+.storage-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:20px 0}
+.storage-metric{min-width:0}
+.metric-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 0;font-size:12px;border-bottom:1px solid #ffffff08}
+.metric-row>span{color:var(--muted)}
+.metric-row>strong{font-variant-numeric:tabular-nums;font-weight:550;text-align:right;overflow-wrap:anywhere;min-width:0}
+.mini-sensor strong{font-variant-numeric:tabular-nums;font-size:22px}
+@media(max-width:760px){.storage-metrics{grid-template-columns:minmax(0,1fr)}.sensor .value{font-size:25px}.mini-sensor strong{font-size:18px}.metric-row{font-size:11px}.metric-meta{font-size:10px}}

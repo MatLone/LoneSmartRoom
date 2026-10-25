@@ -143,7 +143,7 @@ async function mainWiring(lock) {
   }
   check(hides===1,'Rejected IPC requests do not hide window');
   assert.throws(()=>ipcHandlers.get('window:mode')(trusted,'cmd.exe'));checks++;
-  check([...ipcHandlers.keys()].sort().join(',')===['widget:version','window:state','window:mode','window:maximize','window:tray'].sort().join(','),'No arbitrary execution/network/prefs IPC');
+  check([...ipcHandlers.keys()].sort().join(',')===['widget:version','window:state','window:mode','window:maximize','window:tray','monitoring:snapshot'].sort().join(','),'No arbitrary execution/network/prefs IPC');
 }
 async function main(){lifecycle();failuresAndMonitors();diskState();await mainWiring(false);await mainWiring(true);console.log(`PASS: ${checks} Tray, lifecycle, instance, persistence, monitor and IPC assertions; no native applications opened.`);}
 main().catch(error=>{console.error(error.stack);process.exitCode=1;});

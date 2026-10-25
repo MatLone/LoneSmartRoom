@@ -21,14 +21,16 @@ async function main(){
  const ipc={invoke:(name,...args)=>{calls.push([name,...args]);return Promise.resolve({mode:'dashboard'});},send:(name,...args)=>calls.push([name,...args]),on:(name,handler)=>listeners.set(name,handler),removeListener:(name,handler)=>{if(listeners.get(name)===handler)listeners.delete(name);}};
  const context=vm.createContext({require:name=>{assert.equal(name,'electron');return {contextBridge:{exposeInMainWorld:(name,value)=>{assert.equal(name,'loneDesktop');api=value;}},ipcRenderer:ipc};}});
  vm.runInContext(fs.readFileSync(path.join(app,'preload.cjs'),'utf8'),context);
- check(Object.keys(api).sort().join(',')===['minimizeToTray','close','getVersion','getWindowState','minimize','onWindowState','setWindowMode','toggleMaximize'].sort().join(','),'Strict eight-method window API');
+ check(Object.keys(api).sort().join(',')===['minimizeToTray','close','getVersion','getWindowState','minimize','onWindowState','setWindowMode','toggleMaximize','getMetrics','onMetrics'].sort().join(','),'Strict window API plus two cache-only metric methods');
  for(const mode of ['dashboard','widget'])await api.setWindowMode(mode);
  const count=calls.length;
  for(const bad of [null,{},[],'steam','cmd.exe','widget && calc']){await assert.rejects(api.setWindowMode(bad));checks++;}
  check(calls.length===count,'Rejected input never reaches IPC');
  let received;const remove=api.onWindowState(value=>{received=value;});const value={mode:'widget'};listeners.get('window:state')({sender:'not exposed'},value);check(received===value,'IPC event never exposed to renderer');remove();check(listeners.size===0,'Specific listener unsubscribes');
+ let metric;const removeMetric=api.onMetrics(value=>{metric=value;});listeners.get('monitoring:state')({sender:'not exposed'},{v:1});check(metric.v===1,'Metric callback receives data only');removeMetric();check(listeners.size===0,'Metric listener unsubscribes');
+ await api.getMetrics('cmd.exe');check(calls.at(-1).length===1&&calls.at(-1)[0]==='monitoring:snapshot','Metric API accepts no paths, operations or arguments');
  await api.minimizeToTray();api.minimize();api.close();await api.getVersion();await api.getWindowState();await api.toggleMaximize();
- check(calls.every(([name])=>['window:mode','widget:minimize','widget:close','widget:version','window:state','window:maximize','window:tray'].includes(name)),'Only visual IPC channels');
+ check(calls.every(([name])=>['window:mode','widget:minimize','widget:close','widget:version','window:state','window:maximize','window:tray','monitoring:snapshot'].includes(name)),'Only window and read-only metric IPC channels');
  const html=fs.readFileSync(path.join(app,'index.html'),'utf8');
  check(html.includes('Seu espaço, sob controle')&&!html.includes('audit-data.js'),'Neutral title and no stale audit snapshot in application');
  check(!/<script[^>]+src="(?:app|agent-status|app-launch)\.js"/.test(html),'Legacy simulations and operational adapters not loaded');

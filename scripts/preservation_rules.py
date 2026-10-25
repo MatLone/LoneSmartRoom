@@ -5,14 +5,16 @@ only the native icon resource references. All other baseline bytes, including
 WoL settings, event bindings, permissions and packet callbacks, are preserved.
 The authorized Windows visual migration pins its two reviewed entry/bridge files
 by exact hash. The authorized Tray extension adds only a fixed zero-argument
-window action; it does not broaden exceptions for Android or legacy handlers.
+window action. The authorized monitoring extension adds exactly getMetrics() and
+onMetrics(callback), both cache-only, without transport paths or execution arguments.
+It does not broaden exceptions for Android or legacy handlers.
 """
 import hashlib
 from pathlib import Path
 
 DESKTOP_VISUAL_SOURCES = {
     'apps/windows-ui/main.cjs': '9f98b6fb5b721792a545a85b27147c4f9b7efed14ebffe9a5a4e502b65cb6df9',
-    'apps/windows-ui/preload.cjs': 'cd11bfac2defd774f05fb3d0c31e4372a91002f20b2ffb79618a01e9e6257a2f',
+    'apps/windows-ui/preload.cjs': '5fc9553bd9f9cddb98f099a8fc1c0d7ea53ae197c12e87eb5f628755a6481eba',
 }
 
 

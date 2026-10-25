@@ -35,7 +35,11 @@
       "desktop-main.cjs",
       "desktop-policy.cjs",
       "desktop-preferences.cjs",
-      "desktop-window.cjs"
+      "desktop-window.cjs",
+      "monitoring-host.cjs",
+      "monitoring-model.js",
+      "monitoring-renderer.js",
+      "monitoring.css"
     ],
     "directories": {
       "output": "dist"

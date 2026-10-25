@@ -8,6 +8,7 @@
   <title>Lone Smart Room · Windows</title>
   <link rel="icon" href="assets/brand/windows-icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="desktop.css">
+  <link rel="stylesheet" href="monitoring.css">
 </head>
 <body>
 <div class="window" id="dashboard" data-mode="dashboard">
@@ -31,8 +32,9 @@
     </section>
     <section id="panel-monitor" role="tabpanel" aria-labelledby="tab-monitor" hidden>
       <div class="page-heading"><div><span class="eyebrow">LONE SMART ROOM / MONITORAMENTO</span><h1>Seu PC, em foco<span>.</span></h1><p>Uma visão clara do hardware, quando houver dados reais.</p></div><span class="section-index" aria-hidden="true">02</span></div>
-      <div class="notice"><span data-icon="shield"></span><span>Consulta de status e coleta de sensores são capacidades diferentes. A telemetria ainda não foi integrada.</span><span class="badge">Indisponível</span></div>
+      <div class="notice" id="monitoringNotice"><span>Coletor local desativado</span></div>
       <div class="sensor-grid" id="sensorGrid"></div>
+      <div class="storage-metrics" id="storageMetrics" aria-label="Armazenamento local"></div>
       <div class="monitor-layout"><section class="surface chart-card"><div class="section-heading"><div><h2>Uso de recursos</h2><p>Histórico local · sem amostras</p></div><div class="segmented" role="group" aria-label="Recurso do gráfico"><button data-metric="CPU" aria-pressed="true">CPU</button><button data-metric="GPU" aria-pressed="false">GPU</button><button data-metric="RAM" aria-pressed="false">RAM</button></div></div><div class="empty-chart"><span data-icon="chart"></span><h3 id="chartTitle">Aguardando medições de CPU</h3><p>Sem amostras, sem curva e sem estimativas.<br>O gráfico será preenchido pelo provedor de sensores.</p></div><div class="chart-caption"><span><i></i>Coleta não iniciada</span><span>Última amostra: nenhuma</span></div></section><section class="surface provider-card"><div class="section-heading"><div><h2>Coleta local</h2><p>Arquitetura em avaliação</p></div><span data-icon="chip"></span></div><div class="provider-row"><span>CPU e memória</span><span class="badge">Planejado</span></div><div class="provider-row"><span>GPU e temperaturas</span><span class="badge">Em avaliação</span></div><p class="muted">O dashboard não instala drivers nem altera frequências, ventoinhas ou configurações gráficas.</p><button class="text-button" data-panel="sensors">Como serão obtidos os dados<span data-icon="arrow"></span></button></section></div>
       <section class="surface thermal-card"><div><h2>Temperaturas</h2><p>Um sensor ausente não significa 0 °C.</p></div><div class="thermal-values"><span>CPU <b>— °C</b></span><span>GPU <b>— °C</b></span><span>Placa-mãe <b>— °C</b></span></div><span class="badge">Sem provedor</span></section>
       <div class="disabled-strip"><span data-icon="lock"></span><div><strong>Perfis, RPM e otimizações do Windows</strong><span>Nenhuma alteração de hardware ou do sistema disponível.</span></div></div>
@@ -50,5 +52,7 @@
 <dialog id="settingsDialog" aria-labelledby="dialogTitle"><div class="dialog-heading"><div><span class="eyebrow" id="dialogEyebrow">CONFIGURAÇÕES</span><h2 id="dialogTitle">Configurações</h2></div><button class="icon-button" id="dialogClose" aria-label="Fechar configurações"><span data-icon="close"></span></button></div><div class="dialog-body" id="dialogBody"></div><div class="dialog-footer"><span data-icon="shield"></span>Integração visual. Nenhuma configuração operacional é salva.</div></dialog>
 <script src="app-version.js"></script>
 <script src="desktop.js"></script>
+<script src="monitoring-model.js"></script>
+<script src="monitoring-renderer.js"></script>
 </body>
 </html>
