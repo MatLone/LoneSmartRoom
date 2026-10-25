@@ -53,11 +53,12 @@
   function format(metric){
     if(!metric?.valid||metric.stale||metric.value===null)return '—';
     const n=metric.value;
-    if(metric.unit==='percent')return n.toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
+    if(metric.unit==='percent')return n>0&&n<0.1?'<0,1%':n.toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
     if(metric.unit==='bytes')return (n/1024**3).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' GiB';
     if(metric.unit==='bytes_per_second'){
       const divisor=n>=1024**2?1024**2:n>=1024?1024:1,unit=divisor===1?'bytes/s':divisor===1024?'KiB/s':'MiB/s';
-      return (n/divisor).toLocaleString('pt-BR',{maximumFractionDigits:2})+' '+unit;
+      const scaled=n/divisor;
+      return (scaled>0&&scaled<0.01?'<0,01':scaled.toLocaleString('pt-BR',{maximumFractionDigits:2}))+' '+unit;
     }
     return '—';
   }

@@ -28,7 +28,8 @@
     for(const [key,label]of entries){const row=document.createElement('div');row.className='metric-row';row.dataset.metricId='storage.'+volume+'.'+key;
       const text=document.createElement('span');text.textContent=label;const value=document.createElement('strong');value.textContent='—';
       row.append(text,value);card.append(row);}
-    const progress=document.createElement('progress');progress.max=100;progress.value=0;progress.hidden=true;progress.setAttribute('aria-label','Ocupação de '+volume.toUpperCase()+':');card.append(progress);
+    const progressLabel=document.createElement('div');progressLabel.className='capacity-bar-label';progressLabel.textContent='Ocupação do disco';card.append(progressLabel);
+    const progress=document.createElement('progress');progress.max=100;progress.value=0;progress.hidden=true;progress.setAttribute('aria-label','Ocupação do disco '+volume.toUpperCase()+':');card.append(progress);
     const meta=document.createElement('details');meta.className='metric-meta';const summary=document.createElement('summary');summary.textContent='Origem, horários e validade';
     const detail=document.createElement('p');meta.append(summary,detail);card.append(meta);storage.append(card);
   }
@@ -40,7 +41,7 @@
     const body=document.getElementById('dialogBody');body.replaceChildren();
     for(const text of ['Coletor independente → cache → Named Pipe local → processo principal → interface.',
       'CPU, RAM e volumes C:/D: usam APIs de leitura do Windows. Cada indicador conserva origem, unidade, horário e validade.',
-      'Coleta e perfil exclusivos de desenvolvimento. Nenhuma conexão do Electron ao agente HTTPS.',
+      'Coleta somente no contexto do aplicativo. Nenhuma conexão do Electron ao agente HTTPS.',
       'GPU, temperaturas, VRAM, RPM e FPS não estão integrados. Atividade PDH pode ficar indisponível.',
       'ACL e verificações de processo não isolam completamente outros programas sob a mesma conta.']){
       const p=document.createElement('p');p.textContent=text;body.append(p);
@@ -81,16 +82,16 @@
     for(const volume of ['c','d']){
       const card=storage.querySelector(`[data-volume="${volume}"]`),all=[];
       card.querySelectorAll('[data-metric-id]').forEach(row=>{
-        const m=byId.get(row.dataset.metricId);row.querySelector('strong').textContent=model.format(m);
+        const m=byId.get(row.dataset.metricId);row.querySelector('strong').textContent=row.dataset.metricId.endsWith('.activity')&&!m?.valid?'Indisponível':model.format(m);
         row.title=metadata(m);row.dataset.availability=m?.state||'unavailable';all.push(metadata(m));
       });
       const occupation=byId.get('storage.'+volume+'.occupation'),progress=card.querySelector('progress');
       progress.hidden=!occupation?.valid;progress.value=occupation?.valid?occupation.value:0;
-      card.querySelector('.badge').textContent=occupation?.valid?'Leitura válida':'Indisponível';
+      card.querySelector('.badge').textContent=occupation?.valid?'Capacidade válida':'Capacidade indisponível';
       card.querySelector('.metric-meta p').textContent=all.join('\n');
     }
     if(providerRows[0])providerRows[0].textContent=connected?'APIs Windows':'Coletor desconectado';
-    if(providerCaption)providerCaption.textContent=view?.simulated?'Provedor simulado · demonstração':connected?'Somente leitura · desenvolvimento':'Sessão local de desenvolvimento';
+    if(providerCaption)providerCaption.textContent=view?.simulated?'Provedor simulado · demonstração':connected?'Somente leitura · APIs Windows':'Monitoramento local · sem conexão';
     historyNotice(connected);
   }
   function receive(value){if(!value||value.v!==1)return;lastView=value;lastReceipt=performance.now();refresh();}
