@@ -1,5 +1,11 @@
 # Monitoramento no Electron — desenvolvimento isolado, 25/10/2026
 
+**Atualização posterior, com autorização própria:** a validação física adicional
+confirmou a correção da inicialização e 100% de throughput válido após aquecimento
+nos dois volumes. A atividade continua parcialmente indisponível e há ressalvas
+de precisão visual. [Novo relatório e evidências](../monitoring-storage-validation-2026-10-25/README.md).
+O restante deste documento preserva o resultado histórico da primeira sessão.
+
 **CPU, RAM e capacidade/espaço dos volumes foram recebidos pelo dashboard e widget
 em uma única sessão real de 68,100 s.** Electron e coletor encerraram normalmente,
 sem resíduos; agente original, perfil instalado e backups preservados.
