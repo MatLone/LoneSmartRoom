@@ -1,0 +1,59 @@
+{
+  "repository": "https://github.com/GPUOpen-LibrariesAndSDKs/ADLX",
+  "tag": "V1.4",
+  "commit": "66557d410ce4c463f5f7106597d94f53dd84bc82",
+  "files": {
+    "SDK/Include/ADLX.h": {
+      "sha256": "48b4275e2d6aa49cb6b39fb1f258a94d4282e98d67fabf0582fb4af01c5ce699",
+      "bytes": 14097,
+      "url": "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/ADLX/66557d410ce4c463f5f7106597d94f53dd84bc82/SDK/Include/ADLX.h"
+    },
+    "SDK/Include/ADLXVersion.h": {
+      "sha256": "c23b54d2516434add7bde6a26c340caa703daceb7250c27efc4f741a3a1d6a2c",
+      "bytes": 454,
+      "url": "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/ADLX/66557d410ce4c463f5f7106597d94f53dd84bc82/SDK/Include/ADLXVersion.h"
+    },
+    "SDK/Include/IPerformanceMonitoring.h": {
+      "sha256": "8d8e323dd482e4c057d2bc4a93a77704e536a1ee6257bfa615094aac7842fa6a",
+      "bytes": 132856,
+      "url": "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/ADLX/66557d410ce4c463f5f7106597d94f53dd84bc82/SDK/Include/IPerformanceMonitoring.h"
+    },
+    "SDK/ADLXHelper/Windows/Cpp/ADLXHelper.h": {
+      "sha256": "8a548679ab85b9381c723100bfb14b426af8dcb9071a5b7f35bd6e02b1684d48",
+      "bytes": 11296,
+      "url": "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/ADLX/66557d410ce4c463f5f7106597d94f53dd84bc82/SDK/ADLXHelper/Windows/Cpp/ADLXHelper.h"
+    },
+    "SDK/ADLXHelper/Windows/Cpp/ADLXHelper.cpp": {
+      "sha256": "6d24082c54669712fa1c67709532fa7c25543502593e269a1e71da235daf2567",
+      "bytes": 5001,
+      "url": "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/ADLX/66557d410ce4c463f5f7106597d94f53dd84bc82/SDK/ADLXHelper/Windows/Cpp/ADLXHelper.cpp"
+    },
+    "ADLX SDK License Agreement.pdf": {
+      "sha256": "c62178b9d30f75450088c5238193644b45ab5a23442f70f5a3f6b09b951180a6",
+      "bytes": 126195,
+      "url": "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/ADLX/66557d410ce4c463f5f7106597d94f53dd84bc82/ADLX%20SDK%20License%20Agreement.pdf"
+    },
+    "SDK/Include/ADLXDefines.h": {
+      "sha256": "b08d1f5ca4972e520d5b25f5b771e9f907bf7cf00f9b4a9707b8c90cec8f0b47",
+      "bytes": 55959,
+      "url": "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/ADLX/66557d410ce4c463f5f7106597d94f53dd84bc82/SDK/Include/ADLXDefines.h"
+    },
+    "SDK/Include/ISystem.h": {
+      "sha256": "53cdf691ab8de7cb337730b1aee2126488df625d8670b35df410df7f60c7988a",
+      "bytes": 80968,
+      "url": "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/ADLX/66557d410ce4c463f5f7106597d94f53dd84bc82/SDK/Include/ISystem.h"
+    },
+    "SDK/Include/ADLXStructures.h": {
+      "sha256": "182e1eec6f212c9cdd7c43e7e4db72f6922ab71548337ae4230e2935a76789f1",
+      "bytes": 8837,
+      "url": "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/ADLX/66557d410ce4c463f5f7106597d94f53dd84bc82/SDK/Include/ADLXStructures.h"
+    },
+    "SDK/Include/ICollections.h": {
+      "sha256": "66052625b3b24726d39e5e310578b5ee65518aae28528f335232c8c4a468269b",
+      "bytes": 10580,
+      "url": "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/ADLX/66557d410ce4c463f5f7106597d94f53dd84bc82/SDK/Include/ICollections.h"
+    }
+  },
+  "binaryLibrariesDownloaded": false,
+  "globalInstallation": false
+}

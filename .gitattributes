@@ -29,3 +29,7 @@ docs/windows-dev4-preflight-2026-10-24/** -text
 docs/windows-nsis-update-dev4-2026-10-24/** -text
 docs/windows-first-run-dev4-2026-10-24/** -text
 docs/agent-startup-diagnosis-2026-10-24/** -text
+# Preserve upstream SDK bytes, license and recorded SHA-256 across checkouts.
+third_party/adlx-v1.4/** -text
+# Upstream whitespace is kept byte-for-byte and checked by its SHA-256 manifest.
+third_party/adlx-v1.4/SDK/** -whitespace
