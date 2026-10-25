@@ -1,9 +1,9 @@
 {
   "name": "lone-smart-room",
   "productName": "Lone Smart Room",
-  "version": "2.0.0-dev.4",
+  "version": "2.0.0-dev.5",
   "private": true,
-  "description": "Lone Smart Room: dashboard, widget e bandeja Windows; cliente operacional indisponível",
+  "description": "Lone Smart Room: dashboard, widget, bandeja e monitoramento local somente leitura",
   "main": "main.cjs",
   "author": "Lone Smart Room",
   "license": "UNLICENSED",
@@ -39,7 +39,9 @@
       "monitoring-host.cjs",
       "monitoring-model.js",
       "monitoring-renderer.js",
-      "monitoring.css"
+      "monitoring.css",
+      "monitoring-runtime.cjs",
+      "monitoring-package.json"
     ],
     "directories": {
       "output": "dist"

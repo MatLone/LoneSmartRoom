@@ -6,7 +6,7 @@ const root = path.resolve(__dirname, '..'), project = path.join(root, 'apps/wind
 const modules = path.join(project, 'node_modules');
 const config = require(path.join(project, 'electron-builder.development.cjs'));
 const output = path.resolve(project, config.directories.output);
-const evidence = path.join(root, '.cache/validation/windows-tray-dev4');
+const evidence = path.join(root, '.cache/validation/windows-dev5');
 const inside = (file, directory) => {const relative = path.relative(directory, file);return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));};
 async function main() {
   if (!inside(output, path.join(root, '.cache/artifacts/windows'))) throw Error('Output outside artifact workspace');
@@ -20,7 +20,7 @@ async function main() {
     const original = cp[name];originals.set(name, original);
     cp[name] = function(file, ...args) {
       const absolute = path.resolve(String(file));
-      if (inside(absolute, output) || inside(absolute, path.join(root, '.cache/artifacts/windows')) || inside(absolute, path.join(project, 'dist'))) {
+      if (inside(absolute, output) || inside(absolute, path.join(root, '.cache/artifacts/windows')) || inside(absolute, path.join(project, 'dist')) || inside(absolute, path.join(root, '.cache/windows-monitoring-runtime'))) {
         throw Error('Forbidden execution of a generated distribution artifact');
       }
       launches.push({method: name, executable: absolute});

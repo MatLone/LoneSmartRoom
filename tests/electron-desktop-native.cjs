@@ -5,7 +5,7 @@ const {app,session}=require('electron');
 const path=require('node:path'),fs=require('node:fs'),assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'..'),scale=process.env.LONE_TEST_SCALE;
 if(!['1','1.25','1.5'].includes(scale)||!process.argv.includes('--lone-development-review'))throw new Error('Explicit isolated development review required');
-const out=path.join(root,'docs/windows-tray-dev4/review',scale.replace('.','_'));fs.mkdirSync(out,{recursive:true});
+const out=path.join(root,'docs/windows-dev5/review',scale.replace('.','_'));fs.mkdirSync(out,{recursive:true});
 let checks=0,started=false;const cases=[],errors=[],network=[];
 let observedTray, observedMenu, result;
 const windowModule=require('../apps/windows-ui/desktop-window.cjs');
@@ -43,8 +43,8 @@ app.on('browser-window-created',(_event,win)=>{
   }
   try{
    check(path.resolve(app.getAppPath())===path.join(root,'apps/windows-ui'),'Actual Electron package is running');
-   check(app.getVersion()==='2.0.0-dev.4','Actual package version');
-   check(app.getPath('userData').startsWith(path.join(root,'.cache/windows-tray-review/dev4')),'Production profile untouched');
+   check(app.getVersion()==='2.0.0-dev.5','Actual package version');
+   check(app.getPath('userData').startsWith(path.join(root,'.cache/windows-tray-review/dev5')),'Production profile untouched');
    const prefs=win.webContents.getLastWebPreferences();
    console.log('Native webPreferences:',JSON.stringify({contextIsolation:prefs.contextIsolation,sandbox:prefs.sandbox,nodeIntegration:prefs.nodeIntegration,preloadListed:prefs.preload!==undefined,exposedWindowApi:await ev('typeof window.loneDesktop')}));
    check(prefs.contextIsolation&&prefs.sandbox&&!prefs.nodeIntegration,'Actual sandbox and isolation');
@@ -63,7 +63,7 @@ app.on('browser-window-created',(_event,win)=>{
     }
    }
    await ev("window.loneDesktop.setWindowMode('dashboard')");
-   await until(()=>ev(`document.getElementById('platformLabel').textContent.includes('2.0.0-dev.4')`),'Native version label');
+   await until(()=>ev(`document.getElementById('platformLabel').textContent.includes('2.0.0-dev.5')`),'Native version label');
    await ev('Promise.all([...document.images].map(i=>i.decode()))');
    const metadata=await ev(`({api:Object.keys(window.loneDesktop),node:typeof require,agent:typeof LoneAgent,dpr:devicePixelRatio})`);
    check(metadata.api.length===8&&metadata.node==='undefined'&&metadata.agent==='undefined','Limited real bridge; no agent');

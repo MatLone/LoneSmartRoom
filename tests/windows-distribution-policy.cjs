@@ -8,7 +8,7 @@ const {inside} = require('../scripts/build-windows-distribution.cjs');
 let checks = 0;const check = (value, message) => {assert(value, message);checks++;};
 async function main() {
   check(pkg.name === 'lone-smart-room' && pkg.productName === 'Lone Smart Room', 'Existing package identity');
-  check(pkg.version === '2.0.0-dev.4' && config.appId === 'com.lone.smartroom', 'Existing version and appId');
+  check(pkg.version === '2.0.0-dev.5' && config.appId === 'com.lone.smartroom', 'Existing version and appId');
   check(config.files === pkg.build.files, 'Existing explicit packaged-file list retained');
   check(config.publish === null && config.npmRebuild === false, 'No publication/dependency rebuild');
   check(config.win.target.every(t => t.arch.length === 1 && t.arch[0] === 'x64'), 'x64 artifacts only');

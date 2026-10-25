@@ -2,9 +2,10 @@
 // Offline NSIS/7z/ASAR/PE inspection. Does not launch any generated executable.
 const fs = require('node:fs'), path = require('node:path'), cp = require('node:child_process'), crypto = require('node:crypto'), zlib = require('node:zlib'), assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..'), app = path.join(root, 'apps/windows-ui');
-const output = path.join(root, '.cache/artifacts/windows/desktop-dev4-tray-distribution');
-const evidence = path.join(root, '.cache/validation/windows-tray-dev4');
+const output = path.resolve(app,require(path.join(app,'electron-builder.development.cjs')).directories.output);
+const evidence = path.join(root, '.cache/validation/windows-dev5');
 const asar = require(path.join(app, 'node_modules/@electron/asar'));
+const {bundledLayout}=require(path.join(app,'monitoring-runtime.cjs'));
 const seven = path.join(root, '.cache/electron-builder/7zip@1.0.0/7zip-win-x64-a34pt/bin/7za.exe');
 const sha = b => crypto.createHash('sha256').update(b).digest('hex');
 let checks = 0;const check = (v, why) => {assert(v, why);checks++;};
@@ -52,7 +53,7 @@ function inspectAsar(archive) {
     check(!/(?:^|\/)(?:\.env(?:\..*)?|agent_config\.json|credentials\.json|secrets\.json|local\.properties)$|\.(?:pem|key|crt|cer|pfx|p12|jks|keystore|db|sqlite3?)$/i.test(name), 'No credentials, certificates or local databases');
     const data = asar.extractFile(archive, name.split('/').join(path.sep));fileCount++;
     if (name === 'package.json') {
-      const pkg = JSON.parse(data);check(pkg.name === 'lone-smart-room' && pkg.productName === 'Lone Smart Room' && pkg.version === '2.0.0-dev.4', 'Packaged product/version');continue;
+      const pkg = JSON.parse(data);check(pkg.name === 'lone-smart-room' && pkg.productName === 'Lone Smart Room' && pkg.version === '2.0.0-dev.5', 'Packaged product/version');continue;
     }
     check(!name.startsWith('node_modules/') && !name.startsWith('build/') && !name.startsWith('electron-builder.'), 'No build-only tools in app');
     const source = path.join(app, name);check(fs.existsSync(source) && data.equals(fs.readFileSync(source)), 'Packaged resources equal source');
@@ -70,9 +71,23 @@ const sharedAsar = fs.readFileSync(path.join(output, 'win-unpacked/resources/app
 const sharedExe = fs.readFileSync(path.join(output, 'win-unpacked/Lone Smart Room.exe'));
 const application = peInfo(sharedExe);check(application.machine === '8664', 'Application payload is x64');
 const appFileCount = inspectAsar(path.join(output, 'win-unpacked/resources/app.asar'));
+const pin=JSON.parse(asar.extractFile(path.join(output,'win-unpacked/resources/app.asar'),'monitoring-package.json'));
+const payloadRoot=path.join(root,'.cache/windows-monitoring-runtime/dev5');
+const runtimeManifest=JSON.parse(fs.readFileSync(path.join(payloadRoot,'manifest.json')));
+function inspectMonitoring(resources){
+  const layout=bundledLayout(resources,'2.0.0-dev.5',pin);
+  check(path.isAbsolute(layout.python)&&layout.cwd===path.join(resources,'monitoring/code'),'Fixed private runtime selected');
+  for(const name of ['manifest.json',...Object.keys(runtimeManifest.files)]){
+    const bytes=fs.readFileSync(path.join(resources,'monitoring',name));
+    check(bytes.equals(fs.readFileSync(path.join(payloadRoot,name))),'Monitoring package matches reviewed staged payload');
+    check(!/\.(?:pem|key|crt|cer|pfx|p12|jks|keystore|db|sqlite3?)$/i.test(name),'No local identities/certificates/databases in sidecar');
+  }
+  check(fs.readFileSync(path.join(resources,'monitoring/runtime/python313._pth'),'utf8')==='python313.zip\nDLLs\n.\n','Isolated runtime path, no import site');
+}
+inspectMonitoring(path.join(output,'win-unpacked/resources'));
 const packages = [];
 for (const kind of ['Setup', 'Portable']) {
-  const name = `Lone-Smart-Room-2.0.0-dev.4-x64-${kind}-DEV.exe`, raw = fs.readFileSync(path.join(output, name));
+  const name = `Lone-Smart-Room-2.0.0-dev.5-x64-${kind}-DEV.exe`, raw = fs.readFileSync(path.join(output, name));
   const pe = peInfo(raw), blocks = nsisBlocks(raw);
   const archives = blocks.filter(data => data.subarray(0, 6).equals(Buffer.from('377abcaf271c', 'hex')));
   check(archives.length === 1, 'Exactly one embedded 7z application archive');
@@ -84,9 +99,11 @@ for (const kind of ['Setup', 'Portable']) {
   const names = [...listing.matchAll(/^Path = (.+)$/gm)].slice(1).map(m => m[1].trim().replace(/\\/g, '/'));
   check(names.every(n => !n.startsWith('/') && !n.includes('../') && !/^[A-Za-z]:/.test(n)), 'Safe relative archive entries');
   check(names.every(n => !/(?:^|\/)(?:\.runtime|agent|recovery|\.git|node_modules)(?:\/|$)|\.(?:pem|key|crt|cer|pfx|p12|jks|keystore|db|sqlite3?)$/i.test(n)), 'No runtime secrets, agent, source control or build tools in outer payload');
-  cp.execFileSync(seven, ['x', '-y', '-o'+inspection, payload, 'resources/app.asar', 'Lone Smart Room.exe'], {encoding: 'utf8', windowsHide: true});
+  cp.execFileSync(seven, ['x', '-y', '-o'+inspection, payload, 'resources/app.asar', 'resources/monitoring/*', 'Lone Smart Room.exe'], {encoding: 'utf8', windowsHide: true});
   check(fs.readFileSync(path.join(inspection, 'resources/app.asar')).equals(sharedAsar), 'Embedded ASAR equals inspected unpacked app');
   check(fs.readFileSync(path.join(inspection, 'Lone Smart Room.exe')).equals(sharedExe), 'Embedded executable equals inspected x64 application');
+  inspectMonitoring(path.join(inspection,'resources'));
+  check(names.filter(n=>n.startsWith('resources/monitoring/')).every(n=>!/tests\/|pipe_fixture|agent_config|secure_agent/.test(n)),'Production contains no fixtures or HTTPS agent');
   if (kind === 'Setup') {
     check(blocks.some(b => b.includes(Buffer.from('Replace its application files now?', 'utf16le'))), 'Explicit update consent compiled into installer');
     check(blocks.some(b => b.includes(Buffer.from('machine-wide installation exists', 'utf16le'))), 'Machine-wide migration stop compiled into installer');
@@ -98,7 +115,7 @@ for (const kind of ['Setup', 'Portable']) {
 }
 const execution = JSON.parse(fs.readFileSync(path.join(evidence, 'build-execution.json')));
 check(execution.ok && execution.staticUninstallerExtractions === 1 && !execution.generatedExecutablesRun, 'Non-executing build receipt');
-const result = {ok: true, checks, version: '2.0.0-dev.4', appId: 'com.lone.smartroom', application, appFileCount, applicationSha256: sha(sharedExe), asarSha256: sha(sharedAsar), packages,
+const result = {ok: true, checks, version: '2.0.0-dev.5', appId: 'com.lone.smartroom', application, appFileCount, applicationSha256: sha(sharedExe), asarSha256: sha(sharedAsar), packages,
   credentialsFound: false, operationalClient: false, packagedApplicationRun: false, installerRun: false};
 fs.writeFileSync(path.join(evidence, 'artifact-inspection.json'), JSON.stringify(result, null, 2)+'\n');
 console.log(`PASS: ${checks} offline checks; NSIS/portable payloads, x64 app, icons, metadata, credential scan; no generated executables run.`);
