@@ -4,6 +4,11 @@ Branch `feature/ui-migration-preview`; preservados `16530d1` e `a956004`.
 **Implementação e 133 testes simulados aprovados. Sessão física não iniciada.**
 Código/testes no commit `33765ab`; documentação e evidências em commit subsequente.
 
+**Atualização de acompanhamento:** após recuperação do agente e nova autorização
+expressa, a primeira sessão física foi concluída uma única vez, em 80,4 segundos.
+Resultados e limitações estão no [relatório físico](../monitoring-basic-physical-2026-10-25/README.md).
+As referências a coleta adiada abaixo descrevem a entrega histórica deste documento.
+
 Atualização posterior: o agente foi recuperado manualmente, com autorização própria,
 conforme o [relatório de recuperação](../agent-recovery-2026-10-25/README.md).
 O diagnóstico offline abaixo permanece como registro histórico. **A coleta física

@@ -5,7 +5,9 @@ na branch `feature/ui-migration-preview`. **Sem implantação.**
 Em 25/10 foram adicionados provedores básicos Win32 opt-in e testes com mocks;
 a sessão física foi adiada pelo usuário após encontrar o agente já offline.
 Detalhes e novo gate: [provedores básicos e diagnóstico](../docs/monitoring-basic-2026-10-25/README.md).
-Não há CLI de coleta, autostart, serviço, endpoint TCP, named pipe aberto ou ligação
+Após recuperação e nova autorização, uma única sessão física de 80,4 s foi concluída:
+[valores reais, custo e limitações](../docs/monitoring-basic-physical-2026-10-25/README.md).
+O runner físico opt-in terminou; não há coleta permanente, autostart, serviço, endpoint TCP, named pipe aberto ou ligação
 com o Electron/Android. Importar o pacote não inicia threads nem coleta dados.
 
 ## Componentes implementados
@@ -38,7 +40,7 @@ Não existe descoberta/importação dinâmica de plugins ou carregamento por cam
 handles. Nenhuma DLL de sensor é carregada; as DLLs nativas só são resolvidas ao
 construir explicitamente o backend. `basic_session.py` organiza a sessão limitada,
 e o runner físico exige autorização explícita, prova dos mocks e marcador exclusivo.
-Ele não foi executado nesta entrega.
+Ele foi executado uma única vez na sessão física autorizada documentada acima.
 
 ## Contrato de leitura
 
