@@ -17,4 +17,6 @@ progress::-webkit-progress-value{background:#ff153f;border-radius:4px}
 .metric-row>span{color:var(--muted)}
 .metric-row>strong{font-variant-numeric:tabular-nums;font-weight:550;text-align:right;overflow-wrap:anywhere;min-width:0}
 .mini-sensor strong{font-variant-numeric:tabular-nums;font-size:22px}
+.chart-caption{flex-wrap:wrap;gap:8px}
+.chart-caption>span{min-width:0;overflow-wrap:anywhere}
 @media(max-width:760px){.storage-metrics{grid-template-columns:minmax(0,1fr)}.sensor .value{font-size:25px}.mini-sensor strong{font-size:18px}.metric-row{font-size:11px}.metric-meta{font-size:10px}}

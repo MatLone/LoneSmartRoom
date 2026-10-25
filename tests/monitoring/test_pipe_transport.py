@@ -14,6 +14,7 @@ from monitoring.winpipe import WindowsPipeApi, Overlapped, SecurityAttributes
 from monitoring.windows_basic import basic_catalog
 from monitoring_fakes import FakeClock
 from pipe_fixture import FixtureProvider
+from monitoring.development_collector import create_basic_collector
 
 SID = 'S-1-5-21-100000000-200000000-300000000-1001'
 IDENTITY = dict(pid=12, created=12345, sid=SID, session=1, image='c:\\python\\python.exe', elevated=False)
@@ -157,6 +158,30 @@ class ServiceTransportTests(unittest.TestCase):
         self.api.accept.side_effect=accept;self.api.peer.side_effect=PermissionError('denied')
         self.server.serve();self.assertEqual(self.server.counts['rejected'],1)
         self.api.read_frame.assert_not_called();self.api.close.assert_called_once_with(88)
+
+
+class BasicHostTests(unittest.TestCase):
+    def test_native_pdh_initialized_before_collection_not_merely_provider_construction(self):
+        sensors=Mock();sensors.fixed_volumes.return_value=('C:\\','D:\\','E:\\')
+        collector=create_basic_collector(sensors)
+        sensors.open_disk_query.assert_called_once_with(('C:\\','D:\\'))
+        sensors.disk_counters.assert_not_called()
+        self.assertEqual(collector.state,'created')
+        self.assertEqual(len(collector.cache.specs),21)
+        self.assertTrue(collector.stop(1).clean)
+        sensors.close_disk_query.assert_called_once()
+
+    def test_no_authorized_volumes_never_opens_pdh(self):
+        sensors=Mock();sensors.fixed_volumes.return_value=('E:\\',)
+        collector=create_basic_collector(sensors);self.assertEqual(len(collector.cache.specs),5)
+        self.assertTrue(collector.stop(1).clean)
+        sensors.open_disk_query.assert_not_called();sensors.close_disk_query.assert_not_called()
+
+    def test_partial_host_construction_releases_query(self):
+        sensors=Mock();sensors.fixed_volumes.return_value=('C:\\',)
+        with patch('monitoring.development_collector.Collector',side_effect=ValueError('fixture')):
+            with self.assertRaises(ValueError):create_basic_collector(sensors)
+        sensors.close_disk_query.assert_called_once()
 
 
 if __name__=='__main__':unittest.main()

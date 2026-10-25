@@ -41,11 +41,9 @@ def main():
             collector = Collector(specs, [FixtureProvider(specs)])
         else:
             from monitoring.windows_native import WindowsReadApi
+            from monitoring.development_collector import create_basic_collector
             sensors = WindowsReadApi(); sensors.require_non_elevated()
-            volumes = tuple(v for v in sensors.fixed_volumes() if v in ('C:\\', 'D:\\'))
-            providers = [CpuProvider(sensors), MemoryProvider(sensors)] + [VolumeProvider(sensors, v) for v in volumes]
-            if volumes: providers.append(DiskIoProvider(sensors, volumes))
-            collector = Collector(basic_catalog(volumes), providers)
+            collector = create_basic_collector(sensors)
         server = PipeServer(api, collector, args.session, parent, expected, stop, duration=args.duration, simulated=args.simulated)
         server.open()  # If name/ACL setup fails, no real sampling has started.
         def eof_stop():

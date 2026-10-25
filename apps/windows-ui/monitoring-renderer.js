@@ -46,6 +46,15 @@
       const p=document.createElement('p');p.textContent=text;body.append(p);
     }
   }));
+  function historyNotice(connected){
+    const title=document.getElementById('chartTitle'),selected=document.querySelector('[data-metric][aria-pressed=true]');
+    if(title)title.textContent='Histórico de '+(selected?.dataset.metric||'CPU')+' indisponível';
+    const caption=document.querySelector('.chart-card .section-heading p');if(caption)caption.textContent='Série histórica ainda não integrada';
+    const text=document.querySelector('.empty-chart p');if(text)text.textContent='Os cartões exibem as leituras disponíveis. O gráfico histórico será integrado em outra etapa.';
+    const status=document.querySelector('.chart-caption span');if(status)status.textContent=connected?'Coleta local ativa · gráfico indisponível':'Coletor sem conexão · gráfico indisponível';
+    const last=document.querySelector('.chart-caption span:last-child');if(last)last.textContent='Sem série histórica';
+  }
+  document.querySelectorAll('[data-metric]').forEach(button=>button.addEventListener('click',()=>historyNotice(lastView?.connection==='connected')));
   function metadata(m){return m?`${m.source} · ${m.unit} · ${validStates[m.state]||'Indisponível'} · ${m.collected_at||'sem leitura'}`:'Sem leitura disponível';}
   function refresh(){
     const view=lastView,connected=view?.connection==='connected';
@@ -82,6 +91,7 @@
     }
     if(providerRows[0])providerRows[0].textContent=connected?'APIs Windows':'Coletor desconectado';
     if(providerCaption)providerCaption.textContent=view?.simulated?'Provedor simulado · demonstração':connected?'Somente leitura · desenvolvimento':'Sessão local de desenvolvimento';
+    historyNotice(connected);
   }
   function receive(value){if(!value||value.v!==1)return;lastView=value;lastReceipt=performance.now();refresh();}
   native?.onMetrics(receive);native?.getMetrics().then(receive).catch(()=>receive({v:1,connection:'disconnected',error:'read_unavailable'}));
