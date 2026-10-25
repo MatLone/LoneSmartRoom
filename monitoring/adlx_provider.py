@@ -80,6 +80,10 @@ class DeviceLost(RuntimeError):
     """Fixed adapter indication of an invalid/removed GPU, not a transient read failure."""
 
 
+class WarmingUp(RuntimeError):
+    """The SDK history buffer has not produced its first sample yet."""
+
+
 class AdlxProvider:
     metric_ids=tuple(BY_ID)
 
@@ -181,6 +185,8 @@ class AdlxProvider:
                                     and type(used.value) is int and used.value>self._capacity.value):
                                 if 'gpu.adlx.vram_used_mb' in results:results['gpu.adlx.vram_used_mb']=O('gpu.adlx.vram_used_mb',None,A.ERROR)
                                 self._event('inconsistent_vram')
+                    except WarmingUp:
+                        results.update((k,O(k,None,A.WARMING_UP)) for k in dynamic)
                     except DeviceLost:
                         self._opened=False;self._event('device_lost');self._release(True);return empty(A.UNAVAILABLE)
                     except PermissionError:results.update((k,O(k,None,A.PERMISSION_DENIED)) for k in dynamic);self._event('permission_denied')
