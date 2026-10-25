@@ -14,8 +14,8 @@ estabilidade aprovados; encerramento normal indisponível; agente permanece ativ
 - Processo de teste não elevado. HKCU Run e regra de firewall somente consultados.
 - Backup `Windows-before-dev4-20261024T174801Z` íntegro: 72 arquivos, 27 diretórios,
   8.589.376 bytes, tamanhos/hashes e ACL exclusiva válidos. Não houve restauração.
-- Não havia servidor ADB ativo. Não foi iniciado um para esta tarefa. A confirmação
-  manual de status no Samsung foi solicitada e ainda estava pendente neste relatório.
+- Não havia servidor ADB ativo. Não foi iniciado um para esta tarefa. Após a consulta
+  manual de status solicitada, o usuário confirmou **“Conectado”** no Samsung.
 
 ## Uma execução, sem retry
 
@@ -64,9 +64,10 @@ integrado ao launcher; estruturas internas podem mudar em versões futuras, conf
 - Uma regra Lone existente; fingerprint agregado antes/depois idêntico:
   `a37740d417b22250c2352d29791522cdaca245ac43c35b4270b8cc1d199f3c7a`.
 
-A confirmação **física no Samsung ainda não foi obtida**. As consultas locais não
-substituem essa verificação. Não houve instalação Android, novo pareamento, concessão
-de grants, requisições malformadas ou testes da pendência TLS.
+A confirmação **física no Samsung foi recebida do usuário: “Conectado”**, em resposta
+à orientação de abrir o aplicativo e atualizar somente o status. Essa evidência é
+relato direto do usuário, sem captura ADB nesta etapa. Não houve instalação Android,
+novo pareamento, concessão de grants, requisições malformadas ou testes da pendência TLS.
 
 ## Logs e estabilidade
 
@@ -116,7 +117,10 @@ funcionar no contexto atual; não demonstra que o Windows despachará a entrada 
 próximo login. A divergência anterior entre visões direta/WMI permanece inconclusiva.
 
 Recomendação: decidir explicitamente o destino da sessão ativa, preparar um mecanismo
-de parada graciosa em uma etapa separada, confirmar o Samsung e só então aprovar
-a migração de Run e um teste de login. Qualquer encerramento excepcional desta sessão
+de parada graciosa em uma etapa separada e só então aprovar a migração de Run e um
+teste de login. O Samsung já confirmou a conexão. Qualquer encerramento excepcional desta sessão
 exige nova autorização e nova conferência da identidade/horário do processo, sem
 seleção genérica de outros Python. Não há ação adicional de parada autorizada aqui.
+
+A resposta “Conectado” confirma somente a comunicação no Samsung; não concede
+autorização para encerrar processos ou alterar a inicialização automática.
