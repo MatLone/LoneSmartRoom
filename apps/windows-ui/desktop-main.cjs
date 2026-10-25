@@ -2,6 +2,7 @@
 const {app, BrowserWindow, ipcMain, screen, session, Tray, Menu} = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 const policy = require('./desktop-policy.cjs');
 const {createStore} = require('./desktop-preferences.cjs');
 const {createController} = require('./desktop-window.cjs');
@@ -11,13 +12,14 @@ const developmentReview = !app.isPackaged && process.argv.includes('--lone-devel
 const monitoringDevelopment = developmentReview && process.argv.includes('--lone-monitoring-development') &&
   /^[a-f0-9]{32}$/.test(process.env.LONE_MONITORING_RUN_ID || '');
 let monitoringHost=null, monitoringQuitReady=false, monitoringQuitting=false;
+const monitoringEnabled=app.isPackaged||monitoringDevelopment;
 if (developmentReview) {
   const raw = process.argv.find(value => value.startsWith('--force-device-scale-factor='))?.split('=')[1] || '1';
   const scale = ['1', '1.25', '1.5'].includes(raw) ? raw.replace('.', '_') : '1';
   const review = process.argv.includes('--lone-tray-visual-review') ? 'visual' : 'automated';
   const base = monitoringDevelopment
     ? path.resolve(__dirname, '../../.cache/windows-monitoring-development', process.env.LONE_MONITORING_RUN_ID)
-    : path.resolve(__dirname, '../../.cache/windows-tray-review/dev4', review, scale);
+    : path.resolve(__dirname, '../../.cache/windows-tray-review/dev5', review, scale);
   for (const [name, sub] of [['userData', 'profile'], ['sessionData', 'session'], ['logs', 'logs'], ['crashDumps', 'crashes']]) {
     const directory = path.join(base, sub);fs.mkdirSync(directory, {recursive: true});app.setPath(name, directory);
   }
@@ -68,24 +70,35 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     session.defaultSession.setPermissionCheckHandler(() => false);
     session.defaultSession.webRequest.onBeforeRequest((details, callback) => callback({cancel: !policy.allowedResource(details.url)}));
+    const stopMonitoring=async()=>{
+      if(!monitoringHost){monitoringQuitReady=true;return true;}
+      try{const stopped=await monitoringHost.stop();monitoringQuitReady=stopped;return stopped;}catch{return false;}
+    };
+    if(monitoringEnabled)app.on('before-quit',event=>{
+      if(monitoringQuitReady)return;
+      event.preventDefault();
+      if(!monitoringQuitting){monitoringQuitting=true;stopMonitoring().then(stopped=>{
+        monitoringQuitting=false;if(stopped)app.quit();else controller?.restoreCurrent();
+      });}
+    });
     controller = createController({app, screen, Tray, Menu, policy,
       store: createStore(app.getPath('userData')), createWindow,
+      beforeExit:monitoringEnabled?stopMonitoring:null,
       icon: path.join(__dirname, 'assets/brand/windows-icon.ico'), version: app.getVersion(),
       metadata: {development: !app.isPackaged, reviewProfile: developmentReview}});
     registerIpc();controller.start();
-    if(monitoringDevelopment){
+    if(monitoringEnabled){
       const {createMonitoringHost}=require('./monitoring-host.cjs');
-      monitoringHost=createMonitoringHost({root:path.resolve(__dirname,'../..'),runId:process.env.LONE_MONITORING_RUN_ID,
-        simulated:process.argv.includes('--lone-monitoring-simulated'),publish:value=>{
+      monitoringHost=createMonitoringHost({root:path.resolve(__dirname,'../..'),
+        runId:app.isPackaged?crypto.randomBytes(16).toString('hex'):process.env.LONE_MONITORING_RUN_ID,
+        packaged:app.isPackaged,resourcesPath:process.resourcesPath,version:app.getVersion(),
+        simulated:!app.isPackaged&&process.argv.includes('--lone-monitoring-simulated'),publish:value=>{
           const wc=controller?.window?.webContents;
           if(wc&&!wc.isDestroyed()&&wc.mainFrame.url===policy.entryUrl)wc.send('monitoring:state',value);
         }});
-      app.on('before-quit',event=>{
-        if(monitoringQuitReady)return;
-        event.preventDefault();
-        if(!monitoringQuitting){monitoringQuitting=true;monitoringHost.stop().finally(()=>{monitoringQuitReady=true;app.quit();});}
-      });
-      monitoringHost.start();
+      try{monitoringHost.start();}catch{
+        console.error('Local monitoring unavailable; dashboard remains open');
+      }
     }
     app.on('activate', () => controller.restoreCurrent());
   }).catch(() => {console.error('Unable to initialize desktop window');if (controller) controller.quit();else app.quit();});

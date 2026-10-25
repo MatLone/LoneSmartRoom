@@ -19,16 +19,24 @@ sys.path.insert(0, str(ROOT))
 from monitoring.ipc import MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES, encode
 from monitoring.pipe_protocol import pipe_name, request
 from monitoring.winpipe import WindowsPipeApi
+from monitoring.lifetime import duration_for,end_at
+from monitoring.application_context import validate_mode,application_owner
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--session', required=True)
-    parser.add_argument('--duration', type=int, choices=range(1, 76), default=70)
+    lifetime=parser.add_mutually_exclusive_group()
+    lifetime.add_argument('--duration', type=int, choices=range(1, 76))
+    lifetime.add_argument('--application',action='store_true')
+    parser.add_argument('--owner-pid',type=int)
     parser.add_argument('--simulated', action='store_true')
     args = parser.parse_args()
+    duration=duration_for(args.duration,args.application)
+    validate_mode(ROOT,args.application,args.simulated)
     name = pipe_name(args.session)
     api = WindowsPipeApi(); stop = threading.Event(); started = time.monotonic()
+    owner=application_owner(api,ROOT,args.owner_pid) if args.application else None
     worker, handle = None, None
     messages = queue.Queue(maxsize=4); child_lines = queue.Queue(maxsize=4)
     def emit(value): print(encode(value).decode(), flush=True)
@@ -47,7 +55,8 @@ def main():
     try:
         environment = {k:v for k,v in os.environ.items() if not k.upper().startswith(('PYTHON', 'NODE_OPTIONS'))}
         command = [sys.executable, '-I', '-B', str(ROOT/'scripts/monitoring-pipe-server.py'),
-                   '--session', args.session, '--parent-pid', str(os.getpid()), '--duration', str(args.duration)]
+                   '--session', args.session, '--parent-pid', str(os.getpid())]
+        command+=['--application'] if args.application else ['--duration',str(duration)]
         if args.simulated: command.append('--simulated')
         worker = subprocess.Popen(command, cwd=ROOT, env=environment, shell=False,
                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
@@ -62,13 +71,14 @@ def main():
         emit({'v':1, 'event':'ready', 'bridge_pid':os.getpid(), 'collector_pid':worker.pid,
               'transport':'windows_named_pipe_v1', 'simulated':args.simulated})
         threading.Thread(target=read_input, args=(sys.stdin.buffer, messages, MAX_REQUEST_BYTES), daemon=True).start()
-        while not stop.is_set() and time.monotonic()-started < args.duration and worker.poll() is None:
+        while (not stop.is_set() and time.monotonic() < end_at(started,duration) and worker.poll() is None
+               and (owner is None or api.alive(owner))):
             try: payload = messages.get(timeout=0.1)
             except queue.Empty: continue
             if payload is None: break
             try:
                 request(payload)
-                deadline = min(started+args.duration, time.monotonic()+1.5)
+                deadline = min(end_at(started,duration), time.monotonic()+1.5)
                 connection = api.connect(name, handle, expected, deadline, stop)
                 try:
                     api.write_frame(connection, payload, MAX_REQUEST_BYTES, deadline, stop)
@@ -85,15 +95,24 @@ def main():
         stop.set(); stopped = None
         if worker is not None:
             if worker.stdin: worker.stdin.close()
-            try: worker.wait(timeout=5)
-            except subprocess.TimeoutExpired: pass  # No kill; own bounded TTL and explicit failure.
-            try:
-                line = child_lines.get(timeout=1)
-                if line is not None: stopped = json.loads(line)
-            except (queue.Empty, ValueError): pass
+            pending_reported=False;closing_started=time.monotonic()
+            while worker.poll() is None:
+                try:worker.wait(timeout=0.1)
+                except subprocess.TimeoutExpired:
+                    if time.monotonic()-closing_started>5 and not pending_reported:
+                        emit({'v':1,'event':'shutdown_pending'});pending_reported=True
+            # A pending diagnostic may precede the final sanitized stop record.
+            while True:
+                try:
+                    line=child_lines.get(timeout=1)
+                    if line is None:break
+                    value=json.loads(line)
+                    if value.get('stopped') is True:stopped=value
+                except (queue.Empty,ValueError):break
         if handle is not None: api.close(handle)
+        if owner is not None:api.close(owner)
         clean = worker is not None and worker.poll() == 0 and bool(stopped and stopped.get('ok'))
-        emit({'v':1, 'event':'stopped', 'clean':clean, 'worker':stopped,
+        emit({'v':1, 'event':'stopped', 'clean':clean, 'workerExited':worker is None or worker.poll() is not None, 'worker':stopped,
               'elapsed_seconds':time.monotonic()-started})
     return 0 if clean else 1
 

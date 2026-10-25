@@ -17,7 +17,8 @@ def deny(event,args):
 
 def main():
     sys.addaudithook(deny)
-    result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromName('test_pipe_transport'))
+    suite=unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromName(name) for name in ('test_pipe_transport','test_application_lifetime'))
+    result=unittest.TextTestRunner(verbosity=2).run(suite)
     from monitoring.basic_validation import source_hashes
     receipt={'ok':result.wasSuccessful() and not result.skipped,'tests':result.testsRun,'failures':len(result.failures),
              'errors':len(result.errors),'skipped':len(result.skipped),'real_sensors':False,'native_dlls_allowed':False,

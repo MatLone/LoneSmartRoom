@@ -15,19 +15,27 @@ from monitoring.ipc import encode
 from monitoring.pipe_server import PipeServer
 from monitoring.winpipe import WindowsPipeApi
 from monitoring.windows_basic import CpuProvider, MemoryProvider, VolumeProvider, DiskIoProvider, basic_catalog
+from monitoring.lifetime import duration_for,finish_collector
+from monitoring.application_context import validate_mode
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--session', required=True)
     parser.add_argument('--parent-pid', required=True, type=int)
-    parser.add_argument('--duration', type=int, choices=range(1, 76), default=70)
+    lifetime=parser.add_mutually_exclusive_group()
+    lifetime.add_argument('--duration', type=int, choices=range(1, 76))
+    lifetime.add_argument('--application',action='store_true')
     parser.add_argument('--simulated', action='store_true')
     args = parser.parse_args()
+    duration=duration_for(args.duration,args.application)
+    validate_mode(ROOT,args.application,args.simulated)
     api, collector, server, parent = None, None, None, None
     stop = threading.Event(); started = time.monotonic(); result = {'ok': False}
     try:
         api = WindowsPipeApi()
+        if args.application and api.own['image']!=os.path.normcase(os.path.realpath(ROOT.parent/'runtime/python.exe')):
+            raise PermissionError('unexpected_bundle_interpreter')
         if os.getppid() != args.parent_pid: raise PermissionError('unexpected_parent')
         parent = api.hold_process(args.parent_pid)
         expected = api.identity(parent)
@@ -44,7 +52,7 @@ def main():
             from monitoring.development_collector import create_basic_collector
             sensors = WindowsReadApi(); sensors.require_non_elevated()
             collector = create_basic_collector(sensors)
-        server = PipeServer(api, collector, args.session, parent, expected, stop, duration=args.duration, simulated=args.simulated)
+        server = PipeServer(api, collector, args.session, parent, expected, stop, duration=duration, simulated=args.simulated)
         server.open()  # If name/ACL setup fails, no real sampling has started.
         def eof_stop():
             sys.stdin.buffer.read(1)  # Only lifetime EOF/closure, no command parser or remote shutdown endpoint.
@@ -61,7 +69,7 @@ def main():
         stop.set()
         if server is not None: server.close()
         if collector is not None:
-            stopped = collector.stop(3)
+            stopped = finish_collector(collector,lambda:print(encode({'v':1,'pending_stop':True}).decode(),flush=True))
             result['stop'] = {'clean': stopped.clean, 'stopped': stopped.stopped, 'timed_out': stopped.timed_out}
             result['ok'] = result['ok'] and stopped.clean
         if api is not None and parent is not None: api.close(parent)

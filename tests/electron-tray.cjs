@@ -9,7 +9,7 @@ let checks = 0;
 const check = (value, message) => {assert(value, message);checks++;};
 const copy = value => JSON.parse(JSON.stringify(value));
 const primary = {x:0,y:0,width:1920,height:1040};
-function fixture({saved = preferences.defaults(), trayFailure = false, menuFailure = false, writeFailure = false} = {}) {
+function fixture({saved = preferences.defaults(), trayFailure = false, menuFailure = false, writeFailure = false,beforeExit=null} = {}) {
   const app = new EventEmitter(), screen = new EventEmitter(), timers = new Map(), trays = [], saves = [];
   let win, windows = 0, quits = 0, nextTimer = 0;
   screen.displays = [{workArea:primary}];screen.getAllDisplays = () => screen.displays;
@@ -24,7 +24,7 @@ function fixture({saved = preferences.defaults(), trayFailure = false, menuFailu
     maximize(){this.maximized = true;this.emit('maximize');} unmaximize(){this.maximized = false;this.emit('unmaximize');}
     show(){this.visible = true;} hide(){this.visible = false;} focus(){this.focused = true;}
     minimize(){this.minimized = true;this.emit('minimize');} restore(){this.minimized = false;this.emit('restore');}
-    close(){if(this.destroyed)return;this.emit('close');this.destroyed = true;this.emit('closed');app.emit('window-all-closed');}
+    close(){if(this.destroyed)return;const event={defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}};this.emit('close',event);if(event.defaultPrevented)return;this.destroyed = true;this.emit('closed');app.emit('window-all-closed');}
   }
   class Tray extends EventEmitter {
     constructor(icon){super();if(trayFailure)throw Error('No shell');this.icon = icon;this.destroyed = false;this.destroyCalls = 0;trays.push(this);}
@@ -32,7 +32,7 @@ function fixture({saved = preferences.defaults(), trayFailure = false, menuFailu
     setToolTip(value){this.tooltip = value;} setContextMenu(menu){if(menuFailure)throw Error('Menu unavailable');this.menu = menu;}
   }
   app.quit = () => {if(quits)return;quits++;app.emit('before-quit');if(win&&!win.destroyed)win.close();};
-  const controller = createController({app,screen,Tray,Menu:{buildFromTemplate:v=>v},policy,store,
+  const controller = createController({app,screen,Tray,Menu:{buildFromTemplate:v=>v},policy,store,beforeExit,
     createWindow:bounds=>{windows++;win = new Window(bounds);return win;},icon:'official.ico',version:'2.0.0-dev.4',
     schedule:fn=>{const id=++nextTimer;timers.set(id,fn);return id;},cancel:id=>timers.delete(id)});
   app.on('window-all-closed',controller.quit);
@@ -119,22 +119,25 @@ function diskState() {
   const linked=preferences.createStore(dir,unsafe);check(linked.load().mode==='dashboard'&&!linked.save(value),'Reparse/symlink preference target rejected');
   for(const bad of [{...value,mode:'cmd.exe'},{...value,minimizeToTray:'yes'},{...value,bounds:{dashboard:null,widget:[]}},null]){check(preferences.normalize(bad)===null,'Strict preferences accept no paths/commands/coercions');}
 }
-async function mainWiring(lock) {
+async function mainWiring(lock,monitorFailure=false) {
   const app=new EventEmitter(),ipcHandlers=new Map(),ipcEvents=new Map();let creations=0,quits=0,starts=0,restores=0,hides=0;
   app.isPackaged=true;app.commandLine={appendSwitch:()=>{}};app.requestSingleInstanceLock=()=>lock;
-  app.quit=()=>{quits++;};app.whenReady=()=>Promise.resolve();app.getVersion=()=> '2.0.0-dev.4';app.getPath=()=> 'isolated-mock';
+  app.quit=()=>{quits++;};app.whenReady=()=>Promise.resolve();app.getVersion=()=> '2.0.0-dev.5';app.getPath=()=> 'isolated-mock';
   const frame={url:policy.entryUrl},wc={mainFrame:frame,isDestroyed:()=>false};
   const controller={window:{webContents:wc},state:()=>({mode:'dashboard'}),start:()=>{starts++;},restoreCurrent:()=>{restores++;},hideToTray:()=>{hides++;return true;},setMode:m=>{if(!policy.validMode(m))throw Error('Invalid');},toggleMaximize:()=>{},minimize:()=>{},close:()=>{},quit:()=>{quits++;}};
-  const context=vm.createContext({__dirname:directory,process:{argv:[]},console,require:name=>{
+  const monitor={start:()=>{if(monitorFailure)throw Error('mock failure');},stop:()=>Promise.resolve(true),view:()=>({v:1,connection:'disconnected'}),diagnostics:()=>({})};
+  const context=vm.createContext({__dirname:directory,process:{argv:[],env:{},resourcesPath:'C:/mock-resources'},console,require:name=>{
     if(name==='electron')return {app,BrowserWindow:()=>{},ipcMain:{handle:(n,fn)=>ipcHandlers.set(n,fn),on:(n,fn)=>ipcEvents.set(n,fn)},screen:{},session:{defaultSession:{setPermissionRequestHandler:()=>{},setPermissionCheckHandler:()=>{},webRequest:{onBeforeRequest:()=>{}}}},Tray:()=>{},Menu:{}};
     if(name==='./desktop-window.cjs')return {createController:()=>{creations++;return controller;}};
     if(name==='./desktop-preferences.cjs')return {createStore:()=>({})};
     if(name==='./desktop-policy.cjs')return policy;
+    if(name==='./monitoring-host.cjs')return {createMonitoringHost:()=>monitor};
     return require(name);
   }});
   vm.runInContext(fs.readFileSync(path.join(directory,'desktop-main.cjs'),'utf8'),context);await Promise.resolve();await Promise.resolve();
   if(!lock){check(quits===1&&creations===0&&ipcHandlers.size===0,'Duplicate process exits before window/Tray/IPC initialization');return;}
   check(creations===1&&starts===1,'Primary instance initializes one controller without agent dependency');
+  check(quits===0,'Collector failure never closes the dashboard');
   app.emit('second-instance',{},['cmd.exe','steam://open/main'],'arbitrary');check(restores===1&&creations===1,'Second instance ignores forwarded arguments and restores only');
   const trusted={sender:wc,senderFrame:frame};
   check(ipcHandlers.get('window:tray')(trusted).hidden&&hides===1,'Only bounded Tray IPC accepted');
@@ -145,5 +148,13 @@ async function mainWiring(lock) {
   assert.throws(()=>ipcHandlers.get('window:mode')(trusted,'cmd.exe'));checks++;
   check([...ipcHandlers.keys()].sort().join(',')===['widget:version','window:state','window:mode','window:maximize','window:tray','monitoring:snapshot'].sort().join(','),'No arbitrary execution/network/prefs IPC');
 }
-async function main(){lifecycle();failuresAndMonitors();diskState();await mainWiring(false);await mainWiring(true);console.log(`PASS: ${checks} Tray, lifecycle, instance, persistence, monitor and IPC assertions; no native applications opened.`);}
+async function ownedShutdown(){
+  let release,stops=0;const f=fixture({beforeExit:()=>{stops++;return new Promise(resolve=>release=resolve);}});
+  f.controller.close();await Promise.resolve();check(!f.win.destroyed&&f.quits===0&&!f.trays[0].destroyed,'X waits for its monitoring without hiding or destroying Tray');
+  f.controller.quit();check(stops===1,'Concurrent exits do not duplicate shutdown');release(true);await new Promise(setImmediate);
+  check(f.quits===1&&f.win.destroyed&&f.trays[0].destroyed,'Successful monitoring stop completes normal exit');
+  const failed=fixture({beforeExit:()=>Promise.resolve(false)});failed.controller.hideToTray();failed.controller.quit();await new Promise(setImmediate);
+  check(failed.quits===0&&failed.win.visible&&!failed.trays[0].destroyed,'Stop failure preserves a visible app and live Tray, no orphaning');
+}
+async function main(){lifecycle();failuresAndMonitors();diskState();await ownedShutdown();await mainWiring(false);await mainWiring(true);await mainWiring(true,true);console.log(`PASS: ${checks} Tray, lifecycle, instance, persistence, monitor and IPC assertions; no native applications opened.`);}
 main().catch(error=>{console.error(error.stack);process.exitCode=1;});

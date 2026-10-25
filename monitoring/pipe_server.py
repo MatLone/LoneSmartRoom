@@ -4,11 +4,12 @@ import time
 
 from .ipc import LocalAccessPolicy, LocalReadService, MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES, encode
 from .pipe_protocol import pipe_name
+from .lifetime import end_at
 
 
 class PipeServer:
     def __init__(self, api, collector, session, client_handle, client_identity, stop, *, duration=70, simulated=False):
-        if type(duration) not in (int, float) or not 1 <= duration <= 75:
+        if duration is not None and (type(duration) not in (int, float) or not 1 <= duration <= 75):
             raise ValueError('invalid_development_duration')
         self.api, self.collector, self.stop = api, collector, stop
         self.client_handle, self.client_identity = client_handle, client_identity
@@ -26,7 +27,7 @@ class PipeServer:
             self.close(); raise
 
     def serve(self):
-        end = time.monotonic() + self.duration
+        end = end_at(time.monotonic(),self.duration)
         try:
             while not self.stop.is_set() and time.monotonic() < end and self.api.alive(self.client_handle):
                 connected = False

@@ -1,9 +1,10 @@
 'use strict';
 // Dependency-injected native window/Tray lifecycle. No agent or execution APIs.
 function createController({app, screen, Tray, Menu, policy, store, createWindow, icon, version,
-  metadata = {}, schedule = setTimeout, cancel = clearTimeout}) {
+  metadata = {}, beforeExit=null, schedule = setTimeout, cancel = clearTimeout}) {
   let preferences = store.load(), mode = preferences.mode, win = null, tray = null;
   let timer = null, switching = false, exiting = false, hiddenToTray = false;
+  let exitRequested=false;
   let persistenceAvailable = store.status !== 'invalid';
   const live = () => win && !win.isDestroyed();
   const trayAlive = () => Boolean(tray && !tray.isDestroyed());
@@ -77,9 +78,18 @@ function createController({app, screen, Tray, Menu, policy, store, createWindow,
   function destroyTray() {try {if (trayAlive()) tray.destroy();} catch {} finally {tray = null;}}
   function quit() {
     if (exiting) return;
+    if(beforeExit){
+      if(exitRequested)return;
+      exitRequested=true;
+      Promise.resolve().then(beforeExit).then(ok=>{
+        exitRequested=false;
+        if(!ok){restoreCurrent();return;}
+        exiting=true;try{flush();}finally{destroyTray();app.quit();}
+      },()=>{exitRequested=false;restoreCurrent();});return;
+    }
     exiting = true;try {flush();} finally {destroyTray();app.quit();}
   }
-  function beforeQuit() {exiting = true;flush();destroyTray();}
+  function beforeQuit(event) {if(event?.defaultPrevented)return;exiting = true;flush();destroyTray();}
   function makeTray() {
     try {
       tray = new Tray(icon);tray.setToolTip('Lone Smart Room · ' + version);
@@ -96,7 +106,10 @@ function createController({app, screen, Tray, Menu, policy, store, createWindow,
     const initial = restoredBounds(mode);
     win = createWindow(initial);
     for (const event of ['resize','move','maximize','unmaximize','restore']) win.on(event, changed);
-    win.on('close', flush); // Deliberately never preventDefault: X still exits.
+    win.on('close', event=>{
+      // X still exits; it waits for our own monitoring components, never hides to Tray.
+      if(beforeExit&&!exiting){event.preventDefault();quit();}else flush();
+    });
     win.on('closed', () => {win = null;});
     win.once('ready-to-show', () => {
       // The first Windows show can adjust non-client geometry for the monitor DPI.
