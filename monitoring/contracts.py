@@ -19,6 +19,9 @@ class Unit(StrEnum):
     BYTES = 'bytes'
     BYTES_PER_SECOND = 'bytes_per_second'
     RPM = 'rpm'
+    MEGAHERTZ = 'megahertz'
+    WATTS = 'watts'
+    MEGABYTES = 'megabytes'  # Native SDK MB; do not silently reinterpret as bytes/GiB.
 
 
 class Cadence(StrEnum):
@@ -96,11 +99,12 @@ class MetricSpec:
 
     def validate_value(self, value):
         finite(value)
-        if self.unit in (Unit.BYTES, Unit.RPM) and type(value) is not int:
+        if self.unit in (Unit.BYTES, Unit.RPM, Unit.MEGABYTES) and type(value) is not int:
             raise ContractError('integer_required')
         limits = {Unit.PERCENT: (0, 100), Unit.CELSIUS: (-273.15, 300),
                   Unit.BYTES: (0, 2**63 - 1), Unit.RPM: (0, 1_000_000),
-                  Unit.BYTES_PER_SECOND: (0, 2**63 - 1)}
+                  Unit.BYTES_PER_SECOND: (0, 2**63 - 1), Unit.MEGAHERTZ: (0, 100_000),
+                  Unit.WATTS: (0, 5000), Unit.MEGABYTES: (0, 2**31 - 1)}
         low, high = limits[self.unit]
         if not low <= value <= high:
             raise ContractError('value_out_of_range')

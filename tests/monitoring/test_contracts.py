@@ -20,7 +20,9 @@ class ContractTests(unittest.TestCase):
     def test_catalog_covers_declared_hardware_and_units(self):
         specs = catalog(DEFAULT_METRICS)
         self.assertEqual(len(specs), 22)
-        self.assertEqual({s.unit for s in specs.values()}, set(Unit))
+        # Existing v1 catalog stays frozen; optional provider units are not advertised here.
+        self.assertEqual({s.unit for s in specs.values()},
+                         {Unit.PERCENT, Unit.CELSIUS, Unit.BYTES, Unit.BYTES_PER_SECOND, Unit.RPM})
         self.assertEqual({s.cadence for s in specs.values()}, set(Cadence))
         self.assertIn('cpu.package_temperature', specs)
         self.assertIn('gpu.vram_available', specs)
