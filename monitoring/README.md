@@ -1,7 +1,10 @@
 # Monitoramento independente — fundação, etapa 1
 
-Implementação autorizada a partir de `65340970bba7435cd2606900317a584d20ee9a9f`,
-na branch `feature/ui-migration-preview`. **Sem provedores reais e sem implantação.**
+Fundação autorizada a partir de `65340970bba7435cd2606900317a584d20ee9a9f`,
+na branch `feature/ui-migration-preview`. **Sem implantação.**
+Em 25/10 foram adicionados provedores básicos Win32 opt-in e testes com mocks;
+a sessão física foi adiada pelo usuário após encontrar o agente já offline.
+Detalhes e novo gate: [provedores básicos e diagnóstico](../docs/monitoring-basic-2026-10-25/README.md).
 Não há CLI de coleta, autostart, serviço, endpoint TCP, named pipe aberto ou ligação
 com o Electron/Android. Importar o pacote não inicia threads nem coleta dados.
 
@@ -29,6 +32,13 @@ Os provedores substitutos existem somente em `tests/monitoring/monitoring_fakes.
 São `data_kind=simulated`; snapshots que os contêm incluem `contains_simulated=true`.
 Os números da fixture não representam este PC e não são enviados a interfaces.
 Não existe descoberta/importação dinâmica de plugins ou carregamento por caminho.
+
+`windows_basic.py` contém os algoritmos de CPU/RAM/volumes/I/O com backend injetado;
+`windows_native.py` contém exclusivamente APIs de leitura e gestão de seus próprios
+handles. Nenhuma DLL de sensor é carregada; as DLLs nativas só são resolvidas ao
+construir explicitamente o backend. `basic_session.py` organiza a sessão limitada,
+e o runner físico exige autorização explícita, prova dos mocks e marcador exclusivo.
+Ele não foi executado nesta entrega.
 
 ## Contrato de leitura
 
