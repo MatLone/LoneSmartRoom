@@ -1,5 +1,10 @@
 # ADLX somente leitura — contrato opcional em preparação
 
+Registro original do núcleo isolado. A ponte nativa e os limites da primeira sessão
+estão descritos no complemento [adlx-native-worker-v1.md](adlx-native-worker-v1.md).
+As métricas dinâmicas ainda não passaram na validação física; o perfil GPU não está
+integrado ao consumidor dev.5.
+
 Implementação desta fase: `monitoring/adlx_provider.py`, com adapter injetado e
 testes sintéticos. **Não há loader DLL, wrapper nativo compilado ou integração à
 instalação/worker operacional neste commit.** Nenhum valor dos testes é medição do PC.
