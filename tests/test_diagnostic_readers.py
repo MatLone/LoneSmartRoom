@@ -16,7 +16,7 @@ from diagnostics.contracts import Component as C,DetailCode as D,DiagnosticError
 from diagnostics.engine import DiagnosticEngine
 from diagnostics.passive import OnceProvider,report_for,run_session
 from diagnostics.presentation import present
-from diagnostics.windows_readers import WindowsReaders,authenticated_get,validate_chain
+from diagnostics.windows_readers import WindowsReaders,authenticated_get,validate_chain,launcher_arguments
 
 NOW=datetime(2026,10,26,12,tzinfo=timezone.utc)
 
@@ -87,6 +87,15 @@ class SessionTests(unittest.TestCase):
 
 
 class ProjectionTests(unittest.TestCase):
+    def test_unverified_listener_identity_is_not_proven_failure(self):
+        c=census();c['agent_verified']=False
+        r,v=report_for(c,{},NOW,10)
+        self.assertEqual(v['cards'][1]['label'],'Não verificado')
+    def test_absent_collectors_are_inactive_even_if_pipe_namespace_unreadable(self):
+        c=census();c['pipe_namespace']={'available':False,'matching_count':None}
+        r,v=report_for(c,{},NOW,10)
+        self.assertEqual(v['cards'][2]['label'],'Não verificado')
+        self.assertTrue(all(x['label']=='Indisponível' for x in v['cards'][3:7]))
     def test_normally_inactive_not_failure(self):
         r,v=report_for(census(),healthy(),NOW,10)
         for card in v['cards'][2:7]:
@@ -135,6 +144,19 @@ class ProjectionTests(unittest.TestCase):
 
 
 class IdentityTests(unittest.TestCase):
+    def test_documented_isolated_bootstrap_flags_are_recognized(self):
+        from diagnostics.windows_readers import norm
+        python=norm('C:/fixed/pythonw.exe');script=norm('C:/fixed/agent_launcher.py')
+        for flags in ([],['-I','-B']):
+            for worker in ([],['--worker']):
+                self.assertEqual(launcher_arguments([python,*flags,script,*worker],{python},script),(True,bool(worker)))
+    def test_other_python_flags_scripts_and_commands_rejected(self):
+        from diagnostics.windows_readers import norm
+        python=norm('C:/fixed/pythonw.exe');script=norm('C:/fixed/agent_launcher.py')
+        for args in ([python,'-c','anything'],[python,'-m','module'],[python,'-S',script],
+                     [python,'-B','-I',script],[python,script,'--arbitrary'],[python,'C:/other.py'],
+                     [norm('C:/other/pythonw.exe'),script]):
+            self.assertEqual(launcher_arguments(args,{python},script),(False,False))
     def setUp(self):
         self.own={'sid':'account','session':1}
         self.rows=[dict(pid=10,parent=1,sid='account',session=1,elevated=False,alive=True,approved=True,worker=False),

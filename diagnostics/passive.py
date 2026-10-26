@@ -32,9 +32,9 @@ def observations(census, https, now, tick):
     identity = census.get('agent_verified') is True
     listener = census.get('listener_count')
     result = [p(C.LISTENER, dict(present=listener > 0 if type(listener) is int else None,
-        identity_matches=identity if listener else None, port=8776),
+        identity_matches=True if identity else None, port=8776),
         D.LISTENER_OK if identity else D.LISTENER_MISMATCH,
-        O.OK if type(listener) is int else O.UNKNOWN)]
+        O.OK if identity or listener==0 else O.UNKNOWN)]
     good = (identity and https.get('ok') is True and https.get('http_status') == 200
             and https.get('hostname_verified') is True and https.get('pin_verified') is True)
     code = D.HTTPS_OK if good else D.PASSIVE_UNVERIFIED
@@ -45,11 +45,12 @@ def observations(census, https, now, tick):
     result.append(p(C.HTTPS, dict(responded=True if good else None,
         authenticated=True if good else None, tls_verified=True if good else None), code, outcome))
     inactive = (census.get('monitoring_census_complete') is True
-                and census.get('application_count') == 0 and census.get('monitoring_count') == 0
-                and census.get('pipe_namespace') == {'available':True,'matching_count':0})
+                and census.get('application_count') == 0 and census.get('monitoring_count') == 0)
+    pipe_inactive=inactive and census.get('pipe_namespace') == {'available':True,'matching_count':0}
     detail = D.NORMAL_INACTIVE if inactive else D.PASSIVE_UNVERIFIED
-    result.append(p(C.IPC,dict(connected=False if inactive else None,
-        peer_validated=None,contract_version=1),detail,O.UNAVAILABLE if inactive else O.UNKNOWN))
+    result.append(p(C.IPC,dict(connected=False if pipe_inactive else None,
+        peer_validated=None,contract_version=1),D.NORMAL_INACTIVE if pipe_inactive else D.PASSIVE_UNVERIFIED,
+        O.UNAVAILABLE if pipe_inactive else O.UNKNOWN))
     for component in (C.CPU,C.GPU,C.RAM):
         result.append(p(component,dict(collector_running=False if inactive else None,
             sample_valid=None,sample_stale=None), detail,O.UNAVAILABLE if inactive else O.UNKNOWN))

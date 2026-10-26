@@ -34,6 +34,20 @@ def digest(value):
 def norm(value): return os.path.normcase(os.path.abspath(value))
 
 
+def launcher_arguments(args,python_images,launcher):
+    """Allow only the two fixed Python invocation forms documented locally.
+
+    The validated bootstrap uses -I -B before the script. These are interpreter
+    flags, not agent arguments. No -c, -m, other flags or arbitrary script passes.
+    """
+    if not args or norm(args[0]) not in python_images:return False,False
+    rest=args[1:]
+    if rest[:2]==['-I','-B']:rest=rest[2:]
+    valid=(len(rest) in (1,2) and norm(rest[0])==launcher
+           and (len(rest)==1 or rest[1]=='--worker'))
+    return valid,valid and len(rest)==2
+
+
 def validate_chain(rows,listeners,own):
     """Only retained native identities and exact argument allowlists qualify."""
     if len(listeners)!=1 or not rows or len(rows)>4:return False
@@ -167,11 +181,10 @@ class WindowsReaders:
                 raise ValueError('process_identity_unverified')
             if agent:
                 args=self.argv(command)
-                approved=(identity['image'] in python_images and len(args) in (2,3)
-                    and norm(args[0]) in python_images and norm(args[1])==launcher
-                    and (len(args)==2 or args[2]=='--worker'))
+                approved,worker=launcher_arguments(args,python_images,launcher)
+                approved=approved and identity['image'] in python_images
                 agents.append({**identity,'parent':int(r['ParentProcessId']),
-                    'worker':len(args)==3 and args[-1]=='--worker','approved':approved,'alive':True})
+                    'worker':worker,'approved':approved,'alive':True})
             apps+=int(app);monitoring+=int(monitor)
         import ipaddress
         listeners=[]
@@ -184,7 +197,8 @@ class WindowsReaders:
         if configured:
             try:
                 args=self.argv(value)
-                run_target=(len(args)==2 and norm(args[0]) in python_images and norm(args[1])==launcher)
+                approved,worker=launcher_arguments(args,python_images,launcher)
+                run_target=approved and not worker
             except ValueError:pass
         return {'agent_verified':validate_chain(agents,listeners,self.api.own),
             'agent_identity_digest':digest(sorted(agents,key=lambda r:r['pid'])),'agent_processes':[
