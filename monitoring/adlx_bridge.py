@@ -118,20 +118,27 @@ class LineTransport:
         self.process.stdout.close();return True
 
 
-def launch_native(*,diagnostics=False,owner_handle=None):
+def launch_native(*,diagnostics=False,owner_handle=None,application=False):
     """Fixed x64 build path, no user paths/arguments or shell; source/hash checked."""
-    if type(diagnostics) is not bool:raise ContractError('boolean_required')
+    if type(diagnostics) is not bool or type(application) is not bool:raise ContractError('boolean_required')
     if owner_handle is not None and (type(owner_handle) is not int or not 0<owner_handle<2**63):
         raise ContractError('invalid_owner_handle')
-    build=ROOT/'.cache/adlx-build';exe=build/'bridge.exe'
+    if application:
+        if owner_handle is None or diagnostics:raise BridgeError('owned_application_required')
+        from .gpu_development import validate_gpu_bundle
+        build=validate_gpu_bundle(ROOT)
+    else:
+        if (ROOT/'BUNDLED-MONITORING.json').exists():raise BridgeError('owned_application_required')
+        build=ROOT/'.cache/adlx-build'
+    exe=build/'bridge.exe'
     info=json.loads((build/'bridge-build.json').read_text())
     if (info.get('mock') is not False or info.get('verifyOnly') is not False or info.get('sdkCommit')!='66557d410ce4c463f5f7106597d94f53dd84bc82'
             or exe.is_symlink() or not exe.is_file()
             or exe.resolve()!=exe.absolute()
             or hashlib.sha256(exe.read_bytes()).hexdigest()!=info.get('exeSha256')
-            or hashlib.sha256((ROOT/'native/adlx/bridge.cpp').read_bytes()).hexdigest()!=info.get('sourceSha256')):
+            or (not application and hashlib.sha256((ROOT/'native/adlx/bridge.cpp').read_bytes()).hexdigest()!=info.get('sourceSha256'))):
         raise BridgeError('worker_integrity_failed')
-    command=[str(exe)]+(['--diagnostics'] if diagnostics else [])
+    command=[str(exe)]+(['--application'] if application else ['--diagnostics'] if diagnostics else [])
     options={}
     if owner_handle is not None:
         if os.get_handle_inheritable(owner_handle):raise BridgeError('unexpected_owner_inheritance')
@@ -322,5 +329,5 @@ class NativeAdapter:
         return result
 
 
-def real_adapter(*,diagnostics=False,owner_handle=None):
-    return NativeAdapter(LineTransport(lambda:launch_native(diagnostics=diagnostics,owner_handle=owner_handle)),diagnostics=diagnostics)
+def real_adapter(*,diagnostics=False,owner_handle=None,application=False):
+    return NativeAdapter(LineTransport(lambda:launch_native(diagnostics=diagnostics,owner_handle=owner_handle,application=application)),diagnostics=diagnostics)

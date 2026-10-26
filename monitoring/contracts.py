@@ -128,8 +128,15 @@ class Observation:
     metric_id: str
     value: int | float | None
     state: Availability = Availability.AVAILABLE
+    # Additive v1 provenance: age of the SDK sample at validated receipt, not UTC.
+    ingress_age_seconds: float | None = None
 
     def validate(self, spec):
+        if self.ingress_age_seconds is not None and (
+                not 0 <= finite(self.ingress_age_seconds) <= 1.5
+                or not self.metric_id.startswith('gpu.adlx.')
+                or self.state != Availability.AVAILABLE):
+            raise ContractError('invalid_ingress_age')
         if self.metric_id != spec.metric_id or not isinstance(self.state, Availability):
             raise ContractError('invalid_observation')
         if self.state == Availability.STALE:
@@ -176,7 +183,12 @@ class Sample:
         if stale and state == Availability.AVAILABLE:
             state = Availability.STALE
         valid = state == Availability.AVAILABLE
-        return {**spec.as_dict(), 'source': self.source, 'data_kind': self.data_kind.value,
+        provenance = {}
+        if self.observation.ingress_age_seconds is not None:
+            ingress = self.observation.ingress_age_seconds
+            provenance = {'ingress_age_seconds': ingress,
+                          'information_age_seconds': round(age + ingress, 6) if age is not None else None}
+        return {**spec.as_dict(), **provenance, 'source': self.source, 'data_kind': self.data_kind.value,
                 'value': self.observation.value if valid else None, 'state': state.value,
                 'valid': valid, 'stale': stale,
                 'collected_at': utc_text(self.collected_at) if self.collected_at else None,

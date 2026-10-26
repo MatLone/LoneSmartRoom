@@ -56,6 +56,10 @@ bool runtime_facts(bool fixed_path,bool x64,bool signature,const std::string& sh
 bool memory_ok(uint64_t bytes){return bytes<=512ULL*1024*1024;}
 bool history_warming(ADLX_RESULT result,uint64_t since_start){return since_start<=5000&&(result==ADLX_NOT_FOUND||result==ADLX_PENDING_OPERATION);}
 struct Backend {virtual ~Backend()=default;virtual Device open()=0;virtual Frame latest()=0;virtual bool close()=0;};
+// Owned application sessions have an inactivity watchdog, not a total read budget.
+// EOF is still authoritative. No restart/kill; bounded development is unchanged.
+bool session_live(bool application,uint64_t elapsed,uint64_t idle){return application?idle<30000:elapsed<82000;}
+bool read_budget(bool application,unsigned requests){return application||requests<=45;}
 #ifndef LONE_ADLX_MOCK
 template<class T>struct Ref{
     T* p=nullptr;~Ref(){reset();}Ref()=default;Ref(const Ref&)=delete;Ref& operator=(const Ref&)=delete;
@@ -225,7 +229,11 @@ void self_test(){
     source="unverified";age_at(-1,1000,1000,1000,source,&probe);assert(probe.rule=="timestamp_negative");
     source="unverified";age_at(1790000000,100000,1790000000000ULL,13434473600000ULL,source,&probe);assert(probe.matches==0);
     source="unverified";assert(age_at(0,0,10000000,10000000000,source,&probe)==0);
-    emit("{\"ok\":true,\"checks\":31,\"simulated\":true}");
+    need(session_live(true,86400000,9999),"permanent_lifetime");
+    need(!session_live(true,100,30000),"idle_watchdog");
+    need(!session_live(false,82000,0),"bounded_lifetime");
+    need(read_budget(true,1000000)&&!read_budget(false,46),"request_budget");
+    emit("{\"ok\":true,\"checks\":35,\"simulated\":true}");
 }
 #endif
 std::string ready(const Device& d,bool simulated,bool diagnostics=false){
@@ -249,17 +257,19 @@ std::string frame_json(const Frame& f,bool diagnostics=false){
     }
     s<<'}';return s.str();
 }
-int run(Backend& backend,bool simulated,bool diagnostics=false){
+int run(Backend& backend,bool simulated,bool diagnostics=false,bool application=false){
     uint64_t start=GetTickCount64(),last=0;unsigned requests=0;int result=0;
     try{
         need(GetFileType(GetStdHandle(STD_INPUT_HANDLE))==FILE_TYPE_PIPE&&GetFileType(GetStdHandle(STD_OUTPUT_HANDLE))==FILE_TYPE_PIPE,"private_transport_required");
         emit(ready(backend.open(),simulated,diagnostics));std::string command;HANDLE input=GetStdHandle(STD_INPUT_HANDLE);bool done=false;
-        while(!done&&GetTickCount64()-start<82000){
+        uint64_t heartbeat=GetTickCount64();
+        while(!done&&session_live(application,GetTickCount64()-start,GetTickCount64()-heartbeat)){
             DWORD available=0;if(!PeekNamedPipe(input,nullptr,0,nullptr,&available,nullptr))break;if(!available){Sleep(25);continue;}
             char ch=0;DWORD got=0;if(!ReadFile(input,&ch,1,&got,nullptr)||!got)break;if(ch=='\r')continue;
             if(ch!='\n'){need(command.size()<32,"command_limit");command+=ch;continue;}
             if(command=="stop"){done=true;continue;}need(command=="latest","invalid_command");command.clear();
-            auto now=GetTickCount64();if(last&&now-last<1000){error("rate_limited");continue;}need(++requests<=45,"request_limit");last=now;
+            auto now=GetTickCount64();if(last&&now-last<1000){error("rate_limited");continue;}
+            if(!application)++requests;need(read_budget(application,requests),"request_limit");last=now;heartbeat=now;
             PROCESS_MEMORY_COUNTERS memory{};memory.cb=sizeof(memory);need(GetProcessMemoryInfo(GetCurrentProcess(),&memory,sizeof(memory))!=0,"resource_query_failed");
             need(memory_ok(memory.WorkingSetSize),"memory_budget_exceeded");
             try{emit(frame_json(backend.latest(),diagnostics));}catch(const Fault& f){error(f.code);}
@@ -277,11 +287,12 @@ int main(int argc,char** argv){
     Fake backend(argc>=2?argv[1]:"normal",diagnostics);return run(backend,true,diagnostics);
 #else
     bool diagnostics=argc==2&&std::string(argv[1])=="--diagnostics";
-    if(argc!=1&&!diagnostics){error("arguments_refused");return 1;}Adlx backend;
+    bool application=argc==2&&std::string(argv[1])=="--application";
+    if(argc!=1&&!diagnostics&&!application){error("arguments_refused");return 1;}Adlx backend;
 #ifdef LONE_ADLX_VERIFY
     try{backend.verify_runtime();return 0;}catch(const Fault& f){error(f.code);return 1;}
 #else
-    return run(backend,false,diagnostics);
+    return run(backend,false,diagnostics,application);
 #endif
 #endif
 }

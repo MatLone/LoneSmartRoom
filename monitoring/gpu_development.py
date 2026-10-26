@@ -1,5 +1,6 @@
 """Bounded development-only GPU ownership/lifetime. No native calls on import."""
 import hashlib
+import json
 from subprocess import TimeoutExpired
 import time
 
@@ -7,9 +8,34 @@ import time
 def validate_gpu_mode(root, enabled, application, simulated, duration):
     if type(enabled) is not bool:
         raise ValueError('boolean_required')
-    if enabled and (application or simulated or (root/'BUNDLED-MONITORING.json').exists()
-                    or type(duration) is not int or not 1<=duration<=70):
-        raise PermissionError('gpu_requires_bounded_real_development')
+    if not enabled:return
+    if application and not simulated and duration is None:
+        validate_gpu_bundle(root)
+        return
+    if simulated or application or (root/'BUNDLED-MONITORING.json').exists() or type(duration) is not int or not 1<=duration<=70:
+        raise PermissionError('gpu_requires_owned_real_context')
+
+
+def validate_gpu_bundle(root):
+    """Fixed bundle paths; Electron verifies the complete manifest before bootstrap.
+
+    Recheck native receipt/hash here before spawn. No renderer/env-selected paths.
+    This is integrity checking, not isolation against a malicious same-user process.
+    """
+    policy_path=root/'BUNDLED-MONITORING.json'
+    if not policy_path.is_file() or policy_path.is_symlink():raise PermissionError('gpu_bundle_required')
+    policy=json.loads(policy_path.read_text())
+    if policy.get('schema')!=1 or policy.get('realOnly') is not True or policy.get('gpuReadOnly') is not True:
+        raise PermissionError('gpu_bundle_policy')
+    build=root/'native/adlx';exe=build/'bridge.exe'
+    receipt=json.loads((build/'bridge-build.json').read_text())
+    if (exe.is_symlink() or exe.resolve()!=exe.absolute() or not exe.is_file()
+            or receipt.get('mock') is not False or receipt.get('verifyOnly') is not False
+            or receipt.get('sdkCommit')!='66557d410ce4c463f5f7106597d94f53dd84bc82'
+            or hashlib.sha256(exe.read_bytes()).hexdigest()!=receipt.get('exeSha256')
+            or receipt.get('exeSha256')!=policy.get('nativeSha256')):
+        raise PermissionError('gpu_bundle_integrity')
+    return build
 
 
 def claim_gpu_owner(api):

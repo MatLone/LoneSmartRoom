@@ -58,7 +58,7 @@ def main():
             if args.gpu_development:
                 gpu_owner=claim_gpu_owner(api)  # Refuse duplicates before constructing/loading ADLX.
                 from monitoring.adlx_bridge import real_adapter
-                gpu_adapter=real_adapter(owner_handle=gpu_owner)  # Only the owned lease handle is inherited; diagnostics OFF.
+                gpu_adapter=real_adapter(owner_handle=gpu_owner,application=args.application)  # Only owned lease + stdio; diagnostics OFF.
             collector = create_basic_collector(sensors,gpu_adapter=gpu_adapter)
         activity=ReadActivity(collector,time.monotonic) if args.gpu_development else None
         server = PipeServer(api, collector, args.session, parent, expected, stop, duration=duration, simulated=args.simulated,activity=activity)

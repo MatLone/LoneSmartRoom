@@ -1,6 +1,8 @@
 """GPU + basic + cache/IPC integration with synthetic providers and process handles."""
 from dataclasses import replace
 import json
+import hashlib
+from tempfile import TemporaryDirectory
 from pathlib import Path
 from subprocess import TimeoutExpired
 from unittest.mock import Mock,patch
@@ -11,7 +13,7 @@ from monitoring.adlx_bridge import BridgeError,launch_native
 from monitoring.adlx_provider import Capability,Reading,basic_v1_projection
 from monitoring.contracts import Availability as A
 from monitoring.development_collector import create_basic_collector
-from monitoring.gpu_development import validate_gpu_mode,claim_gpu_owner,finish_gpu,ReadActivity
+from monitoring.gpu_development import validate_gpu_mode,validate_gpu_bundle,claim_gpu_owner,finish_gpu,ReadActivity
 from monitoring.ipc import LocalReadService,LocalAccessPolicy,PeerEvidence,MAX_RESPONSE_BYTES
 from monitoring.windows_basic import VolumeSpace,DiskCounter
 from monitoring.pipe_server import PipeServer
@@ -87,6 +89,25 @@ class GpuIntegrationTests(unittest.TestCase):
         self.assertEqual(after['collected_at'],before['collected_at'])
         self.assertEqual((after['value'],after['state'],after['valid']),(None,'stale',False))
 
+    def test_additive_ingress_and_information_age_not_cache_age(self):
+        self.gpu.frame_hook=lambda f:replace(f,age_seconds=.5)
+        first=self.sample()['gpu.adlx.utilization']
+        self.assertEqual(first['ingress_age_seconds'],.5)
+        self.assertEqual(first['information_age_seconds'],first['age_seconds']+.5)
+        self.clock.advance(2.69)
+        cached=by_id(self.collector.snapshot())['gpu.adlx.utilization']
+        self.assertEqual(cached['age_seconds'],2.69)
+        self.assertEqual(cached['information_age_seconds'],3.19)
+        self.assertEqual(cached['collected_at'],first['collected_at'])
+
+    def test_long_owned_session_no_duplicate_provider_and_clean_stop(self):
+        for n in range(500):self.sample(2)
+        self.assertEqual(self.gpu.calls.count('open'),1)
+        self.assertEqual(self.gpu.calls.count('latest'),500)
+        self.assertLessEqual(self.collector.cache.sample_count,29*120)
+        self.assertTrue(self.collector.stop(2).clean)
+        self.assertEqual(self.gpu.calls.count('close'),1)
+
     def test_inactive_cadences_no_new_gpu_process(self):
         self.sample();self.collector.set_active(False);s=self.sample(5)
         self.assertEqual(self.gpu.calls.count('latest'),1)
@@ -132,6 +153,40 @@ class GpuIntegrationTests(unittest.TestCase):
 
 
 class OwnershipTests(unittest.TestCase):
+    def test_packaged_gpu_requires_integrity_and_real_owned_context(self):
+        test_root=Path(__file__).resolve().parents[2]/'.cache/tests';test_root.mkdir(exist_ok=True,parents=True)
+        with TemporaryDirectory(dir=test_root) as directory:
+            root=Path(directory);build=root/'native/adlx';build.mkdir(parents=True)
+            exe=build/'bridge.exe';exe.write_bytes(b'not executable - test substitute')
+            digest=hashlib.sha256(exe.read_bytes()).hexdigest()
+            receipt={'mock':False,'verifyOnly':False,'sdkCommit':'66557d410ce4c463f5f7106597d94f53dd84bc82','exeSha256':digest}
+            (build/'bridge-build.json').write_text(json.dumps(receipt))
+            policy={'schema':1,'version':'2.0.0-dev.6','realOnly':True,'gpuReadOnly':True,'nativeSha256':digest}
+            (root/'BUNDLED-MONITORING.json').write_text(json.dumps(policy))
+            validate_gpu_mode(root,True,True,False,None)
+            self.assertEqual(validate_gpu_bundle(root),build)
+            for args in ((True,False,False,70),(True,True,True,None),(True,True,False,70)):
+                with self.assertRaises(PermissionError):validate_gpu_mode(root,*args)
+            exe.write_bytes(b'tampered')
+            with self.assertRaises(PermissionError):validate_gpu_bundle(root)
+            with patch('monitoring.adlx_bridge.subprocess.Popen') as spawn:
+                with self.assertRaises(BridgeError):launch_native(application=True)
+                with self.assertRaises(BridgeError):launch_native(application=True,owner_handle=123,diagnostics=True)
+                spawn.assert_not_called()
+
+    def test_bundle_native_spawn_fixed_application_flag_inherited_lease_only(self):
+        from monitoring.adlx_bridge import ROOT
+        with patch('monitoring.gpu_development.validate_gpu_bundle',return_value=ROOT/'.cache/adlx-build'),\
+             patch('monitoring.adlx_bridge.os.get_handle_inheritable',return_value=False),\
+             patch('monitoring.adlx_bridge.os.set_handle_inheritable') as inherit,\
+             patch('monitoring.adlx_bridge.subprocess.Popen') as spawn:
+            launch_native(application=True,owner_handle=123)
+            command,=spawn.call_args.args
+            self.assertEqual(command,[str(ROOT/'.cache/adlx-build/bridge.exe'),'--application'])
+            self.assertEqual(spawn.call_args.kwargs['startupinfo'].lpAttributeList,{'handle_list':[123]})
+            self.assertFalse(spawn.call_args.kwargs['shell'])
+            self.assertEqual(inherit.call_args_list[-1].args,(123,False))
+
     def test_bounded_development_only_not_packaged_or_simulated(self):
         root=Path(__file__).resolve().parents[2]
         validate_gpu_mode(root,True,False,False,70)

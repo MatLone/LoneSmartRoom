@@ -40,7 +40,7 @@ class BridgeTests(unittest.TestCase):
 
     def test_native_policy_self_tests_no_adlx_loaded(self):
         p=mock_process('--self-test');data=p.stdout.readline(MAX_LINE);p.wait(timeout=3);p.stdin.close();p.stdout.close()
-        value=json.loads(data);self.assertTrue(value['ok']);self.assertEqual(value['checks'],31)
+        value=json.loads(data);self.assertTrue(value['ok']);self.assertEqual(value['checks'],35)
 
     def test_compiled_mock_contains_no_runtime_loader_or_adlx_name(self):
         data=(BUILD/'bridge-mock.exe').read_bytes().lower()

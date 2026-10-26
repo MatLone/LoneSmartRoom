@@ -189,7 +189,8 @@ class AdlxProvider:
                             for key in dynamic:
                                 try:
                                     value=self._validate(key,frame.readings.get(key,Reading(A.UNAVAILABLE,None)))
-                                    results[key]=O(key,value.value,value.state)
+                                    results[key]=O(key,value.value,value.state,
+                                                   frame.age_seconds if value.state==A.AVAILABLE else None)
                                 except Exception:
                                     results[key]=O(key,None,A.ERROR);self._event('invalid_reading');self._note('provider_reading_invalid',key)
                             used=frame.readings.get('gpu.adlx.vram_used_mb')
