@@ -64,6 +64,8 @@ class DetailCode(StrEnum):
     STARTUP_BOOTSTRAP_SEEN = 'startup_bootstrap_seen'
     STARTUP_EXITED = 'startup_agent_returned'
     STARTUP_EXISTING_INSTANCE = 'startup_existing_instance'
+    NORMAL_INACTIVE = 'application_normally_inactive'
+    PASSIVE_UNVERIFIED = 'passive_evidence_unavailable'
 
 
 FACTS = {
@@ -117,7 +119,7 @@ class Probe:
             raise DiagnosticError('invalid_component_or_outcome')
         if type(self.schema_version) is not int or self.schema_version != SCHEMA_VERSION:
             raise DiagnosticError('incompatible_contract')
-        if self.evidence_kind != 'simulated':
+        if self.evidence_kind not in ('simulated', 'observed'):
             raise DiagnosticError('operational_providers_not_authorized')
         if self.detail_code is not None and type(self.detail_code) is not DetailCode:
             raise DiagnosticError('invalid_detail_code')

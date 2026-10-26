@@ -70,12 +70,15 @@ def classify(probe):
 
 
 class DiagnosticEngine:
-    """Injected simulated providers only; collection occurs only on explicit calls.
+    """Injected providers, simulated by default; collection requires explicit calls.
 
     Provider code shares this process' authority. This class is not a sandbox for
     malicious Python providers. The test runner separately denies external I/O.
     """
-    def __init__(self, providers=()):
+    def __init__(self, providers=(), *, evidence_kind='simulated'):
+        if evidence_kind not in ('simulated', 'observed'):
+            raise DiagnosticError('invalid_evidence_kind')
+        self.evidence_kind = evidence_kind
         self.providers = tuple(islice(providers, len(Component) + 1))
         if len(self.providers) > len(Component):
             raise DiagnosticError('too_many_providers')
@@ -83,7 +86,7 @@ class DiagnosticEngine:
         for provider in self.providers:
             if type(provider.component) is not Component or provider.component in self._providers:
                 raise DiagnosticError('duplicate_or_invalid_provider')
-            if provider.evidence_kind != 'simulated':
+            if provider.evidence_kind != self.evidence_kind:
                 raise DiagnosticError('operational_providers_not_authorized')
             self._providers[provider.component] = provider
         self._latest = {}
@@ -108,7 +111,8 @@ class DiagnosticEngine:
                     probe = provider.read()
                     if probe is None:
                         continue  # No new evidence; never renew an old timestamp.
-                    if type(probe) is not Probe or probe.component != component:
+                    if (type(probe) is not Probe or probe.component != component
+                            or probe.evidence_kind != self.evidence_kind):
                         raise DiagnosticError('invalid_observation')
                     if probe.observed_monotonic > monotonic or probe.observed_at > now:
                         self._latest[component] = ('invalid_time', None)
@@ -154,12 +158,12 @@ class DiagnosticEngine:
                     state, code = classify(probe)
             records.append({'component':component.value,'state':state,'code':code,
                             'detail_code':probe.detail_code.value if probe and probe.detail_code else None,
-                            'evidence_kind':'simulated','observed_at':stamp(probe.observed_at) if probe else None,
+                            'evidence_kind':self.evidence_kind,'observed_at':stamp(probe.observed_at) if probe else None,
                             'age_seconds':round(age, 3) if age is not None else None,
                             'valid':state == 'healthy','freshness_seconds':ttl,
                             'last_communication':stamp(self._last_good_https) if component == Component.HTTPS and self._last_good_https else None})
         report={'schema_version':SCHEMA_VERSION,'generated_at':stamp(now),'mode':mode,
-                'simulation':True,'repair_capability':False,'power_state':'unknown','checks':records}
+                'simulation':self.evidence_kind == 'simulated','repair_capability':False,'power_state':'unknown','checks':records}
         if len(json.dumps(report,separators=(',',':')).encode('utf-8')) > MAX_REPORT_BYTES:
             raise DiagnosticError('report_too_large')
         return report

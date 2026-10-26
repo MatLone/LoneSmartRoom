@@ -12,6 +12,8 @@ TITLES={Component.HTTPS:'Agente HTTPS',Component.LISTENER:'Listener esperado · 
 LABELS={'healthy':'Saudável','offline':'Indisponível','unknown':'Indisponível',
         'unavailable':'Indisponível','unsupported':'Indisponível','stale':'Desatualizado','error':'Falha'}
 DETAILS={
+ D.NORMAL_INACTIVE:'Aplicativo Windows fechado e componentes ausentes. Inatividade normal; não é falha comprovada.',
+ D.PASSIVE_UNVERIFIED:'Sem recibo atual acessível por uma interface de leitura autorizada. Nenhum componente foi iniciado.',
  D.HTTPS_OK:'Resposta autenticada, identidade TLS e pin confirmados pelo recibo.',
  D.CONNECTION_FAILED:'Sem resposta atual do agente. Isso não confirma PC desligado.',
  D.TLS_FAILED:'A identidade TLS não foi confirmada. A conexão não deve ser aceita.',
@@ -61,10 +63,11 @@ FALLBACK_TEXT={'expected_listener':'Listener esperado confirmado no recibo; HTTP
  'bootstrap_observed':'Bootstrap observado; não confirma disponibilidade atual do HTTPS.'}
 
 
-def present(report):
+def present(report, *, allow_observed=False):
     exact(report,('schema_version','generated_at','mode','simulation','repair_capability','power_state','checks'))
     if (type(report['schema_version']) is not int or report['schema_version']!=1
-            or report['simulation'] is not True or report['repair_capability'] is not False
+            or type(report['simulation']) is not bool
+            or (not report['simulation'] and not allow_observed) or report['repair_capability'] is not False
             or report['power_state']!='unknown' or report['mode'] not in ('active','inactive')):
         raise DiagnosticError('invalid_diagnostic_report')
     utc_string(report['generated_at'])
@@ -75,7 +78,8 @@ def present(report):
         exact(r,('component','state','code','evidence_kind','observed_at','age_seconds','valid','freshness_seconds','last_communication'),('detail_code',))
         try:component=Component(r['component'])
         except (ValueError,TypeError):raise DiagnosticError('invalid_presented_component') from None
-        if component in seen or type(r['state']) is not str or r['state'] not in LABELS or r['evidence_kind']!='simulated':
+        kind = 'simulated' if report['simulation'] else 'observed'
+        if component in seen or type(r['state']) is not str or r['state'] not in LABELS or r['evidence_kind']!=kind:
             raise DiagnosticError('invalid_presented_state')
         seen.add(component);boolean(r['valid'])
         if r['valid']!=(r['state']=='healthy'):raise DiagnosticError('invalid_presented_validity')
@@ -95,9 +99,11 @@ def present(report):
             except (ValueError,TypeError):raise DiagnosticError('invalid_presented_detail') from None
         label=LABELS[r['state']];message=DETAILS.get(detail,FALLBACK_TEXT.get(r['code'],'Sem evidência suficiente. Estado do componente não confirmado.'))
         verification='Verificado na simulação' if r['valid'] else 'Não confirmado'
+        if r['valid'] and not report['simulation']:verification='Verificado em leitura passiva'
         if r['code'] in ERROR_CODES:
             label='Falha';message='Falha na verificação; o estado do componente não foi confirmado. Sem repetição ou reparo automático.'
         elif r['state']=='unknown' or r['code'] in PRIMARY_UNKNOWN:
+            if not report['simulation']:label='Não verificado'
             verification='Não verificado'
             message='Evidência inconclusiva; não confirma indisponibilidade do PC.'
             if detail in (D.STARTUP_DISPATCH_UNCONFIRMED,D.STARTUP_NOT_VERIFIED,D.STARTUP_EXISTING_INSTANCE):message=DETAILS[detail]
@@ -105,8 +111,8 @@ def present(report):
         cards.append({'component':component.value,'title':TITLES[component],'label':label,'raw_state':r['state'],
                       'verification':verification,'message':message,'code':r['code'],'detail_code':detail.value if detail else None,
                       'observed_at':r['observed_at'],'age_seconds':r['age_seconds'],
-                      'last_communication':r['last_communication'],'evidence_kind':'simulated'})
-    result={'schema_version':1,'title':'Autodiagnóstico · PRÉVIA SIMULADA','simulation':True,'read_only':True,
+                      'last_communication':r['last_communication'],'evidence_kind':kind})
+    result={'schema_version':1,'title':'Autodiagnóstico · '+('PRÉVIA SIMULADA' if report['simulation'] else 'LEITURA PASSIVA'),'simulation':report['simulation'],'read_only':True,
             'repair_capability':False,'generated_at':report['generated_at'],'cards':cards}
     if len(json.dumps(result).encode('utf-8'))>16384:raise DiagnosticError('diagnostic_view_limit')
     return result
