@@ -1,7 +1,7 @@
 {
   "name": "lone-smart-room",
   "productName": "Lone Smart Room",
-  "version": "2.0.0-dev.6",
+  "version": "2.0.0-dev.7",
   "private": true,
   "description": "Lone Smart Room: dashboard, widget, bandeja e monitoramento local somente leitura",
   "main": "main.cjs",
