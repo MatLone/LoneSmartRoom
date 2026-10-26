@@ -35,16 +35,16 @@ function contract(){
   const ram=copy();const stamp=new Date().toISOString();ram.metrics.filter(m=>m.id.startsWith('ram.')).forEach(m=>m.collected_at=stamp);ram.metrics.find(m=>m.id==='ram.used').value=7*1024**3;
   assert.throws(()=>model.normalize(ram));checks++;
 }
-function fixture(){
+function fixture(options={}){
   const child=new EventEmitter();child.pid=123;child.exitCode=null;child.stdout=new EventEmitter();child.stdin=new EventEmitter();child.requests=[];
   child.stdin.write=value=>{child.requests.push(value);return true;};
   child.stdin.end=()=>{emit({v:1,event:'stopped',clean:true,worker:{ok:true}});child.exitCode=0;child.emit('exit',0);};
-  const events=[],timers=new Map();let clock=0,next=0,spawnArgs;
-  const host=createMonitoringHost({root,runId:'a'.repeat(32),publish:v=>events.push(v),now:()=>clock,
-    spawnChild:(...args)=>{spawnArgs=args;return child;},interval:fn=>{timers.set(++next,fn);return next;},clear:id=>timers.delete(id),
+  const events=[],timers=new Map(),periods=new Map();let clock=0,next=0,spawnArgs;
+  const host=createMonitoringHost({root,runId:'a'.repeat(32),...options,publish:v=>events.push(v),now:()=>clock,
+    spawnChild:(...args)=>{spawnArgs=args;return child;},interval:(fn,ms)=>{timers.set(++next,fn);periods.set(next,ms);return next;},clear:id=>{timers.delete(id);periods.delete(id);},
     timeout:fn=>{timers.set(++next,fn);return next;},cancel:id=>timers.delete(id)});
   function emit(v){child.stdout.emit('data',Buffer.from(JSON.stringify(v)+'\n'));}
-  return {host,child,events,timers,emit,advance:n=>clock+=n,args:()=>spawnArgs};
+  return {host,child,events,timers,periods,emit,advance:n=>clock+=n,args:()=>spawnArgs};
 }
 async function lifecycle(){
   const f=fixture();f.host.start();const args=f.args();

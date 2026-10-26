@@ -16,14 +16,14 @@ function rendererFixture(){
   }
   const make=(tag,cls)=>new Node(tag,cls),cards=Array.from({length:4},()=>{const n=make('article','sensor');n.append(make('div','value'),make('small'));return n;});
   const minis=Array.from({length:4},()=>{const n=make('div','mini-sensor');n.append(make('strong'),make('small'));return n;});
-  const storage=make('section'),notice=make('div'),body=make('div'),listeners=new Map();
-  const document={hidden:false,visibilityState:'visible',createElement:make,getElementById:id=>({monitoringNotice:notice,storageMetrics:storage,dialogBody:body}[id]||null),
+  const storage=make('section'),gpu=make('section'),notice=make('div'),body=make('div'),listeners=new Map();
+  const document={hidden:false,visibilityState:'visible',createElement:make,addEventListener:(name,fn)=>listeners.set(name,fn),getElementById:id=>({monitoringNotice:notice,storageMetrics:storage,gpuMetrics:gpu,dialogBody:body}[id]||null),
     querySelector:()=>null,querySelectorAll:s=>s==='#sensorGrid .sensor'?cards:s==='#miniSensors .mini-sensor'?minis:[]};
   const window={innerWidth:1360,loneMetricModel:require('../../apps/windows-ui/monitoring-model.js'),
     loneDesktop:{onMetrics:fn=>receive=fn,getMetrics:()=>new Promise(()=>{})},addEventListener:(name,fn)=>listeners.set(name,fn)};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../apps/windows-ui/monitoring-renderer.js'),'utf8'),{
     window,document,performance:{now:()=>clock},setInterval:(fn,ms)=>{tick=fn;timers.push(ms);return 1;},clearInterval(){},queueMicrotask:fn=>fn()});
-  return {cards,minis,storage,notice,document,window,timers,listeners,send:receive,tick:()=>tick(),clock:n=>clock=n,
+  return {cards,minis,storage,gpu,notice,document,window,timers,listeners,send:receive,tick:()=>tick(),clock:n=>clock=n,
     writes:()=>writes,reset:()=>writes=0};
 }
 module.exports={rendererFixture};

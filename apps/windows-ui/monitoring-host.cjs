@@ -4,15 +4,17 @@ const fs=require('node:fs'),path=require('node:path'),{spawn}=require('node:chil
 const model=require('./monitoring-model.js');
 const runtime=require('./monitoring-runtime.cjs');
 const MAX_LINE=132096;
-function createMonitoringHost({root,runId,simulated=false,packaged=false,resourcesPath,version,resolveLayout,
+function createMonitoringHost({root,runId,simulated=false,packaged=false,gpu=false,resourcesPath,version,resolveLayout,
   publish=()=>{},spawnChild=spawn,now=()=>performance.now(),
   interval=setInterval,clear=clearInterval,timeout=setTimeout,cancel=clearTimeout}) {
   if(!/^[a-f0-9]{32}$/.test(runId))throw Error('invalid_development_session');
   if(packaged&&simulated)throw Error('simulated_packaged_monitoring_forbidden');
+  if(typeof gpu!=='boolean'||(gpu&&(packaged||simulated)))throw Error('gpu_development_only');
+  let active=true;
   let child=null,buffer=Buffer.alloc(0),timer=null,deadline=null,pending=false,closing=false,last=null,lastAt=0,requestAt=0;
   let status='connecting',error=null,stopPromise=null,stopResolve=null,startedAt=0,attempted=false,stopTimedOut=false;
   const lastValid=new Map(),diagnostics={bridgePid:null,collectorPid:null,childPid:null,responses:0,reconnections:0,cleanStop:false,workerExited:false};
-  function view(){return {v:1,connection:status,simulated,error,snapshot:last?model.age(last,(now()-lastAt)/1000):null,
+  function view(){return {v:1,connection:status,simulated,gpu_enabled:gpu,error,snapshot:last?model.age(last,(now()-lastAt)/1000):null,
     last_valid_at:Object.fromEntries(lastValid)};}
   function send(){publish(view());}
   function fail(code){status='disconnected';error=code;pending=false;send();}
@@ -36,7 +38,7 @@ function createMonitoringHost({root,runId,simulated=false,packaged=false,resourc
       pending=false;
       if(!value.body?.ok)return fail(value.body?.error==='rate_limited'?'rate_limited':'read_unavailable');
       try{
-        const snapshot=model.normalize(value.body.snapshot,{simulated});
+        const snapshot=model.normalize(value.body.snapshot,{simulated,gpu});
         if(last&&snapshot.sequence<last.sequence)throw Error('sequence_regression');
         if(status==='disconnected')diagnostics.reconnections++;
         last=snapshot;lastAt=now();status='connected';error=null;diagnostics.responses++;
@@ -57,6 +59,7 @@ function createMonitoringHost({root,runId,simulated=false,packaged=false,resourc
     if(![python,script,cwd].every(p=>typeof p==='string'&&path.isAbsolute(p)))throw Error('invalid_runtime_layout');
     const args=['-I','-S','-B',script,'--session',runId,...(packaged?['--application','--owner-pid',String(process.pid)]:['--duration','70'])];
     if(simulated)args.push('--simulated');
+    if(gpu)args.push('--gpu-development');
     const env={};for(const key of ['SystemRoot','WINDIR','TEMP','TMP','USERPROFILE','LOCALAPPDATA','APPDATA','PATH'])if(process.env[key])env[key]=process.env[key];
     startedAt=now();
     child=spawnChild(python,args,{cwd,shell:false,windowsHide:true,env,stdio:['pipe','pipe','ignore']});
@@ -94,6 +97,13 @@ function createMonitoringHost({root,runId,simulated=false,packaged=false,resourc
       child.stdin.end(); // Lifetime EOF only, no pipe/agent shutdown command.
     });return stopPromise;
   }
-  return {start,stop,view,diagnostics:()=>structuredClone(diagnostics)};
+  function setActive(value){
+    if(typeof value!=='boolean')throw Error('boolean_required');
+    if(!gpu||active===value||closing)return;
+    active=value;
+    if(timer!==null){clear(timer);timer=interval(poll,active?1000:10000);}
+    if(active)poll();
+  }
+  return {start,stop,view,setActive,diagnostics:()=>structuredClone(diagnostics)};
 }
 module.exports={createMonitoringHost,MAX_LINE};

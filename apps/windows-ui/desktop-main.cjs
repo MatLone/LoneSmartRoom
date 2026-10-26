@@ -11,6 +11,7 @@ const {createController} = require('./desktop-window.cjs');
 const developmentReview = !app.isPackaged && process.argv.includes('--lone-development-review');
 const monitoringDevelopment = developmentReview && process.argv.includes('--lone-monitoring-development') &&
   /^[a-f0-9]{32}$/.test(process.env.LONE_MONITORING_RUN_ID || '');
+const gpuDevelopment=monitoringDevelopment&&process.argv.includes('--lone-gpu-development');
 let monitoringHost=null, monitoringQuitReady=false, monitoringQuitting=false;
 const monitoringEnabled=app.isPackaged||monitoringDevelopment;
 if (developmentReview) {
@@ -92,12 +93,18 @@ if (!app.requestSingleInstanceLock()) {
       monitoringHost=createMonitoringHost({root:path.resolve(__dirname,'../..'),
         runId:app.isPackaged?crypto.randomBytes(16).toString('hex'):process.env.LONE_MONITORING_RUN_ID,
         packaged:app.isPackaged,resourcesPath:process.resourcesPath,version:app.getVersion(),
+        gpu:gpuDevelopment,
         simulated:!app.isPackaged&&process.argv.includes('--lone-monitoring-simulated'),publish:value=>{
           const wc=controller?.window?.webContents;
           if(wc&&!wc.isDestroyed()&&wc.mainFrame.url===policy.entryUrl)wc.send('monitoring:state',value);
         }});
       try{monitoringHost.start();}catch{
         console.error('Local monitoring unavailable; dashboard remains open');
+      }
+      if(gpuDevelopment){
+        const win=controller.window;
+        for(const event of ['hide','minimize','blur'])win.on(event,()=>monitoringHost.setActive(false));
+        for(const event of ['show','restore','focus'])win.on(event,()=>monitoringHost.setActive(true));
       }
     }
     app.on('activate', () => controller.restoreCurrent());

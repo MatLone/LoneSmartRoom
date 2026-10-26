@@ -22,9 +22,9 @@ class Node {
 }
 const make=(tag,cls)=>new Node(tag,cls),cards=Array.from({length:4},()=>{const c=make('article','sensor');c.append(make('div','value'),make('small'));return c;});
 const minis=Array.from({length:4},()=>{const c=make('div','mini-sensor');c.append(make('strong'),make('small'));return c;});
-const storage=make('section'),notice=make('div'),body=make('div');let receive,tick,clock=0,checks=0;
+const storage=make('section'),gpu=make('section'),notice=make('div'),body=make('div');let receive,tick,clock=0,checks=0;
 const check=(v,n)=>{assert(v,n);checks++;};
-const doc={createElement:make,getElementById:id=>({monitoringNotice:notice,storageMetrics:storage,dialogBody:body}[id]||null),
+const doc={createElement:make,addEventListener(){},getElementById:id=>({monitoringNotice:notice,storageMetrics:storage,gpuMetrics:gpu,dialogBody:body}[id]||null),
   querySelector:()=>null,querySelectorAll:s=>s==='#sensorGrid .sensor'?cards:s==='#miniSensors .mini-sensor'?minis:[]};
 const native={onMetrics:fn=>receive=fn,getMetrics:()=>new Promise(()=>{})};
 vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../apps/windows-ui/monitoring-renderer.js'),'utf8'),{

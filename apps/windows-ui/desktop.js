@@ -27,7 +27,7 @@
   const svg=name=>`<svg viewBox="0 0 24 24" aria-hidden="true">${icons[name]||icons.lock}</svg>`;
   const devices=[['lamp','Lâmpada','Iluminação ambiente'],['led','Fita LED','Iluminação de destaque'],['fan','Ventilador','Climatização'],['tv','Smart TV','Entretenimento']];
   document.getElementById('deviceGrid').innerHTML=devices.map(([id,name,caption])=>`<article class="device"><div class="device-top">${svg(id)}<button class="switch" disabled aria-label="${name}: integração indisponível"></button></div><h3>${name}</h3><p>${caption}</p><div class="device-foot"><span>Integração indisponível</span><button class="icon-button" data-panel="${id}" aria-label="Ver configuração de ${name}">${svg('gear')}</button></div></article>`).join('');
-  const sensors=[['chip','CPU','%'],['gpu','GPU','%'],['memory','RAM','GB'],['temperature','Temperatura','°C']];
+  const sensors=[['chip','CPU','%'],['gpu','GPU','%'],['memory','RAM','GB'],['temperature','Temperatura GPU','°C']];
   document.getElementById('miniSensors').innerHTML=sensors.map(([icon,label])=>`<div class="mini-sensor"><div>${svg(icon)}${label}</div><strong>—</strong><small>Coleta não implementada</small></div>`).join('');
   document.getElementById('sensorGrid').innerHTML=sensors.map(([icon,label,unit])=>`<article class="sensor"><div class="sensor-top"><span>${label}</span>${svg(icon)}</div><div class="value">—<span>${unit}</span></div><small>Sem medição disponível</small></article>`).join('');
   document.querySelectorAll('[data-icon]').forEach(n=>n.innerHTML=svg(n.dataset.icon));

@@ -34,10 +34,11 @@ function rendererRecovery(){
   const f=rendererFixture(),send=(connection,s,error=null)=>f.send({v:1,connection,simulated:false,snapshot:s,error,last_valid_at:{}});
   const sample=snapshot();sample.metrics[0].value=12;const normalized=model.normalize(sample);
   f.reset();send('connected',normalized);const pushWrites=f.writes();check(pushWrites>0,'Push performs DOM writes');
-  f.reset();f.tick();const timerWrites=f.writes();check(timerWrites>0&&f.timers.join()==='1000','Independent timer repeats DOM setters without a new sample');
+  f.reset();f.tick();const timerWrites=f.writes();check(timerWrites===0&&f.timers.join()==='1000','Unchanged text is not written again by the age timer');
   f.document.hidden=true;f.document.visibilityState='hidden';f.window.innerWidth=390;f.reset();send('connected',normalized);const hiddenWrites=f.writes();
-  check(hiddenWrites===pushWrites,'Mock hidden/widget state does not suppress refresh work');
-  check(!f.listeners.has('visibilitychange'),'No window visibility handler added by this renderer');
+  check(hiddenWrites===0,'Hidden interface receives state without DOM writes');
+  check(f.listeners.has('visibilitychange'),'Visibility restoration updates the interface');
+  f.document.hidden=false;f.document.visibilityState='visible';f.listeners.get('visibilitychange')();
   send('disconnected',normalized,'read_timeout');check(f.cards[0].querySelector('.value').textContent==='—','Disconnected hides last number');
   send('connected',normalized);check(f.cards[0].querySelector('.value').textContent==='12%','Reconnect restores validated value');
   f.clock(4000);f.tick();check(f.cards[0].querySelector('.value').textContent==='—'&&f.cards[0].querySelector('small').textContent==='Desatualizada','Age advances without new IPC and marks stale');
@@ -46,6 +47,6 @@ function rendererRecovery(){
   return {pushWrites,timerWrites,hiddenWrites,method:'DOM setter calls in substitutes, not CPU measurements or Chromium throttling'};
 }
 (async()=>{await hostRecovery();windowRecovery();const writes=rendererRecovery();const result={ok:true,checks,writes,
-  installedAppRun:false,realSensors:false,operationalSourceChanged:false};const out=path.resolve(__dirname,'../.cache/validation/adlx-preparation-2026-10-25');
+  installedAppRun:false,realSensors:false,developmentSourceChanged:true,installedAppChanged:false};const out=path.resolve(__dirname,'../.cache/validation/adlx-preparation-2026-10-25');
   fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'maintenance-tests.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

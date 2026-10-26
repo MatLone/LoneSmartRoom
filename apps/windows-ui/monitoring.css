@@ -17,6 +17,13 @@ progress::-webkit-progress-value{background:#ff153f;border-radius:4px}
 .metric-row>span{color:var(--muted)}
 .metric-row>strong{font-variant-numeric:tabular-nums;font-weight:550;text-align:right;overflow-wrap:anywhere;min-width:0}
 .capacity-bar-label{color:var(--muted);font-size:11px;margin-top:14px}
+.gpu-details{margin:20px 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:24px;min-width:0}
+.gpu-details>h2,.gpu-details>.gpu-caption,.gpu-details>.metric-meta{grid-column:1/-1}
+.gpu-caption{color:var(--muted);font-size:11px;margin:9px 0 12px;overflow-wrap:anywhere}
+.gpu-details .metric-row{min-width:0;flex-wrap:wrap;gap:6px}
+.gpu-details .metric-row[data-availability=stale]{opacity:.75}
+.window[data-mode=widget] .gpu-details{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+@media(max-width:460px){.gpu-details{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px}.gpu-details h2{font-size:14px}}
 .storage-metric .capacity-bar-label+progress{margin-top:7px}
 .storage-metric .section-heading{flex-wrap:wrap;gap:8px}
 .mini-sensor strong{font-variant-numeric:tabular-nums;font-size:22px}
