@@ -39,6 +39,10 @@ class BrandAssetsTests(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         source = module.svg(390, 112, 'Lone Smart Room — marca principal', module.horizontal())
+        update_spec = importlib.util.spec_from_file_location('approved_E_update', ROOT / 'scripts/build-e-red-brand.py')
+        update = importlib.util.module_from_spec(update_spec)
+        update_spec.loader.exec_module(update)
+        source = update.red_e(source)
         self.assertEqual(source.encode(), (ASSETS / 'logo-horizontal.svg').read_bytes())
 
     def test_native_splash_is_resource_only_and_references_safe_artwork(self):

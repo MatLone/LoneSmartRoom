@@ -11,9 +11,16 @@ class AndroidVisualPreservation(unittest.TestCase):
     def test_functional_sources_resources_and_brand_match_pre_migration_checkpoint(self):
         pins=json.loads((ROOT/'tests/fixtures/android-functional-baseline.json').read_text(encoding='utf-8'))
         self.assertEqual(pins['checkpoint'],'29d12a6')
+        # Explicit asset-only changes approved after the original functional pins.
+        # Geometry, source identity and permitted file set are independently tested.
+        update=json.loads((ROOT/'docs/design/brand/e-red-windows-icon-2026-10-26/change-manifest.json').read_text(encoding='utf-8'))['authorizedChanges']
         for name,digest in pins['files'].items():
             with self.subTest(file=name):
-                self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(),digest)
+                if name in update:
+                    self.assertEqual(update[name]['before'],digest)
+                    self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(),update[name]['after'])
+                else:
+                    self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(),digest)
 
     def test_native_identity_and_network_policy_unchanged(self):
         manifest=ET.parse(ROOT/'apps/android/app/src/main/AndroidManifest.xml').getroot()

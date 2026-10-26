@@ -2,15 +2,24 @@
   "method": "deterministic vector recreation from new official board",
   "reference": "docs/design/brand/official-board-2026-10-24/reference/approved-board.png",
   "referenceSha256": "ae768d603ec335958e5079460d1deb86f7824372e43fdf46ef51b7a41fc42f06",
-  "approval": "official board approved; derived exports awaiting visual inspection",
-  "primaryRed": "#ff0033",
+  "approval": "user-authorized E-only color and exact Windows icon; exports awaiting visual review",
+  "primaryRed": "#ff153f",
   "graphite": "#080a0d",
   "fontsRequired": false,
   "svgSha256": {
-    "logo-horizontal.svg": "ac56c4444d7dd064368e02a57243d123fa105f05188aa022e8de1eb787149d92",
-    "logo-compact.svg": "8011bcceeec40c96b5fe323728b5e9973cfa81a2df4772544517de5cf7debb14",
+    "logo-horizontal.svg": "ddef6f9a391eb1fdb2827db70cf52464b13e5c79554544263d19661ab4c84144",
+    "logo-compact.svg": "7fdc40603a424bf852d3e8648c3a9f85be35e1811ddc4128cebab53b16316778",
     "symbol.svg": "24fece10004f8813ed0ae3605d659341675e8597deac45031b875e4cbe55eafc",
-    "app-icon.svg": "7443242cbe330d729cc4cc26fb2f6aa29f98ac0a2de2ceed1f0da52b5b6604b6",
-    "splash-screen.svg": "762edf216ed6823907774a4ed82273b137dfa33edd2c8fd5c76eb2e00f5b7309"
-  }
+    "app-icon.svg": "55cf51bba41a434ec629a43808e043dca17378dd45ef2cc333f3af484b66025a",
+    "splash-screen.svg": "f9483ee7a72e52acaa461887ac4ea97ea37ae7e65dc5251115704b7d30f13717"
+  },
+  "wordColors": {
+    "L": "original_white",
+    "O": "original_white",
+    "N": "original_white",
+    "E": "#ff153f"
+  },
+  "symbolGeometryChanged": false,
+  "iconSource": "apps/windows-ui/assets/brand/windows-icon.svg",
+  "iconSourceSha256": "55cf51bba41a434ec629a43808e043dca17378dd45ef2cc333f3af484b66025a"
 }

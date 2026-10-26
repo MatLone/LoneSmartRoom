@@ -11,6 +11,8 @@
     "narrow": 224
   },
   "minimumSubtitleHeightCss": 8.088888888888889,
-  "variantSha256": "e1d08e624d369fdbd944cac9d267c92a711f50783e88cbd5e3edd3e811ea80d0",
-  "olderVectorsArchivedAt": "docs/design/brand/official-board-2026-10-24/previous-dev4"
+  "variantSha256": "a6c392affca81252f3f07a7490cafe8d25f86bdb6770d2a2f4e5c73312374f92",
+  "olderVectorsArchivedAt": "docs/design/brand/official-board-2026-10-24/previous-dev4",
+  "wordEColor": "#ff153f",
+  "geometryChanged": false
 }
