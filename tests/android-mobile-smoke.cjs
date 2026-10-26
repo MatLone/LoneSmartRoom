@@ -83,7 +83,7 @@ app.whenReady().then(async()=>{
     await evaluate(`window.onLoneAppLaunch({kind:'permissions',allowed_apps:['cs2']})`);
     await check(`document.getElementById('launchSteam').disabled && !document.getElementById('launchCs2').disabled`);
     await evaluate(`window.onLoneAppLaunch({kind:'permissions',allowed_apps:[]})`);
-    await check(`document.querySelectorAll('.sensor-value').length===3 && [...document.querySelectorAll('.sensor-value')].every(e=>e.textContent==='—')`);
+    await check(`document.querySelectorAll('.sensor-value').length===4 && [...document.querySelectorAll('.sensor-value')].every(e=>e.textContent==='—')`);
     await evaluate(`document.querySelector('[data-tab="controls"]').click();document.querySelector('[data-open="lamp"]').click()`);
     await check(`document.getElementById('settingsDialog').open && document.querySelector('[role="switch"]').disabled`);
     await evaluate(`document.querySelector('#settingsDialog [data-close]').click()`);

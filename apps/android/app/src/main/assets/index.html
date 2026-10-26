@@ -7,6 +7,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Lone Smart Room</title>
   <link rel="stylesheet" href="mobile-v2.css">
+  <link rel="stylesheet" href="windows-family.css">
   <link rel="icon" href="brand/lone-app-icon.png" type="image/png">
 </head>
 <body data-platform="android">
@@ -17,7 +18,7 @@
       <button id="tab-monitor" role="tab" aria-selected="false" aria-controls="panel-monitor" data-tab="monitor"><span data-icon="activity"></span><span>Monitoramento PC</span></button>
       <button id="tab-gamer" role="tab" aria-selected="false" aria-controls="panel-gamer" data-tab="gamer"><span data-icon="gamepad"></span><span>Gamer Launcher</span></button>
     </nav>
-    <main id="workspace"></main>
+    <main id="workspace" tabindex="-1"></main>
   </div>
   <dialog id="brandDialog" aria-labelledby="brandTitle">
     <div class="dialog-header"><div><span class="eyebrow">IDENTIDADE VISUAL · LONE SMART ROOM</span><h2 id="brandTitle">Lone Smart Room</h2></div><button class="icon-button" data-close aria-label="Fechar identidade visual"><span data-icon="close"></span></button></div>

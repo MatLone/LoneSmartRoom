@@ -71,7 +71,7 @@ def main():
     require(b'setDataDirectorySuffix' not in activity, 'WebView data directory changed')
     with zipfile.ZipFile(apk) as archive:
         for name in ('app.js', 'index.html', 'styles.css', 'agent-status.js', 'app-version.js', 'app-launch.js',
-                     'mobile-v2.css', 'mobile-shell.js', 'mobile-bindings.js', 'wol-ui.js'):
+                     'mobile-v2.css', 'windows-family.css', 'mobile-shell.js', 'mobile-bindings.js', 'wol-ui.js'):
             require(archive.read('assets/' + name) == (android / 'assets' / name).read_bytes(),
                     'Packaged asset differs from reviewed source: ' + name)
         require(b'lone-wol-settings-v1' in archive.read('assets/app.js'), 'WoL storage key changed')

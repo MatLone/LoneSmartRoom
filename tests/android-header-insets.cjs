@@ -3,7 +3,7 @@
 const {app,BrowserWindow,session}=require('electron');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'..'),cache=path.join(root,'.cache/android-header-insets');
-const out=path.join(root,'docs/design/header-settings-dev7-2026-10-24');
+const out=path.join(cache,'results');
 for(const [name,folder]of [['userData','profile'],['sessionData','session'],['logs','logs'],['crashDumps','crashes']]){
  const dir=path.join(cache,folder);fs.mkdirSync(dir,{recursive:true});app.setPath(name,dir);
 }

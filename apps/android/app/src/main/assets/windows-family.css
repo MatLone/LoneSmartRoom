@@ -1,0 +1,96 @@
+/* Android adaptation of the approved Electron dashboard, not desktop dimensions.
+   Native bridges, storage and safe-area ownership remain unchanged. */
+:root {
+  --bg:#0b0b0e; --surface:#151518; --raised:#1e1e23;
+  --border:#2d2d35; --red:#ff153f; --primary:#df0c32;
+  --text:#f3f3f6; --muted:#a5a5b1; --dim:#a0a0ad; --radius:18px;
+  font-family:"Segoe UI",Roboto,Arial,sans-serif;
+}
+body[data-platform="android"] .app-layout{max-width:840px;border:0}
+.app-header{background:#0d0d10;border-bottom:1px solid #24242b}
+body[data-platform="android"] .app-header .brand{max-width:212px}
+body[data-platform="android"] .app-header .brand-lockup{width:min(212px,100%)}
+body[data-platform="android"] .app-header .brand small{font-size:10px;color:var(--muted)}
+.icon-button{border-radius:11px;background:#19191e;color:#c4c4cf}
+main{padding:22px max(18px,env(safe-area-inset-right,0px)) 28px max(18px,env(safe-area-inset-left,0px))}
+.page-heading{margin:0 0 23px;align-items:flex-start}
+.eyebrow{font-size:10px;letter-spacing:1.65px;line-height:1.5}
+.page-heading h1{font-size:32px;font-weight:650;letter-spacing:-1.1px;line-height:1.12;margin-bottom:11px}
+.page-heading h1 .accent{color:var(--red)}
+.page-heading p{font-size:13px;line-height:1.6;color:var(--muted)}
+.pc-card{padding:20px;background:linear-gradient(105deg,#21151c,#151518 65%);border-color:#54303d}
+.pc-card:before{left:20px;width:49px;background:var(--red);box-shadow:0 0 17px #ff153f60}
+.pc-head{flex-wrap:wrap;gap:10px}.pc-head>.status-badge{margin-left:auto}
+.pc-head h2{font-size:18px}.small-label{font-size:10px}
+.icon-tile{background:#331821;border-color:#663042;border-radius:12px}
+.status-badge{font-size:11px;white-space:normal;line-height:1.4;max-width:100%}
+.status-line{font-size:12px;align-items:flex-start}.status-line b{font-size:12px;overflow-wrap:anywhere}
+.fine-print,.security-line{font-size:12px;line-height:1.65}
+.feedback{background:#1d1d24;color:#c4c4cf;font-size:12px;padding:12px;margin-bottom:14px;overflow-wrap:anywhere}
+.action-row{display:grid;grid-template-columns:1fr;gap:10px}
+.button{font-size:13px;border-radius:11px;min-height:48px;padding:13px 14px;line-height:1.4}
+.button svg{width:18px;height:18px}
+.inline-button{font-size:12px;min-height:44px;line-height:1.5}
+.secondary-actions{justify-content:space-between;gap:5px}
+.section-line{margin-top:25px}.section-line h2{font-size:17px}.section-line>span{font-size:10px;line-height:1.5;text-align:right}
+.surface{background:var(--surface);border:1px solid var(--border);border-radius:17px;padding:16px}
+.room-surface .section-line{margin:0 0 17px}.room-surface{margin-top:22px}
+.device-grid{gap:10px}.device-card{border-radius:12px;min-height:171px;padding:13px;background:#19191f}
+.device-top{margin-bottom:17px;color:var(--red)}.device-top>svg{width:23px;height:23px}
+.device-card strong{font-size:14px}.device-card small{font-size:11px;line-height:1.5}
+.device-card .device-state{font-size:10px;line-height:1.5;align-items:flex-start}
+.device-state svg{flex-shrink:0;margin-top:2px}
+.switch-shape{background:#28282f}.switch-shape:before{background:#93939f}
+.nex-card{gap:13px;border-radius:16px;padding:18px;margin-top:20px}
+.nex-copy h2{font-size:14px}.nex-copy p{font-size:12px}.nex-type{font-size:32px}
+.brand-pending-note{font-size:11px;line-height:1.6;color:var(--muted)}
+.monitor-top{align-items:flex-start;font-size:12px;line-height:1.6;border-radius:12px;background:#19151b}
+.monitor-top svg{margin-top:3px}
+body[data-platform="android"] .sensor-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+body[data-platform="android"] .sensor{padding:16px 13px;min-width:0;border-radius:14px}
+.sensor-title{font-size:12px;gap:7px;line-height:1.5;align-items:flex-start}
+.sensor-title svg{flex-shrink:0;width:18px;height:18px;margin-top:1px}
+.sensor-value{color:#b2b2bf;font-size:32px;margin-top:20px}
+body[data-platform="android"] .sensor small{font-size:11px;color:var(--muted);line-height:1.6}
+.unavailable-track{height:4px;border-radius:5px;background:#31313b;margin-top:14px}
+.metric-details{margin-top:14px}.metric-details h2{font-size:16px;margin:0 0 7px;line-height:1.4}
+.metric-details>p{font-size:12px;line-height:1.65;color:var(--muted);margin:0 0 10px}
+.metric-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-top:1px solid var(--border);padding:12px 0;font-size:12px;line-height:1.5}
+.metric-row:last-child{padding-bottom:0}.metric-row>span{color:var(--muted)}
+.metric-row strong{font-weight:500;text-align:right;overflow-wrap:anywhere}
+.empty-chart{border-radius:14px;min-height:180px}.empty-chart h3{font-size:14px}.empty-chart p{font-size:12px}
+.disabled-row{font-size:12px}.disabled-row small{font-size:11px;line-height:1.6}
+.game-hero{border-radius:18px;padding:23px;border-color:#673244;background:linear-gradient(125deg,#3c1624,#1b161e 65%,#16161b)}
+.game-hero:after{font-size:160px;top:30px;right:-4px}
+.game-kicker{gap:10px;font-size:10px;letter-spacing:.7px;position:relative;z-index:1}
+.game-kicker>.status-badge{font-size:10px;max-width:65%}
+.game-title{font-size:45px;line-height:.98;letter-spacing:-2px;margin:32px 0 17px}
+.game-title span{margin-left:9px}.game-hero p{font-size:12px;line-height:1.7;position:relative}
+.steam-row{border-radius:16px;padding:17px;flex-wrap:wrap;gap:12px}.steam-row p{font-size:12px}
+.steam-row h2{font-size:21px}.steam-row .status-badge{font-size:11px}
+.command-panel{border-radius:16px;padding:18px}.command-panel h2{font-size:15px;line-height:1.5}
+.command-panel p{font-size:12px;line-height:1.7}.command-steps{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.command-steps span{font-size:11px;padding:10px}.command-panel .fine-print{color:#c4adb9}
+body[data-platform="android"] .navigation{padding:4px max(7px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(7px,env(safe-area-inset-left,0px));background:#111115}
+body[data-platform="android"] .navigation button{min-height:68px;font-size:11px!important;gap:7px}
+.navigation button[aria-selected="true"]{color:var(--red)}
+dialog{border-radius:21px;border-color:#47414b;background:#17171d;max-height:calc(100dvh - max(32px,env(safe-area-inset-top,0px)) - max(20px,env(safe-area-inset-bottom,0px)) - 24px)}
+.dialog-header{padding:21px;border-color:#35303a}.dialog-header h2{font-size:22px;line-height:1.2}
+.dialog-header .eyebrow{font-size:9px}.dialog-body{padding:21px}.dialog-body p{font-size:13px}
+.dialog-body label.field{font-size:13px}.dialog-note{font-size:12px;line-height:1.7}
+.field-help{font-size:12px;line-height:1.6}.dialog-body h3{font-size:16px}
+@media(max-width:359px){
+ main{padding-left:14px;padding-right:14px}.page-heading h1{font-size:29px}
+ .pc-card{padding:16px}.pc-head>.status-badge{margin-left:0}.device-card{padding:11px}
+ .device-card strong{font-size:13px}.device-card small{font-size:10px}
+ .game-title{font-size:38px}.steam-row .status-badge{margin-left:0}
+ .sensor-title{font-size:11px;gap:5px}
+}
+@media(min-width:600px){
+ main{padding:28px 28px 36px}.page-heading h1{font-size:36px}
+ .action-row{grid-template-columns:1fr 1fr}.device-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .game-layout{display:grid;grid-template-columns:1.1fr 1fr;gap:18px}
+ .game-aside>.steam-row{margin-top:0}.game-title{font-size:43px}
+ body[data-platform="android"] .sensor-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(prefers-contrast:more){:root{--muted:#d0d0d9;--dim:#c2c2ce;--border:#686874}}
