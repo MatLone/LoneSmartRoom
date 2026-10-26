@@ -111,3 +111,28 @@ nova e pasta de evidências separada. Nenhum autostart, serviço, tarefa ou inst
 
 O perfil GPU não é publicado no Named Pipe v1 da dev.5. O consumidor básico mantém
 allowlist e unidades existentes; a futura UI exige negociação/revisão explícita.
+
+## Diagnóstico opt-in — revisão posterior à primeira tentativa
+
+Sem `--diagnostics`, os campos do wire v1 permanecem iguais e nenhum novo log de
+frame é mantido. A opção fixa, local e sem caminhos externos negocia no ready o
+perfil `adlx_frame_diagnostics_v1`. Apenas nesse perfil o frame acrescenta o objeto
+diagnostic, com unidades, deltas dos três relógios, quantidade de correspondências,
+resultado da divisão ms/1000, domínio escolhido e código nativo de decisão.
+O perfil exige campos/tipos conhecidos e conversões consistentes; não converte
+automaticamente segundos em ms nem aceita um domínio arbitrário.
+
+O adapter distingue regras de wire, estrutura, tempo, leituras, conversão nativa,
+transporte e provedor. BridgeError conserva o code antigo; rule/stage são detalhes
+internos adicionais. O novo buffer é local em memória, desativado por padrão, limitado
+a 16 registros/32 KiB serializados, até 4 KiB por registro. Preserva a primeira
+rejeição e registros recentes, com contador de descarte. Não escreve arquivos.
+Não retém payloads brutos, valores dos sensores, nomes desconhecidos, exceções livres,
+caminhos, certificados ou credenciais. Persistência futura só por exportação explícita
+do diagnóstico sanitizado em sessão de desenvolvimento autorizada.
+
+A idade positiva de fila continua somada à idade SDK. Horário de recebimento futuro
+ou não finito agora é rejeitado em vez de zerar a diferença negativa. Isso corrige
+um defeito determinístico independente, posterior à guarda que falhou na primeira
+sessão. Janela de correspondência 5 s, frescor 1,5 s, unidades e contrato métrico v1
+permanecem iguais. Nenhuma correção de epoch SDK foi aplicada ou validada em hardware.
