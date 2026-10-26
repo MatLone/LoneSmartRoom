@@ -170,5 +170,36 @@ class DiagnosticTests(unittest.TestCase):
             launch_native(diagnostics=True);self.assertEqual(popen.call_args.args[0][-1],'--diagnostics')
         with self.assertRaises(Exception):launch_native(diagnostics='arbitrary')
 
+    def test_future_transport_receipt_rejected_instead_of_age_zero_clamp(self):
+        a=adapter([frame()]);self.addCleanup(a.close);a.transport.received_at=20
+        with patch('monitoring.adlx_bridge.time.monotonic',return_value=10):
+            with self.assertRaises(BridgeError) as r:a.latest('amd-rx6750xt')
+        self.assertEqual(r.exception.rule,'transport_time_future')
+        record=a.diagnostics()['frame_diagnostics']['records'][-1]
+        self.assertEqual(record['transport_time']['queue_age_seconds'],-10)
+
+    def test_nonfinite_transport_clock_not_published_or_logged_as_number(self):
+        for received in (float('nan'),float('inf'),True,10**1000):
+            a=adapter([frame()]);self.addCleanup(a.close);a.transport.received_at=received
+            with self.assertRaises(BridgeError) as r:a.latest('amd-rx6750xt')
+            self.assertEqual(r.exception.rule,'transport_time_nonfinite')
+            json.dumps(a.diagnostics(),allow_nan=False)
+
+    def test_queue_age_is_added_without_weakening_provider_freshness(self):
+        a=adapter([frame()]);self.addCleanup(a.close);a.transport.received_at=10
+        c=Collector(GPU_SPECS,[AdlxProvider(a,'amd-rx6750xt')],clock=FakeClock())
+        with patch('monitoring.adlx_bridge.time.monotonic',return_value=12):c.step()
+        metric=next(m for m in c.snapshot()['metrics'] if m['id']=='gpu.adlx.utilization')
+        self.assertFalse(metric['valid']);self.assertIsNone(metric['value']);c.stop()
+        self.assertEqual(a.diagnostics()['frame_diagnostics']['records'][-1]['rule'],'provider_sample_age_limit')
+
+    def test_transport_error_can_recover_on_next_valid_frame_without_restart(self):
+        a=adapter([frame(stamp=100),frame(stamp=200)]);self.addCleanup(a.close);a.transport.received_at=20
+        with patch('monitoring.adlx_bridge.time.monotonic',return_value=10):
+            with self.assertRaises(BridgeError):a.latest('amd-rx6750xt')
+        a.transport.received_at=30
+        with patch('monitoring.adlx_bridge.time.monotonic',return_value=30):self.assertEqual(a.latest('amd-rx6750xt').sdk_timestamp_ms,200)
+        self.assertEqual(a.transport.starts,1)
+
 
 if __name__=='__main__':unittest.main()

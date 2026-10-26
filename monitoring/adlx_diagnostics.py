@@ -69,7 +69,7 @@ class DiagnosticBuffer:
         if type(enabled) is not bool:raise ValueError('boolean_required')
         self.enabled=enabled;self._records=[];self._bytes=0;self._dropped=0;self._lock=Lock()
 
-    def emit(self,stage,rule,payload=None,*,field=None,metric=None):
+    def emit(self,stage,rule,payload=None,*,field=None,metric=None,transport=None):
         if not self.enabled:return
         # Unknown control strings are discarded, not recorded or formatted.
         if type(stage) is not str or type(rule) is not str or stage not in STAGES or rule not in RULES:return
@@ -78,6 +78,10 @@ class DiagnosticBuffer:
         if field in (*FRAME_FIELDS,'diagnostic','value','state','transport_received_at','transport_now'):
             record['field']=field
         if metric in METRICS:record['metric']=metric
+        if type(transport) is dict:
+            record['transport_time']={'received_type':kind(transport.get('received')),'now_type':kind(transport.get('now')),
+                'queue_age_seconds':number(transport.get('queue_age_seconds')),
+                'calculated_age_seconds':number(transport.get('calculated_age_seconds'))}
         if payload is not None:
             record['payload_type']=kind(payload)
             record['field_types']={name:kind(value[name]) if name in value else 'missing' for name in FRAME_FIELDS}

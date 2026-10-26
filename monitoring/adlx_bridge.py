@@ -204,8 +204,8 @@ class NativeAdapter:
     def _key(self,key):
         if not self._opened or key!=self.ready['device']['key']:raise BridgeError('invalid_device_key')
 
-    def _reject(self,stage,rule,value,field=None):
-        self._events.append('invalid_frame');self._diagnostic.emit(stage,rule,value,field=field)
+    def _reject(self,stage,rule,value,field=None,*,transport=None):
+        self._events.append('invalid_frame');self._diagnostic.emit(stage,rule,value,field=field,transport=transport)
         raise BridgeError('invalid_frame',rule=rule,stage=stage)
 
     def _validate_frame(self,value):
@@ -275,7 +275,15 @@ class NativeAdapter:
             except BridgeError as exc:
                 self._diagnostic.emit('readings',exc.rule,value,metric=name)
                 raise
-        age=value['age_seconds']+max(0,time.monotonic()-self._last_received)
+        now=time.monotonic();received=self._last_received;transport={'received':received,'now':now}
+        for name,number in (('transport_received_at',received),('transport_now',now)):
+            try:finite=type(number) in (int,float) and math.isfinite(number)
+            except OverflowError:finite=False
+            if not finite:self._reject('transport_time','transport_time_nonfinite',value,name,transport=transport)
+        queue_age=now-received;transport['queue_age_seconds']=queue_age
+        if queue_age<0:self._reject('transport_time','transport_time_future',value,'transport_received_at',transport=transport)
+        age=value['age_seconds']+queue_age;transport['calculated_age_seconds']=age
+        if not math.isfinite(age):self._reject('transport_time','transport_time_nonfinite',value,'transport_now',transport=transport)
         self.last_frame={'sdk_timestamp_ms':value['timestamp_ms'],'age_seconds':age,'clock_source':value['clock_source']}
         self._diagnostic.emit('frame','frame_structure_accepted',value)
         return Frame(key,value['timestamp_ms'],age,readings)
