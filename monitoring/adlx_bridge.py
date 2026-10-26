@@ -7,6 +7,7 @@ from collections import deque
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import queue
 import subprocess
@@ -72,6 +73,7 @@ class LineTransport:
         self._started=True
         try:self.process=self._spawn()
         except Exception:raise BridgeError('process_creation_failed') from None
+        if getattr(self.process,'_lone_owner_reset_failed',False) is True:self._fault='owner_handle_reset_failed'
         self._reader=threading.Thread(target=self._read,name='lone-adlx-output',daemon=True);self._reader.start()
 
     def _read(self):
@@ -116,9 +118,11 @@ class LineTransport:
         self.process.stdout.close();return True
 
 
-def launch_native(*,diagnostics=False):
+def launch_native(*,diagnostics=False,owner_handle=None):
     """Fixed x64 build path, no user paths/arguments or shell; source/hash checked."""
     if type(diagnostics) is not bool:raise ContractError('boolean_required')
+    if owner_handle is not None and (type(owner_handle) is not int or not 0<owner_handle<2**63):
+        raise ContractError('invalid_owner_handle')
     build=ROOT/'.cache/adlx-build';exe=build/'bridge.exe'
     info=json.loads((build/'bridge-build.json').read_text())
     if (info.get('mock') is not False or info.get('verifyOnly') is not False or info.get('sdkCommit')!='66557d410ce4c463f5f7106597d94f53dd84bc82'
@@ -128,8 +132,24 @@ def launch_native(*,diagnostics=False):
             or hashlib.sha256((ROOT/'native/adlx/bridge.cpp').read_bytes()).hexdigest()!=info.get('sourceSha256')):
         raise BridgeError('worker_integrity_failed')
     command=[str(exe)]+(['--diagnostics'] if diagnostics else [])
-    return subprocess.Popen(command,cwd=ROOT,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,
-                            shell=False,close_fds=True,creationflags=subprocess.CREATE_NO_WINDOW,bufsize=0)
+    options={}
+    if owner_handle is not None:
+        if os.get_handle_inheritable(owner_handle):raise BridgeError('unexpected_owner_inheritance')
+        startup=subprocess.STARTUPINFO();startup.lpAttributeList={'handle_list':[owner_handle]}
+        options['startupinfo']=startup
+        os.set_handle_inheritable(owner_handle,True)
+    process=None
+    try:
+        process=subprocess.Popen(command,cwd=ROOT,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,
+                                 shell=False,close_fds=True,creationflags=subprocess.CREATE_NO_WINDOW,bufsize=0,**options)
+    finally:
+        if owner_handle is not None:
+            try:os.set_handle_inheritable(owner_handle,False)
+            except OSError:
+                # Never lose a successfully created child by throwing from finally.
+                # Transport keeps ownership, fails bootstrap and requests normal stop.
+                if process is not None:process._lone_owner_reset_failed=True
+    return process
 
 
 class NativeAdapter:
@@ -302,5 +322,5 @@ class NativeAdapter:
         return result
 
 
-def real_adapter(*,diagnostics=False):
-    return NativeAdapter(LineTransport(lambda:launch_native(diagnostics=diagnostics)),diagnostics=diagnostics)
+def real_adapter(*,diagnostics=False,owner_handle=None):
+    return NativeAdapter(LineTransport(lambda:launch_native(diagnostics=diagnostics,owner_handle=owner_handle)),diagnostics=diagnostics)

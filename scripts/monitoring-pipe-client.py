@@ -21,6 +21,7 @@ from monitoring.pipe_protocol import pipe_name, request
 from monitoring.winpipe import WindowsPipeApi
 from monitoring.lifetime import duration_for,end_at
 from monitoring.application_context import validate_mode,application_owner
+from monitoring.gpu_development import validate_gpu_mode
 
 
 def main():
@@ -31,9 +32,11 @@ def main():
     lifetime.add_argument('--application',action='store_true')
     parser.add_argument('--owner-pid',type=int)
     parser.add_argument('--simulated', action='store_true')
+    parser.add_argument('--gpu-development', action='store_true')
     args = parser.parse_args()
     duration=duration_for(args.duration,args.application)
     validate_mode(ROOT,args.application,args.simulated)
+    validate_gpu_mode(ROOT,args.gpu_development,args.application,args.simulated,duration)
     name = pipe_name(args.session)
     api = WindowsPipeApi(); stop = threading.Event(); started = time.monotonic()
     owner=application_owner(api,ROOT,args.owner_pid) if args.application else None
@@ -58,6 +61,7 @@ def main():
                    '--session', args.session, '--parent-pid', str(os.getpid())]
         command+=['--application'] if args.application else ['--duration',str(duration)]
         if args.simulated: command.append('--simulated')
+        if args.gpu_development: command.append('--gpu-development')
         worker = subprocess.Popen(command, cwd=ROOT, env=environment, shell=False,
                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                   creationflags=0x08000000, bufsize=0)

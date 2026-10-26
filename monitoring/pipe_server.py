@@ -8,13 +8,14 @@ from .lifetime import end_at
 
 
 class PipeServer:
-    def __init__(self, api, collector, session, client_handle, client_identity, stop, *, duration=70, simulated=False):
+    def __init__(self, api, collector, session, client_handle, client_identity, stop, *, duration=70, simulated=False, activity=None):
         if duration is not None and (type(duration) not in (int, float) or not 1 <= duration <= 75):
             raise ValueError('invalid_development_duration')
         self.api, self.collector, self.stop = api, collector, stop
         self.client_handle, self.client_identity = client_handle, client_identity
         self.duration, self.name = duration, pipe_name(session)
         self.simulated = simulated
+        self.activity = activity
         self.service = LocalReadService(collector, LocalAccessPolicy(api.own['sid'], api.own['session']))
         self.handle = None
         self.counts = {'connections': 0, 'responses': 0, 'rejected': 0, 'timeouts': 0}
@@ -30,6 +31,7 @@ class PipeServer:
         end = end_at(time.monotonic(),self.duration)
         try:
             while not self.stop.is_set() and time.monotonic() < end and self.api.alive(self.client_handle):
+                if self.activity:self.activity.tick()
                 connected = False
                 try:
                     self.api.accept(self.handle, min(end, time.monotonic()+0.25), self.stop)
@@ -40,6 +42,7 @@ class PipeServer:
                     evidence = self.api.client_token(self.handle)
                     response = self.service.handle(payload, evidence)
                     body = json.loads(response)
+                    if self.activity and body.get('ok') and 'snapshot' in body:self.activity.read()
                     if body.get('ok') and 'transport' in body:
                         body.update(transport='windows_named_pipe_v1',
                                     hardware_inventory='basic_local_volumes', real_providers_included=not self.simulated)

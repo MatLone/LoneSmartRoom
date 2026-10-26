@@ -17,6 +17,7 @@ from monitoring.winpipe import WindowsPipeApi
 from monitoring.windows_basic import CpuProvider, MemoryProvider, VolumeProvider, DiskIoProvider, basic_catalog
 from monitoring.lifetime import duration_for,finish_collector
 from monitoring.application_context import validate_mode
+from monitoring.gpu_development import validate_gpu_mode,claim_gpu_owner,finish_gpu,ReadActivity
 
 
 def main():
@@ -27,10 +28,13 @@ def main():
     lifetime.add_argument('--duration', type=int, choices=range(1, 76))
     lifetime.add_argument('--application',action='store_true')
     parser.add_argument('--simulated', action='store_true')
+    parser.add_argument('--gpu-development', action='store_true')
     args = parser.parse_args()
     duration=duration_for(args.duration,args.application)
     validate_mode(ROOT,args.application,args.simulated)
+    validate_gpu_mode(ROOT,args.gpu_development,args.application,args.simulated,duration)
     api, collector, server, parent = None, None, None, None
+    gpu_adapter,gpu_owner=None,None
     stop = threading.Event(); started = time.monotonic(); result = {'ok': False}
     try:
         api = WindowsPipeApi()
@@ -51,8 +55,13 @@ def main():
             from monitoring.windows_native import WindowsReadApi
             from monitoring.development_collector import create_basic_collector
             sensors = WindowsReadApi(); sensors.require_non_elevated()
-            collector = create_basic_collector(sensors)
-        server = PipeServer(api, collector, args.session, parent, expected, stop, duration=duration, simulated=args.simulated)
+            if args.gpu_development:
+                gpu_owner=claim_gpu_owner(api)  # Refuse duplicates before constructing/loading ADLX.
+                from monitoring.adlx_bridge import real_adapter
+                gpu_adapter=real_adapter(owner_handle=gpu_owner)  # Only the owned lease handle is inherited; diagnostics OFF.
+            collector = create_basic_collector(sensors,gpu_adapter=gpu_adapter)
+        activity=ReadActivity(collector,time.monotonic) if args.gpu_development else None
+        server = PipeServer(api, collector, args.session, parent, expected, stop, duration=duration, simulated=args.simulated,activity=activity)
         server.open()  # If name/ACL setup fails, no real sampling has started.
         def eof_stop():
             sys.stdin.buffer.read(1)  # Only lifetime EOF/closure, no command parser or remote shutdown endpoint.
@@ -72,6 +81,13 @@ def main():
             stopped = finish_collector(collector,lambda:print(encode({'v':1,'pending_stop':True}).decode(),flush=True))
             result['stop'] = {'clean': stopped.clean, 'stopped': stopped.stopped, 'timed_out': stopped.timed_out}
             result['ok'] = result['ok'] and stopped.clean
+        if gpu_adapter is not None:
+            clean=finish_gpu(gpu_adapter,lambda:print(encode({'v':1,'pending_stop':True}).decode(),flush=True))
+            process=gpu_adapter.transport.process
+            result['gpu']={'clean':clean,'exited':process is None or process.poll() is not None,
+                           'pid':process.pid if process else None}
+            result['ok']=result['ok'] and clean
+        if api is not None and gpu_owner is not None:api.close(gpu_owner)
         if api is not None and parent is not None: api.close(parent)
         result.update(v=1, stopped=True, pid=os.getpid(), elapsed_seconds=time.monotonic()-started,
                       ended_at=datetime.now(timezone.utc).isoformat())
