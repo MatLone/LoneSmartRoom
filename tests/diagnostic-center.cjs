@@ -76,6 +76,46 @@ async function bridge(){
   check(requests.length===model.scenarios.length,'Invalid input rejected before IPC');
   check(!Object.keys(api).some(k=>/exec|shell|pipe|file|credential/i.test(k)),'No arbitrary privileged bridge');
 }
+async function rendererComponents(){
+  const nodes=new Map(),timers=new Map(),pending=[],events=new Map();let nextTimer=0;
+  class Node{
+    constructor(tag='div'){this.tag=tag;this.children=[];this.dataset={};this.attrs={};this.handlers={};this.hidden=false;this.disabled=false;this.textContent='';}
+    append(...children){this.children.push(...children);}replaceChildren(...children){this.children=children;}
+    get lastElementChild(){return this.children.at(-1);}
+    setAttribute(name,value){this.attrs[name]=value;}addEventListener(name,handler){this.handlers[name]=handler;}
+    focus(){document.activeElement=this;}scrollIntoView(){this.scrolled=true;}
+  }
+  for(const id of ['diagnosticCenter','diagnosticGrid','diagnosticScenario','diagnosticRefresh','diagnosticError','diagnosticDemo','diagnosticClock','diagnosticPending','diagnosticOpen','diagnosticClose'])nodes.set(id,new Node());
+  const document={activeElement:null,getElementById:id=>nodes.get(id),createElement:tag=>new Node(tag),createElementNS:(_ns,tag)=>new Node(tag)};
+  const center=nodes.get('diagnosticCenter'),grid=nodes.get('diagnosticGrid'),select=nodes.get('diagnosticScenario');center.hidden=true;select.value='overview';
+  const window={loneDiagnosticModel:model,loneDesktop:{getDiagnostics:()=>new Promise((resolve,reject)=>pending.push({resolve,reject}))},addEventListener:(name,fn)=>events.set(name,fn)};
+  vm.runInNewContext(fs.readFileSync(path.join(dir,'diagnostics-renderer.js'),'utf8'),{window,document,
+    setTimeout:(fn,ms)=>{const id=++nextTimer;timers.set(id,{fn,ms});return id;},clearTimeout:id=>timers.delete(id)});
+  const flush=()=>new Promise(resolve=>setImmediate(resolve));
+  const tick=ms=>{for(const [id,t] of [...timers])if(t.ms===ms){timers.delete(id);t.fn();}};
+  const click=id=>nodes.get(id).handlers.click();
+  check(grid.children.length===7&&grid.children.every(c=>c.dataset.state==='unknown'),'Renderer starts with no fabricated health');
+  click('diagnosticOpen');check(!center.hidden&&center.scrolled&&pending.length===1,'Open explicitly queries restricted API');
+  pending.shift().resolve(envelope('overview'));await flush();
+  check(grid.children.length===7&&grid.children.some(c=>c.dataset.state==='healthy'),'Actual renderer renders validated demonstration');
+  check(center.dataset.simulation==='true'&&!nodes.get('diagnosticDemo').hidden,'Actual renderer labels simulation');
+  check(grid.attrs['aria-busy']==='false','Busy state released');tick(550);
+  click('diagnosticRefresh');click('diagnosticClose');
+  check(center.hidden&&document.activeElement===nodes.get('diagnosticOpen'),'Close restores focus');
+  pending.shift().resolve(envelope('auth-failure'));await flush();
+  check(grid.children.find(c=>c.dataset.card==='https').dataset.state==='healthy','Closed generation ignores late error response');
+  click('diagnosticOpen');pending.shift().reject(Error('credential=private-value'));await flush();
+  check(grid.children.every(c=>c.dataset.state==='unknown'),'Provider exception clears previously healthy cards');
+  check(!nodes.get('diagnosticError').hidden&&!nodes.get('diagnosticError').textContent.includes('private-value'),'Only sanitized provider error appears');
+  tick(550);click('diagnosticRefresh');tick(2500);await flush();
+  check(grid.children.every(c=>c.dataset.state==='unknown'),'UI timeout never retains healthy state');
+  check(nodes.get('diagnosticError').textContent.includes('prazo'),'UI timeout explicitly explained');
+  pending.shift().resolve(envelope('overview'));await flush();tick(550);
+  click('diagnosticRefresh');pending.shift().resolve(envelope('recovered'));await flush();
+  check(grid.children.find(c=>c.dataset.card==='https').dataset.state==='healthy','Actual renderer recovers after failed request');
+  check(nodes.get('diagnosticError').hidden,'Recovery removes old error');
+  events.get('pagehide')();check(![...timers.values()].some(t=>t.ms===550),'Page exit cancels presentation debounce');
+}
 async function mainIpc(){
   const app=new EventEmitter(),paths=[],handlers=new Map(),listeners=new Map();let controller;
   const policy=require('../apps/windows-ui/desktop-policy.cjs');
@@ -121,4 +161,4 @@ function staticPreservation(){
   const files=require('../apps/windows-ui/package.json').build.files;
   for(const f of ['diagnostics-host.cjs','diagnostics-fixtures.json','diagnostics-contract.js','diagnostics-model.js','diagnostics-renderer.js','diagnostics.css'])check(files.includes(f),'Future package include list, without packaging');
 }
-(async()=>{projections();await hosts();await bridge();await mainIpc();staticPreservation();console.log(`PASS: ${checks} diagnostic center assertions; fixtures only, no Electron or sensors.`);})().catch(error=>{console.error(error);process.exitCode=1;});
+(async()=>{projections();await hosts();await bridge();await rendererComponents();await mainIpc();staticPreservation();console.log(`PASS: ${checks} diagnostic center assertions; fixtures only, no Electron or sensors.`);})().catch(error=>{console.error(error);process.exitCode=1;});
