@@ -1,5 +1,6 @@
 """Explicit fixtures. No OS, HTTPS, IPC, sensor or startup probe is implemented."""
 from collections import deque
+from itertools import islice
 
 from .contracts import Component, DiagnosticError, Probe
 
@@ -10,7 +11,7 @@ class SimulatedProvider:
     def __init__(self, component, frames=()):
         if type(component) is not Component:
             raise DiagnosticError('invalid_component')
-        frames = tuple(frames)
+        frames = tuple(islice(frames, 65))
         if len(frames) > 64:
             raise DiagnosticError('fixture_queue_limit')
         self.component = component

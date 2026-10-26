@@ -2,7 +2,7 @@
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import json
-import math
+from itertools import repeat
 import unittest
 
 from diagnostics.contracts import Component as C, DiagnosticError, MAX_REPORT_BYTES, Outcome, Probe
@@ -77,6 +77,14 @@ class DiagnosticContractTests(unittest.TestCase):
 
     def test_fixture_queue_bound(self):
         with self.assertRaises(DiagnosticError):SimulatedProvider(C.CPU,[None]*65)
+
+    def test_infinite_fixture_iterator_is_bounded_before_materialization(self):
+        with self.assertRaisesRegex(DiagnosticError,'fixture_queue_limit'):
+            SimulatedProvider(C.CPU,repeat(None))
+
+    def test_infinite_provider_iterator_is_bounded_before_materialization(self):
+        with self.assertRaisesRegex(DiagnosticError,'too_many_providers'):
+            DiagnosticEngine(repeat(SimulatedProvider(C.CPU)))
 
 
 class DiagnosticClassificationTests(unittest.TestCase):
@@ -174,6 +182,7 @@ class DiagnosticLifecycleTests(unittest.TestCase):
         engine=DiagnosticEngine([SimulatedProvider(C.CPU,[fixture(C.CPU)])]);engine.collect(NOW,100)
         row=record(engine.snapshot(NOW-timedelta(seconds=1),101),C.CPU)
         self.assertEqual(row['state'],'unknown');self.assertEqual(row['code'],'invalid_time')
+        self.assertIsNone(row['age_seconds'])
 
     def test_monotonic_rollback_rejected(self):
         engine=DiagnosticEngine();engine.snapshot(NOW,100)

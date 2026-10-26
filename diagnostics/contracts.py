@@ -85,7 +85,9 @@ class Probe:
             raise DiagnosticError('operational_providers_not_authorized')
         utc(self.observed_at)
         tick(self.observed_monotonic)
-        if type(self.facts) not in (dict, MappingProxyType) or set(self.facts) - set(FACTS[self.component]):
+        if (type(self.facts) not in (dict, MappingProxyType)
+                or len(self.facts) > len(FACTS[self.component])
+                or set(self.facts) - set(FACTS[self.component])):
             raise DiagnosticError('invalid_facts')
         copied = dict(self.facts)
         for name, value in copied.items():

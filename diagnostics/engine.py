@@ -1,5 +1,6 @@
 """Pure diagnostic reducer and bounded cache; no sockets, processes, files or timers."""
 import json
+from itertools import islice
 from threading import RLock
 
 from .contracts import (Component, DiagnosticError, FACTS, MAX_REPORT_BYTES,
@@ -73,7 +74,7 @@ class DiagnosticEngine:
     malicious Python providers. The test runner separately denies external I/O.
     """
     def __init__(self, providers=()):
-        self.providers = tuple(providers)
+        self.providers = tuple(islice(providers, len(Component) + 1))
         if len(self.providers) > len(Component):
             raise DiagnosticError('too_many_providers')
         self._providers = {}
@@ -142,6 +143,7 @@ class DiagnosticEngine:
                 age = max(monotonic_age, utc_age)
                 if monotonic_age < 0 or utc_age < 0:
                     state, code = 'unknown', 'invalid_time'
+                    age = None
                 elif age > ttl:
                     state, code = 'stale', 'observation_stale'
                 else:
