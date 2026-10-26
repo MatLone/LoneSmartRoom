@@ -9,6 +9,7 @@
   <link rel="icon" href="assets/brand/windows-icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="desktop.css">
   <link rel="stylesheet" href="monitoring.css">
+  <link rel="stylesheet" href="diagnostics.css">
 </head>
 <body>
 <div class="window" id="dashboard" data-mode="dashboard">
@@ -33,6 +34,20 @@
     <section id="panel-monitor" role="tabpanel" aria-labelledby="tab-monitor" hidden>
       <div class="page-heading"><div><span class="eyebrow">LONE SMART ROOM / MONITORAMENTO</span><h1>Seu PC, em foco<span>.</span></h1><p>Uma visão clara do hardware, quando houver dados reais.</p></div><span class="section-index" aria-hidden="true">02</span></div>
       <div class="notice" id="monitoringNotice"><span>Coletor local desativado</span></div>
+      <section class="surface diagnostic-entry" aria-labelledby="diagnosticEntryTitle">
+        <span class="icon-tile"><span data-icon="shield"></span></span>
+        <div><h2 id="diagnosticEntryTitle">Central de Diagnóstico</h2><p>Conexão, componentes e qualidade das evidências.</p><small>Demonstração isolada disponível em desenvolvimento.</small></div>
+        <button id="diagnosticOpen" class="button">Abrir central<span data-icon="arrow"></span></button>
+      </section>
+      <section id="diagnosticCenter" class="diagnostic-center" aria-labelledby="diagnosticTitle" tabindex="-1" hidden>
+        <header class="diagnostic-heading"><div><span class="eyebrow">LONE SMART ROOM / AUTODIAGNÓSTICO</span><h2 id="diagnosticTitle">Central de Diagnóstico<span>.</span></h2><p>Evidências claras. Nenhum reparo automático.</p></div><button id="diagnosticClose" class="button" aria-label="Fechar Central de Diagnóstico">Voltar ao monitoramento</button></header>
+        <div class="diagnostic-demo" id="diagnosticDemo" role="note"><span class="diagnostic-demo-dot"></span><div><strong>SIMULAÇÃO · DADOS DE DEMONSTRAÇÃO</strong><p>Nenhuma sonda real é executada. Estes estados não descrevem seu computador.</p></div><span class="diagnostic-readonly">SOMENTE LEITURA</span></div>
+        <div class="diagnostic-toolbar"><label for="diagnosticScenario">Cenário simulado<select id="diagnosticScenario"><option value="overview">Visão geral</option><option value="healthy">Verificações saudáveis</option><option value="inactive">Aplicativo inativo normalmente</option><option value="offline">Agente sem resposta</option><option value="listener-mismatch">Identidade do listener incorreta</option><option value="auth-failure">Falha de autenticação</option><option value="pipe-absent">Pipe ausente</option><option value="sensor-unavailable">Sensor indisponível</option><option value="stale">Dados desatualizados</option><option value="provider-error">Erro do provedor</option><option value="unverified">Sem evidências</option><option value="recovered">Recuperação após falha</option><option value="startup-inconclusive">Inicialização inconclusiva</option></select></label><button id="diagnosticRefresh" class="button">Atualizar demonstração</button><span id="diagnosticClock">Relógio simulado: aguardando</span></div>
+        <p id="diagnosticError" class="diagnostic-error" role="status" hidden></p>
+        <div id="diagnosticGrid" class="diagnostic-grid" aria-busy="false"></div>
+        <section class="diagnostic-pending" aria-labelledby="diagnosticPendingTitle"><div class="diagnostic-section-label"><span data-icon="lock"></span><h3 id="diagnosticPendingTitle">Pendências preservadas</h3></div><p>Uma consulta normal ou uma demonstração saudável não encerra estas investigações.</p><ul id="diagnosticPending"></ul></section>
+        <p class="diagnostic-footnote">Sem acesso a credenciais ou comandos. Ausência de evidências não confirma falha nem computador desligado.</p>
+      </section>
       <div class="sensor-grid" id="sensorGrid"></div>
       <section class="surface gpu-details" id="gpuMetrics" aria-label="Sensores AMD Radeon RX 6750 XT"></section>
       <div class="storage-metrics" id="storageMetrics" aria-label="Armazenamento local"></div>
@@ -55,5 +70,8 @@
 <script src="desktop.js"></script>
 <script src="monitoring-model.js"></script>
 <script src="monitoring-renderer.js"></script>
+<script src="diagnostics-contract.js"></script>
+<script src="diagnostics-model.js"></script>
+<script src="diagnostics-renderer.js"></script>
 </body>
 </html>

@@ -3,6 +3,11 @@ const {contextBridge, ipcRenderer} = require('electron');
 contextBridge.exposeInMainWorld('loneDesktop', Object.freeze({
   getVersion: () => ipcRenderer.invoke('widget:version'),
   getMetrics: () => ipcRenderer.invoke('monitoring:snapshot'),
+  getDiagnostics: (scenario='overview') => {
+    if(typeof scenario!=='string'||!['overview','healthy','inactive','offline','listener-mismatch','auth-failure','pipe-absent','sensor-unavailable','stale','provider-error','unverified','recovered','startup-inconclusive'].includes(scenario))
+      return Promise.reject(new Error('Invalid diagnostic scenario'));
+    return ipcRenderer.invoke('diagnostics:snapshot',{v:1,scenario});
+  },
   onMetrics: callback => {
     if(typeof callback!=='function')throw new TypeError('Expected callback');
     const handler=(_event,value)=>callback(value);

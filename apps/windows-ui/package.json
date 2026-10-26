@@ -41,7 +41,13 @@
       "monitoring-renderer.js",
       "monitoring.css",
       "monitoring-runtime.cjs",
-      "monitoring-package.json"
+      "monitoring-package.json",
+      "diagnostics-contract.js",
+      "diagnostics-model.js",
+      "diagnostics-renderer.js",
+      "diagnostics-host.cjs",
+      "diagnostics-fixtures.json",
+      "diagnostics.css"
     ],
     "directories": {
       "output": "dist"

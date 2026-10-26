@@ -6,6 +6,7 @@ const entryUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
 const resources = new Set([
   'index.html', 'desktop.css', 'desktop.js', 'app-version.js',
   'monitoring-model.js', 'monitoring-renderer.js', 'monitoring.css',
+  'diagnostics-contract.js', 'diagnostics-model.js', 'diagnostics-renderer.js', 'diagnostics.css',
   'assets/brand/logo-horizontal.svg', 'assets/brand/logo-header-small.svg',
   'assets/brand/windows-icon.svg', 'assets/brand/windows-icon.png'
 ].map(name => pathToFileURL(path.join(__dirname, name)).href));

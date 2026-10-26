@@ -9,16 +9,23 @@ const {createController} = require('./desktop-window.cjs');
 
 // Isolated development profiles never touch the installed application's userData.
 const developmentReview = !app.isPackaged && process.argv.includes('--lone-development-review');
-const monitoringDevelopment = developmentReview && process.argv.includes('--lone-monitoring-development') &&
+const diagnosticsReview = developmentReview && process.argv.includes('--lone-diagnostics-preview');
+const monitoringDevelopment = !diagnosticsReview && developmentReview && process.argv.includes('--lone-monitoring-development') &&
   /^[a-f0-9]{32}$/.test(process.env.LONE_MONITORING_RUN_ID || '');
 const gpuDevelopment=monitoringDevelopment&&process.argv.includes('--lone-gpu-development');
 let monitoringHost=null, monitoringQuitReady=false, monitoringQuitting=false;
 const monitoringEnabled=app.isPackaged||monitoringDevelopment;
+const {createDiagnosticsHost}=require('./diagnostics-host.cjs');
+const diagnosticsHost=createDiagnosticsHost({enabled:diagnosticsReview});
+app.on('will-quit',()=>diagnosticsHost.stop());
 if (developmentReview) {
   const raw = process.argv.find(value => value.startsWith('--force-device-scale-factor='))?.split('=')[1] || '1';
   const scale = ['1', '1.25', '1.5'].includes(raw) ? raw.replace('.', '_') : '1';
   const review = process.argv.includes('--lone-tray-visual-review') ? 'visual' : 'automated';
-  const base = monitoringDevelopment
+  const diagnosticId=/^[a-f0-9]{32}$/.test(process.env.LONE_DIAGNOSTICS_REVIEW_ID||'')?process.env.LONE_DIAGNOSTICS_REVIEW_ID:'local';
+  const base = diagnosticsReview
+    ? path.resolve(__dirname, '../../.cache/windows-diagnostics-review', diagnosticId, scale)
+    : monitoringDevelopment
     ? path.resolve(__dirname, '../../.cache/windows-monitoring-development', process.env.LONE_MONITORING_RUN_ID)
     : path.resolve(__dirname, '../../.cache/windows-tray-review/dev5', review, scale);
   for (const [name, sub] of [['userData', 'profile'], ['sessionData', 'session'], ['logs', 'logs'], ['crashDumps', 'crashes']]) {
@@ -41,6 +48,7 @@ function registerIpc() {
   handle('window:tray', 0, () => ({hidden: controller.hideToTray(), state: state()}));
   handle('monitoring:snapshot', 0, () => monitoringHost?.view() ||
     ({v:1,connection:'disabled',simulated:false,error:null,snapshot:null,last_valid_at:{}}));
+  handle('diagnostics:snapshot', 1, query => diagnosticsHost.snapshot(query));
   ipcMain.on('widget:minimize', (event, ...args) => {if (trusted(event, args, 0)) controller.minimize();});
   ipcMain.on('widget:close', (event, ...args) => {if (trusted(event, args, 0)) controller.close();});
 }
@@ -111,4 +119,5 @@ if (!app.requestSingleInstanceLock()) {
   }).catch(() => {console.error('Unable to initialize desktop window');if (controller) controller.quit();else app.quit();});
   app.on('window-all-closed', () => {if (controller) controller.quit();else app.quit();});
 }
-if(typeof module==='object')module.exports={monitoringDiagnostics:()=>monitoringHost?.diagnostics()||null};
+if(typeof module==='object')module.exports={monitoringDiagnostics:()=>monitoringHost?.diagnostics()||null,
+  diagnosticPreview:()=>diagnosticsHost.diagnostics()};
