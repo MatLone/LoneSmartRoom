@@ -104,6 +104,13 @@ class AdlxProvider:
     def _event(self,code):
         self._events.append(code);self._events=self._events[-16:]
 
+    def _note(self,rule,metric=None):
+        # Optional local diagnostics; cannot alter success/failure of a metric read.
+        callback=getattr(self._adapter,'note_provider',None)
+        if callable(callback):
+            try:callback(rule,metric=metric)
+            except Exception:pass
+
     def diagnostics(self):
         return {'opened':self._opened,'closed':self._closed,'sdk_timestamp_ms':self._last_stamp,'events':tuple(self._events)}
 
@@ -170,8 +177,12 @@ class AdlxProvider:
                                 or not 0<=frame.sdk_timestamp_ms<=2**63-1 or type(frame.age_seconds) not in (int,float)
                                 or not math.isfinite(frame.age_seconds) or not 0<=frame.age_seconds<=self._max_age
                                 or not isinstance(frame.readings,dict) or not set(frame.readings)<=set(BY_ID)):
+                            stale=(type(frame) is Frame and type(frame.age_seconds) in (int,float)
+                                   and frame.age_seconds>self._max_age)
+                            self._note('provider_sample_age_limit' if stale else 'provider_frame_shape')
                             raise ContractError('invalid_adlx_frame')
                         if self._last_stamp is not None and frame.sdk_timestamp_ms<=self._last_stamp:
+                            self._note('provider_timestamp_not_advanced')
                             self._event('sample_not_advanced');results.update((k,O(k,None,A.UNAVAILABLE)) for k in dynamic)
                         else:
                             self._last_stamp=frame.sdk_timestamp_ms
@@ -179,12 +190,14 @@ class AdlxProvider:
                                 try:
                                     value=self._validate(key,frame.readings.get(key,Reading(A.UNAVAILABLE,None)))
                                     results[key]=O(key,value.value,value.state)
-                                except Exception:results[key]=O(key,None,A.ERROR);self._event('invalid_reading')
+                                except Exception:
+                                    results[key]=O(key,None,A.ERROR);self._event('invalid_reading');self._note('provider_reading_invalid',key)
                             used=frame.readings.get('gpu.adlx.vram_used_mb')
                             if (used and used.state==A.AVAILABLE and self._capacity.state==A.AVAILABLE
                                     and type(used.value) is int and used.value>self._capacity.value):
                                 if 'gpu.adlx.vram_used_mb' in results:results['gpu.adlx.vram_used_mb']=O('gpu.adlx.vram_used_mb',None,A.ERROR)
                                 self._event('inconsistent_vram')
+                                self._note('provider_vram_inconsistent','gpu.adlx.vram_used_mb')
                     except WarmingUp:
                         results.update((k,O(k,None,A.WARMING_UP)) for k in dynamic)
                     except DeviceLost:

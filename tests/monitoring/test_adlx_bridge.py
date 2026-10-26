@@ -17,20 +17,21 @@ PROCESSES=[]
 BUILD=ROOT/'.cache/adlx-build'
 
 
-def mock_process(scenario='normal'):
-    allowed={'normal','unsupported','cap_error','read_fail','load_fail','init_fail','invalid','stale','warming','slow','close_fail','--self-test'}
+def mock_process(scenario='normal',diagnostics=False):
+    allowed={'normal','unsupported','cap_error','read_fail','load_fail','init_fail','invalid','stale','warming','slow','close_fail','unverified','--self-test'}
     assert scenario in allowed
     receipt=json.loads((BUILD/'bridge-mock-build.json').read_text());exe=BUILD/'bridge-mock.exe'
     assert receipt['mock'] is True and hashlib.sha256(exe.read_bytes()).hexdigest()==receipt['exeSha256']
     assert receipt['sourceSha256']==hashlib.sha256((ROOT/'native/adlx/bridge.cpp').read_bytes()).hexdigest()
-    p=subprocess.Popen([str(exe),scenario],cwd=ROOT,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,
+    command=[str(exe),scenario]+(['--diagnostics'] if diagnostics else [])
+    p=subprocess.Popen(command,cwd=ROOT,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,
         shell=False,close_fds=True,creationflags=subprocess.CREATE_NO_WINDOW,bufsize=0)
     PROCESSES.append(p);return p
 
 
 class BridgeTests(unittest.TestCase):
     def adapter(self,case='normal',**options):
-        a=NativeAdapter(LineTransport(lambda:mock_process(case)),data_kind=DataKind.SIMULATED,**options)
+        a=NativeAdapter(LineTransport(lambda:mock_process(case,options.get('diagnostics',False))),data_kind=DataKind.SIMULATED,**options)
         def close():
             try:a.close()
             except BridgeError:
@@ -39,7 +40,7 @@ class BridgeTests(unittest.TestCase):
 
     def test_native_policy_self_tests_no_adlx_loaded(self):
         p=mock_process('--self-test');data=p.stdout.readline(MAX_LINE);p.wait(timeout=3);p.stdin.close();p.stdout.close()
-        value=json.loads(data);self.assertTrue(value['ok']);self.assertEqual(value['checks'],19)
+        value=json.loads(data);self.assertTrue(value['ok']);self.assertEqual(value['checks'],31)
 
     def test_compiled_mock_contains_no_runtime_loader_or_adlx_name(self):
         data=(BUILD/'bridge-mock.exe').read_bytes().lower()
