@@ -169,9 +169,9 @@ class DiagnosticLifecycleTests(unittest.TestCase):
 
     def test_active_inactive_gpu_expiry_boundaries(self):
         engine=DiagnosticEngine([SimulatedProvider(C.GPU,[fixture(C.GPU)])]);engine.collect(NOW,100)
-        self.assertEqual(record(engine.snapshot(NOW+timedelta(seconds=3),103),C.GPU)['state'],'healthy')
+        self.assertEqual(record(engine.snapshot(NOW+timedelta(seconds=3),103),C.GPU)['state'],'stale')
         self.assertEqual(record(engine.snapshot(NOW+timedelta(seconds=3.001),103.001),C.GPU)['state'],'stale')
-        self.assertEqual(record(engine.snapshot(NOW+timedelta(seconds=11),111,'inactive'),C.GPU)['state'],'healthy')
+        self.assertEqual(record(engine.snapshot(NOW+timedelta(seconds=11),111,'inactive'),C.GPU)['state'],'stale')
         self.assertEqual(record(engine.snapshot(NOW+timedelta(seconds=11.001),111.001,'inactive'),C.GPU)['state'],'stale')
 
     def test_new_probe_cannot_claim_future_utc_or_monotonic(self):

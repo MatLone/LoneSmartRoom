@@ -58,6 +58,8 @@ def classify(probe):
     elif component == Component.STARTUP:
         if f['configured'] is False:
             return 'unavailable', 'startup_not_configured'
+        if f['dispatch_observed'] is False and f['bootstrap_succeeded'] is True:
+            return 'unknown', 'conflicting_startup_evidence'
         if f['configured'] is True and f['dispatch_observed'] is True and f['bootstrap_succeeded'] is False:
             return 'error', 'bootstrap_failure_observed'
         if f['configured'] is True and f['dispatch_observed'] is True and f['bootstrap_succeeded'] is True:
@@ -136,6 +138,8 @@ class DiagnosticEngine:
         for component in Component:
             error, probe = self._latest.get(component, ('not_observed', None))
             ttl = 11 if mode == 'inactive' and component in (Component.GPU, Component.ADLX) else ACTIVE_TTL[component]
+            if probe and probe.sample_interval_seconds is not None:
+                ttl = 3*probe.sample_interval_seconds
             state, code, age = 'unknown', error, None
             if probe is not None:
                 monotonic_age = monotonic-probe.observed_monotonic
@@ -144,11 +148,12 @@ class DiagnosticEngine:
                 if monotonic_age < 0 or utc_age < 0:
                     state, code = 'unknown', 'invalid_time'
                     age = None
-                elif age > ttl:
+                elif age >= ttl:
                     state, code = 'stale', 'observation_stale'
                 else:
                     state, code = classify(probe)
             records.append({'component':component.value,'state':state,'code':code,
+                            'detail_code':probe.detail_code.value if probe and probe.detail_code else None,
                             'evidence_kind':'simulated','observed_at':stamp(probe.observed_at) if probe else None,
                             'age_seconds':round(age, 3) if age is not None else None,
                             'valid':state == 'healthy','freshness_seconds':ttl,

@@ -32,6 +32,40 @@ class Outcome(StrEnum):
     UNSUPPORTED = 'unsupported'
 
 
+class DetailCode(StrEnum):
+    HTTPS_OK = 'https_status_verified'
+    CONNECTION_FAILED = 'connection_failed'
+    TLS_FAILED = 'tls_identity_failed'
+    AUTH_FAILED = 'authentication_failed'
+    HTTP_FAILED = 'status_response_failed'
+    LISTENER_MISMATCH = 'listener_owner_unverified'
+    LISTENER_OK = 'listener_identity_verified'
+    PIPE_DISCONNECTED = 'pipe_disconnected'
+    PIPE_IDENTITY_FAILED = 'pipe_identity_failed'
+    PIPE_CONTRACT_FAILED = 'pipe_contract_failed'
+    PIPE_LIMIT = 'pipe_limit_rejected'
+    METRICS_OK = 'metrics_valid'
+    METRICS_PARTIAL = 'metrics_partial_support'
+    METRICS_MISSING = 'metrics_missing'
+    METRICS_READ_ERROR = 'metrics_read_error'
+    METRICS_WARMING = 'metrics_warming_up'
+    METRICS_UNSUPPORTED = 'metrics_unsupported'
+    METRICS_STALE = 'metrics_stale'
+    AWAITING_FRESH = 'awaiting_new_sample'
+    ADLX_NOT_RUNNING = 'adlx_not_running'
+    ADLX_UNVERIFIED = 'adlx_library_unverified'
+    ADLX_REJECTED = 'adlx_frame_rejected'
+    ADLX_OK = 'adlx_frame_valid'
+    STARTUP_NOT_CONFIGURED = 'startup_entry_absent'
+    STARTUP_TARGET_INVALID = 'startup_target_unverified'
+    STARTUP_NOT_VERIFIED = 'startup_context_unverified'
+    STARTUP_DISPATCH_UNCONFIRMED = 'startup_dispatch_unconfirmed'
+    STARTUP_BOOTSTRAP_FAILED = 'startup_bootstrap_failed'
+    STARTUP_BOOTSTRAP_SEEN = 'startup_bootstrap_seen'
+    STARTUP_EXITED = 'startup_agent_returned'
+    STARTUP_EXISTING_INSTANCE = 'startup_existing_instance'
+
+
 FACTS = {
     Component.HTTPS: ('responded', 'authenticated', 'tls_verified'),
     Component.LISTENER: ('present', 'identity_matches', 'port'),
@@ -75,6 +109,8 @@ class Probe:
     outcome: Outcome = Outcome.OK
     schema_version: int = SCHEMA_VERSION
     evidence_kind: str = 'simulated'
+    detail_code: DetailCode | None = None
+    sample_interval_seconds: float | None = None
 
     def __post_init__(self):
         if type(self.component) is not Component or type(self.outcome) is not Outcome:
@@ -83,6 +119,12 @@ class Probe:
             raise DiagnosticError('incompatible_contract')
         if self.evidence_kind != 'simulated':
             raise DiagnosticError('operational_providers_not_authorized')
+        if self.detail_code is not None and type(self.detail_code) is not DetailCode:
+            raise DiagnosticError('invalid_detail_code')
+        if self.sample_interval_seconds is not None and (
+                self.component not in (Component.CPU, Component.RAM)
+                or tick(self.sample_interval_seconds) not in (1,5)):
+            raise DiagnosticError('invalid_diagnostic_sample_interval')
         utc(self.observed_at)
         tick(self.observed_monotonic)
         if (type(self.facts) not in (dict, MappingProxyType)
