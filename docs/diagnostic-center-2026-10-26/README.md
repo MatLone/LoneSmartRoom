@@ -233,8 +233,10 @@ O código dos testes nativos fica em `tests/electron-diagnostic-*.cjs` e não é
 incluído na lista de empacotamento. Capturas preservadas aqui são das execuções
 instrumentadas; o comando de prévia simples não grava capturas automaticamente.
 
-Não há instalação a reverter. Em branch de revisão, `git revert a7310a4` remove
-somente a implementação nova, mantendo o relatório/evidências. Não executar
+Não há instalação a reverter. Em branch de revisão, reverter primeiro
+`8fb005c` (testes dependentes) e depois `a7310a4` (implementação), mantendo o
+relatório/evidências. Essa ordem evita conflito ao remover o teste criado pela
+implementação e ampliado posteriormente. Não executar
 rollback, reinstalação ou restauração do perfil/banco. Todos os checkpoints e
 backups anteriores permanecem preservados. A integração real e qualquer
 implantação exigem autorização separada.
