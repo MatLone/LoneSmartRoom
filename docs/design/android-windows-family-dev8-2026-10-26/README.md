@@ -43,7 +43,7 @@ O botão WoL da prévia usa bridge substituta que apenas registra chamadas; não
 
 | Suíte | Resultado |
 |---|---|
-| Python geral, contexto normal da conta | 159 aprovados |
+| Python geral, contexto normal da conta | 159 iniciais; 206 finais após a fundação de diagnóstico |
 | Preservação específica do redesign | 3 aprovados, 50 arquivos fixados |
 | Monitoramento básico, somente mocks com I/O externo bloqueado | 133 aprovados |
 | Renderer Android existente | 65 assertions; 15 combinações responsivas |
