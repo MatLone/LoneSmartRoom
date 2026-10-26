@@ -1,5 +1,5 @@
 'use strict';
-// Exploratory acceptance test: records failures explicitly, no expected-failure masking.
+// Regression originally exposed by exploratory acceptance; no expected-failure masking.
 const fs=require('node:fs'),path=require('node:path');
 const {fixture,snapshot}=require('./electron-monitoring.cjs');
 const model=require('../apps/windows-ui/monitoring-model.js');
@@ -19,7 +19,7 @@ function sample(state='available'){
   cases.push({id:'next_valid_frame_restores_values_without_respawn',expected:true,actual:!f.host.view().refreshing&&f.host.view().snapshot.metrics.some(m=>m.id==='gpu.adlx.utilization'&&m.valid)});
   await f.host.stop();const failures=cases.filter(c=>c.actual!==c.expected);
   const result={ok:failures.length===0,checks:cases.length,failures:failures.length,cases,realProcesses:false,realSensors:false,
-    classification:'strict_restore_state_acceptance_not_a_numeric_data_leak',operationalSourceModified:false};
+    classification:'strict_restore_state_acceptance_not_a_numeric_data_leak',installedApplicationModified:false,developmentHostUnderTest:true};
   const out=path.resolve(__dirname,'../.cache/validation/dev6-complementary-plan-2026-10-26');fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'restore-diagnostic.json'),JSON.stringify(result,null,2)+'\n');
   console.log(JSON.stringify(result));process.exitCode=failures.length?1:0;
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

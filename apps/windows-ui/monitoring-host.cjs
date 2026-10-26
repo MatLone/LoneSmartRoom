@@ -4,6 +4,8 @@ const fs=require('node:fs'),path=require('node:path'),{spawn}=require('node:chil
 const model=require('./monitoring-model.js');
 const runtime=require('./monitoring-runtime.cjs');
 const MAX_LINE=132096;
+// UI retry budget only; does not change ADLX admission or metric expiry.
+const GPU_RESUME_WAIT_MS=10000;
 function createMonitoringHost({root,runId,simulated=false,packaged=false,gpu=false,resourcesPath,version,resolveLayout,
   publish=()=>{},spawnChild=spawn,now=()=>performance.now(),
   interval=setInterval,clear=clearInterval,timeout=setTimeout,cancel=clearTimeout}) {
@@ -15,14 +17,22 @@ function createMonitoringHost({root,runId,simulated=false,packaged=false,gpu=fal
   let child=null,buffer=Buffer.alloc(0),timer=null,deadline=null,pending=false,closing=false,last=null,lastAt=0,requestAt=0;
   let status='connecting',error=null,stopPromise=null,stopResolve=null,startedAt=0,attempted=false,stopTimedOut=false;
   const lastValid=new Map(),diagnostics={bridgePid:null,collectorPid:null,childPid:null,responses:0,reconnections:0,cleanStop:false,workerExited:false};
+  const dynamicGpu=m=>m.id.startsWith('gpu.adlx.')&&!m.id.endsWith('total_mb');
+  const resumedSample=m=>dynamicGpu(m)&&m.valid&&!m.stale&&m.state==='available'&&
+    m.interval_seconds===2&&m.age_seconds!==null&&now()-m.age_seconds*1000>=resumeAt;
   function view(){
     let snapshot=last?model.age(last,(now()-lastAt)/1000):null;
-    if(refreshing&&snapshot)snapshot={...snapshot,metrics:snapshot.metrics.map(m=>m.id.startsWith('gpu.adlx.')&&!m.id.endsWith('total_mb')?
-      {...m,value:null,valid:false,stale:false,state:'warming_up'}:m)};
-    return {v:1,connection:status,simulated,gpu_enabled:gpu,refreshing,error,snapshot,last_valid_at:Object.fromEntries(lastValid)};
+    const waiting=refreshing&&now()-resumeAt<GPU_RESUME_WAIT_MS;
+    const gpuResumeState=!gpu?'disabled':refreshing?(waiting?'updating':'unavailable'):resumeAt===null?'idle':'ready';
+    if(snapshot&&(refreshing||(gpu&&active&&resumeAt!==null)))snapshot={...snapshot,metrics:snapshot.metrics.map(m=>dynamicGpu(m)&&
+      (refreshing||(active&&resumeAt!==null&&m.valid&&!resumedSample(m)))?
+      {...m,value:null,valid:false,stale:false,state:refreshing&&!waiting?'unavailable':'warming_up'}:m)};
+    return {v:1,connection:status,simulated,gpu_enabled:gpu,refreshing:waiting,gpu_resume_state:gpuResumeState,error,snapshot,last_valid_at:Object.fromEntries(lastValid)};
   }
   function send(){publish(view());}
-  function fail(code){status='disconnected';error=code;pending=false;send();}
+  function fail(code){status='disconnected';error=code;pending=false;
+    if(gpu&&active&&!refreshing){resumeAt=now();refreshing=true;}
+    send();}
   function poll(){
     if(closing||!child||child.exitCode!==null)return;
     if(!diagnostics.bridgePid){if(now()-startedAt>10000){fail('launch_timeout');void stop();}return;}
@@ -47,8 +57,7 @@ function createMonitoringHost({root,runId,simulated=false,packaged=false,gpu=fal
         if(last&&snapshot.sequence<last.sequence)throw Error('sequence_regression');
         if(status==='disconnected')diagnostics.reconnections++;
         last=snapshot;lastAt=now();status='connected';error=null;diagnostics.responses++;
-        if(refreshing&&snapshot.metrics.some(m=>m.id.startsWith('gpu.adlx.')&&!m.id.endsWith('total_mb')&&
-          m.interval_seconds===2&&m.age_seconds!==null&&now()-m.age_seconds*1000>=resumeAt))refreshing=false;
+        if(refreshing&&snapshot.metrics.some(resumedSample))refreshing=false;
         for(const m of snapshot.metrics)if(m.valid)lastValid.set(m.id,m.collected_at);
         send();
       }catch{fail('invalid_metrics');}

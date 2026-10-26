@@ -90,6 +90,7 @@
     notice.dataset.connection=view?.connection||'disabled';
     if(connected&&snapshot.metrics.some(m=>m.stale))statusText+=' · há dados desatualizados';
     if(view?.refreshing)statusText+=' · atualizando após restauração';
+    if(view?.gpu_resume_state==='unavailable')statusText+=' · GPU indisponível após retomada';
     if(view?.error)statusText+=' · falha na leitura local';
     text(status,statusText);
     labels.forEach(([id],i)=>{
@@ -116,7 +117,8 @@
     text(gpuMetaText,gpuValues.join('\n'));
     const gpuMetric=byId.get('gpu.adlx.utilization'),gpuTemp=byId.get('gpu.adlx.temperature');
     text(gpuCaption,!view?.gpu_enabled?'Provedor GPU desativado':
-      !connected?'Coletor desconectado · dados indisponíveis':view?.refreshing?'Atualizando GPU após restauração · aguardando nova amostra':gpuMetric?.stale?'Dados GPU desatualizados':
+      !connected?'Coletor desconectado · dados indisponíveis':view?.refreshing?'Atualizando GPU após restauração · aguardando nova amostra':
+      view?.gpu_resume_state==='unavailable'?'GPU indisponível após retomada · aguardando recuperação':gpuMetric?.stale?'Dados GPU desatualizados':
       gpuMetric?.valid?'Somente leitura · ADLX · atualização '+gpuMetric.collected_at:'Aguardando leitura GPU válida · frames inválidos são descartados');
     const thermal=document.querySelectorAll('.thermal-values b');
     text(thermal[1],model.format(gpuTemp));
