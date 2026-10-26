@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from monitoring.adlx_bridge import BridgeError,LineTransport,NativeAdapter,decode,launch_native
-from monitoring.adlx_diagnostics import DiagnosticBuffer,convert_time,FRAME_FIELDS
+from monitoring.adlx_diagnostics import DiagnosticBuffer,convert_time,FRAME_FIELDS,UNITS
 from monitoring.adlx_provider import AdlxProvider,GPU_SPECS
 from monitoring.collector import Collector,Schedule
 from monitoring.contracts import DataKind
@@ -200,6 +200,27 @@ class DiagnosticTests(unittest.TestCase):
         a.transport.received_at=30
         with patch('monitoring.adlx_bridge.time.monotonic',return_value=30):self.assertEqual(a.latest('amd-rx6750xt').sdk_timestamp_ms,200)
         self.assertEqual(a.transport.starts,1)
+
+    def test_diagnostic_units_match_existing_optional_metric_contract(self):
+        self.assertEqual(UNITS,{spec.metric_id:spec.unit.value for spec in GPU_SPECS})
+        self.assertEqual(set(frame(diagnostics=False)),set(FRAME_FIELDS))
+
+    def test_unavailable_zero_available_null_and_cache_stale_not_accepted(self):
+        for state,value,rule in [('unavailable',0,'reading_null'),('available',None,'reading_type'),('stale',None,'reading_state')]:
+            payload=frame();payload['readings']['gpu.adlx.utilization']={'state':state,'value':value}
+            self.reject(payload,rule,stage='readings')
+
+    def test_opt_in_native_diagnostic_shape_is_strict(self):
+        value=frame();del value['diagnostic']['profile'];self.reject(value,'native_diagnostic_shape')
+        value=frame();del value['diagnostic'];self.reject(value,'frame_required_missing')
+
+    def test_first_rejection_survives_recent_record_eviction(self):
+        log=DiagnosticBuffer(True)
+        for _ in range(20):log.emit('frame','frame_structure_accepted',frame())
+        log.emit('time','age_null',unmatched())
+        for _ in range(1000):log.emit('frame','frame_structure_accepted',frame())
+        result=log.snapshot();self.assertEqual(result['records'][0]['rule'],'age_null')
+        self.assertLessEqual(len(result['records']),16);self.assertLessEqual(result['encodedBytes'],32768)
 
 
 if __name__=='__main__':unittest.main()

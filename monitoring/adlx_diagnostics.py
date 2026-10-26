@@ -67,7 +67,7 @@ class DiagnosticBuffer:
 
     def __init__(self,enabled=False):
         if type(enabled) is not bool:raise ValueError('boolean_required')
-        self.enabled=enabled;self._records=[];self._bytes=0;self._dropped=0;self._lock=Lock()
+        self.enabled=enabled;self._records=[];self._bytes=0;self._dropped=0;self._lock=Lock();self._first_rejection=None
 
     def emit(self,stage,rule,payload=None,*,field=None,metric=None,transport=None):
         if not self.enabled:return
@@ -100,11 +100,16 @@ class DiagnosticBuffer:
                     else:record['sensors'][name]={'state':'unknown','value_type':kind(sensor),'validity':'invalid_structure'}
         encoded=json.dumps(record,allow_nan=False,separators=(',',':')).encode('utf-8')
         with self._lock:
-            if len(encoded)>self.MAX_RECORD_BYTES or len(self._records)>=self.MAX_RECORDS or self._bytes+len(encoded)>self.MAX_BYTES:
+            if len(encoded)>self.MAX_RECORD_BYTES:
                 self._dropped=min(self._dropped+1,2**31-1);return
+            if self._first_rejection is None and rule!='frame_structure_accepted':self._first_rejection=encoded
             self._records.append(encoded);self._bytes+=len(encoded)
+            while len(self._records)>self.MAX_RECORDS or self._bytes>self.MAX_BYTES:
+                index=1 if self._records[0] is self._first_rejection else 0
+                removed=self._records.pop(index);self._bytes-=len(removed);self._dropped=min(self._dropped+1,2**31-1)
 
     def snapshot(self):
         with self._lock:
             return {'enabled':self.enabled,'records':[json.loads(x) for x in self._records],
-                    'encodedBytes':self._bytes,'dropped':self._dropped,'persistentFileLogging':False}
+                    'encodedBytes':self._bytes,'dropped':self._dropped,'persistentFileLogging':False,
+                    'retention':'first_rejection_and_recent'}
