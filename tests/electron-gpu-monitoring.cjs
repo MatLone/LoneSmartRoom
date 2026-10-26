@@ -40,7 +40,7 @@ function formatContract(){
   check(normalized(inactive).metrics.length===29,'Inactive GPU cadence explicitly permitted');
 }
 async function hostIntegration(){
-  assert.throws(()=>createMonitoringHost({runId:'a'.repeat(32),packaged:true,gpu:true}));checks++;
+  check(!!createMonitoringHost({runId:'a'.repeat(32),packaged:true,gpu:true}),'Packaged owned GPU host can be constructed without native operations');
   assert.throws(()=>createMonitoringHost({runId:'a'.repeat(32),gpu:true,simulated:true}));checks++;
   const f=fixture({gpu:true});f.host.start();
   check(f.args()[1].includes('--gpu-development')&&f.args()[1].includes('--duration')&&!f.args()[1].includes('--application'),'Fixed development GPU flag only');

@@ -124,7 +124,7 @@ async function mainWiring(lock,monitorFailure=false) {
   app.isPackaged=true;app.commandLine={appendSwitch:()=>{}};app.requestSingleInstanceLock=()=>lock;
   app.quit=()=>{quits++;};app.whenReady=()=>Promise.resolve();app.getVersion=()=> '2.0.0-dev.5';app.getPath=()=> 'isolated-mock';
   const frame={url:policy.entryUrl},wc={mainFrame:frame,isDestroyed:()=>false};
-  const controller={window:{webContents:wc},state:()=>({mode:'dashboard'}),start:()=>{starts++;},restoreCurrent:()=>{restores++;},hideToTray:()=>{hides++;return true;},setMode:m=>{if(!policy.validMode(m))throw Error('Invalid');},toggleMaximize:()=>{},minimize:()=>{},close:()=>{},quit:()=>{quits++;}};
+  const controller={window:{webContents:wc,on:()=>{}},state:()=>({mode:'dashboard'}),start:()=>{starts++;},restoreCurrent:()=>{restores++;},hideToTray:()=>{hides++;return true;},setMode:m=>{if(!policy.validMode(m))throw Error('Invalid');},toggleMaximize:()=>{},minimize:()=>{},close:()=>{},quit:()=>{quits++;}};
   const monitor={start:()=>{if(monitorFailure)throw Error('mock failure');},stop:()=>Promise.resolve(true),view:()=>({v:1,connection:'disconnected'}),diagnostics:()=>({})};
   const context=vm.createContext({__dirname:directory,process:{argv:[],env:{},resourcesPath:'C:/mock-resources'},console,require:name=>{
     if(name==='electron')return {app,BrowserWindow:()=>{},ipcMain:{handle:(n,fn)=>ipcHandlers.set(n,fn),on:(n,fn)=>ipcEvents.set(n,fn)},screen:{},session:{defaultSession:{setPermissionRequestHandler:()=>{},setPermissionCheckHandler:()=>{},webRequest:{onBeforeRequest:()=>{}}}},Tray:()=>{},Menu:{}};

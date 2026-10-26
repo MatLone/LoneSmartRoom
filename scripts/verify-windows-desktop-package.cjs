@@ -6,13 +6,19 @@ const asar=require(path.join(app,'node_modules/@electron/asar'));
 const bundle=path.resolve(process.argv[2]||path.resolve(app,require(path.join(app,'electron-builder.development.cjs')).directories.output,'win-unpacked'));
 const exe=path.join(bundle,'Lone Smart Room.exe'),archive=path.join(bundle,'resources/app.asar');
 const hash=buffer=>crypto.createHash('sha256').update(buffer).digest('hex');
-const files=['main.cjs','desktop-main.cjs','desktop-policy.cjs','desktop-window.cjs','desktop-preferences.cjs','preload.cjs','index.html','desktop.css','desktop.js','app-version.js','assets/brand/windows-icon.ico','assets/brand/windows-icon.svg','assets/brand/windows-icon.png','assets/brand/logo-horizontal.svg','assets/brand/logo-header-small.svg'];
+const files=['main.cjs','desktop-main.cjs','desktop-policy.cjs','desktop-window.cjs','desktop-preferences.cjs','preload.cjs','index.html','desktop.css','desktop.js','app-version.js',
+  'monitoring-host.cjs','monitoring-model.js','monitoring-renderer.js','monitoring-runtime.cjs','monitoring.css','monitoring-package.json',
+  'assets/brand/windows-icon.ico','assets/brand/windows-icon.svg','assets/brand/windows-icon.png','assets/brand/logo-horizontal.svg','assets/brand/logo-header-small.svg'];
 for(const name of files)assert(asar.extractFile(archive,name.split('/').join(path.sep)).equals(fs.readFileSync(path.join(app,name))),name);
 const pkg=JSON.parse(asar.extractFile(archive,'package.json'));
 const sourcePackage=JSON.parse(fs.readFileSync(path.join(app,'package.json'),'utf8'));
-assert.equal(pkg.version,'2.0.0-dev.5');assert.equal(pkg.name,'lone-smart-room');
+assert.equal(pkg.version,'2.0.0-dev.6');assert.equal(pkg.name,'lone-smart-room');
 // electron-builder strips its build configuration from packaged package.json.
 assert.equal(sourcePackage.build.appId,'com.lone.smartroom');
+// Verify the installed-shape sidecar tree without executing its interpreter/bridge.
+require('../apps/windows-ui/monitoring-runtime.cjs').bundledLayout(path.join(bundle,'resources'),pkg.version);
+const payload=path.join(root,'.cache/windows-monitoring-runtime/dev6'),manifest=JSON.parse(fs.readFileSync(path.join(payload,'manifest.json')));
+for(const name of ['manifest.json',...Object.keys(manifest.files)])assert(fs.readFileSync(path.join(bundle,'resources/monitoring',name)).equals(fs.readFileSync(path.join(payload,name))),'Sidecar differs from reviewed payload: '+name);
 const raw=fs.readFileSync(exe),u16=p=>raw.readUInt16LE(p),u32=p=>raw.readUInt32LE(p);
 const pe=u32(0x3c);assert.equal(raw.subarray(pe,pe+4).toString('hex'),'50450000');
 const sectionCount=u16(pe+6),optional=pe+24,dirs=optional+(u16(optional)===0x20b?112:96),resRva=u32(dirs+16),table=optional+u16(pe+20);
@@ -24,6 +30,6 @@ let icons=[],groups=[];for(const [kind,target]of entries(0)){if(kind===3)icons=l
 const ico=fs.readFileSync(path.join(app,'assets/brand/windows-icon.ico')),count=ico.readUInt16LE(4);
 for(let i=0;i<count;i++){const p=6+16*i,size=ico.readUInt32LE(p+8),start=ico.readUInt32LE(p+12),image=ico.subarray(start,start+size);assert(icons.some(icon=>icon.equals(image)),'Official ICO image missing from PE');}
 assert(groups.length>0);
-const result={ok:true,version:pkg.version,appIdFromBuildConfiguration:sourcePackage.build.appId,packagedName:pkg.name,resourcesVerified:files,exeSha256:hash(raw),asarSha256:hash(fs.readFileSync(archive)),peIconGroups:groups.length,peIconImages:icons.length,officialIconImagesMatched:count,generatedExecutableRun:false,installerExecuted:false};
-const output=path.join(root,'.cache/validation/windows-dev5/package-inspection.json');fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(result,null,2)+'\n');
+const result={ok:true,version:pkg.version,appIdFromBuildConfiguration:sourcePackage.build.appId,packagedName:pkg.name,resourcesVerified:files,sidecarFilesVerified:Object.keys(manifest.files).length+1,exeSha256:hash(raw),asarSha256:hash(fs.readFileSync(archive)),peIconGroups:groups.length,peIconImages:icons.length,officialIconImagesMatched:count,generatedExecutableRun:false,installerExecuted:false};
+const output=path.join(root,'.cache/validation/windows-dev6/package-inspection.json');fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(result,null,2)+'\n');
 console.log(`PASS: ${files.length} ASAR files, package identity and ${count} official PE icon images; executable not run.`);

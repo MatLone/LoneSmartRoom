@@ -56,7 +56,7 @@
     for(const text of ['Coletor independente → cache → Named Pipe local → processo principal → interface.',
       'CPU, RAM e volumes C:/D: usam APIs de leitura do Windows. Cada indicador conserva origem, unidade, horário e validade.',
       'Coleta somente no contexto do aplicativo. Nenhuma conexão do Electron ao agente HTTPS.',
-      'Em desenvolvimento isolado, GPU, hotspot, VRAM, clock, potência e RPM usam somente consultas ADLX. Sensores não suportados permanecem indisponíveis.',
+      'GPU, hotspot, VRAM, clock, potência e RPM usam somente consultas ADLX. Sensores não suportados permanecem indisponíveis.',
       'GPU atualiza a cada 2 segundos, com cadência reduzida em inatividade. MB são as unidades nativas ADLX, sem reinterpretar como GiB.',
       'Temperatura da CPU, controle de ventoinhas e FPS não estão integrados. Atividade PDH pode ficar indisponível.',
       'ACL e verificações de processo não isolam completamente outros programas sob a mesma conta.']){
@@ -72,7 +72,13 @@
     text(document.querySelector('.chart-caption span:last-child'),'Sem série histórica');
   }
   document.querySelectorAll('[data-metric]').forEach(button=>button.addEventListener('click',()=>historyNotice(lastView?.connection==='connected')));
-  function metadata(m){return m?`${m.source} · ${m.unit} · ${validStates[m.state]||'Indisponível'} · ${m.collected_at||'sem leitura'}`:'Sem leitura disponível';}
+  function metadata(m){
+    if(!m)return 'Sem leitura disponível';
+    const seconds=n=>Number.isFinite(n)?n.toLocaleString('pt-BR',{maximumFractionDigits:1})+' s':'não informada';
+    return `${m.source} · ${m.unit} · ${validStates[m.state]||'Indisponível'} · ${m.collected_at||'sem leitura'} · cache ${seconds(m.age_seconds)} · cadência ${seconds(m.interval_seconds)}`+
+      (m.ingress_age_seconds===undefined?'':` · idade no ingresso ${seconds(m.ingress_age_seconds)} (limite 1,5 s) · idade da informação ${seconds(m.information_age_seconds)}`)+
+      ` · limite de exibição do cache ${seconds(model.displayLimit(m))}`;
+  }
   function refresh(){
     if(document.hidden)return; // Receive state, but defer DOM work while hidden.
     const view=lastView,connected=view?.connection==='connected';
@@ -83,6 +89,7 @@
       view?.connection==='disabled'?'Coletor local desativado':view?.connection==='stopped'?'Sessão de coleta encerrada':'Coletor desconectado · dados indisponíveis');
     notice.dataset.connection=view?.connection||'disabled';
     if(connected&&snapshot.metrics.some(m=>m.stale))statusText+=' · há dados desatualizados';
+    if(view?.refreshing)statusText+=' · atualizando após restauração';
     if(view?.error)statusText+=' · falha na leitura local';
     text(status,statusText);
     labels.forEach(([id],i)=>{
@@ -108,8 +115,8 @@
     });
     text(gpuMetaText,gpuValues.join('\n'));
     const gpuMetric=byId.get('gpu.adlx.utilization'),gpuTemp=byId.get('gpu.adlx.temperature');
-    text(gpuCaption,!view?.gpu_enabled?'Provedor GPU desativado · disponível apenas em desenvolvimento isolado':
-      !connected?'Coletor desconectado · dados indisponíveis':gpuMetric?.stale?'Dados GPU desatualizados':
+    text(gpuCaption,!view?.gpu_enabled?'Provedor GPU desativado':
+      !connected?'Coletor desconectado · dados indisponíveis':view?.refreshing?'Atualizando GPU após restauração · aguardando nova amostra':gpuMetric?.stale?'Dados GPU desatualizados':
       gpuMetric?.valid?'Somente leitura · ADLX · atualização '+gpuMetric.collected_at:'Aguardando leitura GPU válida · frames inválidos são descartados');
     const thermal=document.querySelectorAll('.thermal-values b');
     text(thermal[1],model.format(gpuTemp));

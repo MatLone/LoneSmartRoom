@@ -14,7 +14,7 @@ import sys
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
-PAYLOAD=ROOT/'.cache/windows-monitoring-runtime/dev5'
+PAYLOAD=ROOT/'.cache/windows-monitoring-runtime/dev6'
 
 
 def main():
@@ -26,7 +26,7 @@ def main():
     manifest=json.loads((PAYLOAD/'manifest.json').read_text())
     pin=json.loads((ROOT/'apps/windows-ui/monitoring-package.json').read_text())
     check(hashlib.sha256((PAYLOAD/'manifest.json').read_bytes()).hexdigest()==pin['manifestSha256'])
-    check(manifest['version']==pin['version']=='2.0.0-dev.5')
+    check(manifest['version']==pin['version']=='2.0.0-dev.6')
     check(manifest['pythonVersion']==pin['pythonVersion']=='3.13.3')
     check(set(manifest['files'])=={p.relative_to(PAYLOAD).as_posix() for p in PAYLOAD.rglob('*') if p.is_file() and p.name!='manifest.json'})
     native=[]
@@ -44,10 +44,16 @@ def main():
             source=ROOT/('/'.join(Path(name).parts[1:]))
             if source.is_file():check(hashlib.sha256(source.read_bytes()).hexdigest()==digest)
     base=Path(sys._base_executable).resolve().parent
-    for name in native+['runtime/LICENSE.txt']:
+    for name in [n for n in native if n.startswith('runtime/')]+['runtime/LICENSE.txt']:
         original=base/Path(name).relative_to('runtime')
         check(original.is_file() and original.read_bytes()==(PAYLOAD/name).read_bytes())
     check((PAYLOAD/'runtime/python313._pth').read_text()=='python313.zip\nDLLs\n.\n')
+    receipt=json.loads((PAYLOAD/'code/native/adlx/bridge-build.json').read_text())
+    check(receipt['sourceSha256']==hashlib.sha256((ROOT/'native/adlx/bridge.cpp').read_bytes()).hexdigest())
+    check(receipt['exeSha256']==hashlib.sha256((PAYLOAD/'code/native/adlx/bridge.exe').read_bytes()).hexdigest())
+    check((PAYLOAD/'code/native/adlx/bridge.exe').read_bytes()==(ROOT/'.cache/adlx-build/bridge.exe').read_bytes())
+    check(not any('amdadlx64.dll' in p.lower() or p.endswith('.h') for p in manifest['files']))
+    check((PAYLOAD/'licenses/AMD-ADLX-SDK-License.pdf').read_bytes()==(ROOT/'third_party/adlx-v1.4/ADLX SDK License Agreement.pdf').read_bytes())
     members=0
     with zipfile.ZipFile(PAYLOAD/'runtime/python313.zip') as archive:
         check(archive.testzip() is None)
@@ -73,11 +79,13 @@ def main():
         check(Path(module.__file__).is_relative_to(PAYLOAD));modules.append(module.__name__)
     for file in sorted((PAYLOAD/'code/scripts').glob('*.py')):
         runpy.run_path(str(file),run_name='__package_inspection__');checks+=1
+    from monitoring.gpu_development import validate_gpu_mode
+    validate_gpu_mode(PAYLOAD/'code',True,True,False,None);checks+=1
     result={'ok':True,'checks':checks,'files':len(manifest['files']),'pythonVersion':manifest['pythonVersion'],
         'version':manifest['version'],'stdlibPythonFiles':members,'importedMonitoringModules':modules,
         'manifestSha256':pin['manifestSha256'],'packagedExecutablesRun':False,'realSensors':False,
         'dependenciesInstalled':False,'nativeCallsAllowed':False}
-    out=ROOT/'.cache/validation/windows-dev5/runtime-inspection.json'
+    out=ROOT/'.cache/validation/windows-dev6/runtime-inspection.json'
     out.write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(result))
 

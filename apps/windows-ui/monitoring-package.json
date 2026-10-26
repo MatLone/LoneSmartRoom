@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "2.0.0-dev.5",
+  "version": "2.0.0-dev.6",
   "pythonVersion": "3.13.3",
-  "manifestSha256": "ed179b40d0adeae54a33fdf293a2f64117ebab0e2abadf15bdf114537da78f52"
+  "manifestSha256": "d51e3b69ee26ece2fc64cc70791fce306547fbff89ac09f85fe992dcc0f1c1d3"
 }

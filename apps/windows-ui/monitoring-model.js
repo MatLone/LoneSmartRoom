@@ -10,6 +10,9 @@
   const gpuFields=new Map(['utilization','temperature','hotspot_temperature','vram_used_mb','vram_total_mb','core_clock','power','fan_rpm']
     .map((key,i)=>['gpu.adlx.'+key,[['percent','celsius','celsius','megabytes','megabytes','megahertz','watts','rpm'][i],'amd.adlx']]));
   function timestamp(value){return typeof value==='string'&&value.length<=40&&/Z$/.test(value)&&Number.isFinite(Date.parse(value));}
+  // Display policy is separate from native admission (<=1.5 s) and v1 cache TTL.
+  // Dynamic GPU: one cadence + one foreground UI poll. Capacity/basic keep v1.
+  function displayLimit(m){return m.id.startsWith('gpu.adlx.')&&!m.id.endsWith('total_mb')?m.interval_seconds+1:3*m.interval_seconds;}
   function normalize(snapshot, {simulated=false, gpu=false, now=Date.now()}={}) {
     if(!snapshot||snapshot.schema_version!==1||!Number.isSafeInteger(snapshot.sequence)||snapshot.sequence<0||
       !timestamp(snapshot.generated_at)||Date.parse(snapshot.generated_at)>now+5000||
@@ -27,6 +30,10 @@
         !(isGpu?(m.id==='gpu.adlx.vram_total_mb'?[60]:[2,10]):m.id.startsWith('storage.')&&!['read_rate','write_rate','activity'].includes(m.id.split('.').at(-1))
           ?[60]:[1,5]).includes(m.interval_seconds))throw Error('invalid_metric');
       seen.add(m.id);
+      const ingress=m.ingress_age_seconds;
+      if(ingress!==undefined&&(!isGpu||m.id.endsWith('total_mb')||!Number.isFinite(ingress)||ingress<0||ingress>1.5))throw Error('invalid_ingress_age');
+      if(m.information_age_seconds!==undefined&&(!Number.isFinite(m.information_age_seconds)||m.age_seconds===null||ingress===undefined||
+          Math.abs(m.information_age_seconds-m.age_seconds-ingress)>0.000002))throw Error('invalid_information_age');
       const available=m.state==='available'&&!m.stale;
       if(m.valid!==available||(available&&(!Number.isFinite(m.value)||(m.value<0&&m.unit!=='celsius')||
           (m.unit==='percent'&&m.value>100)||(m.unit==='bytes'&&!Number.isSafeInteger(m.value))||
@@ -38,8 +45,10 @@
         if((limits&&(m.value<limits[0]||m.value>limits[1]))||
           (['megabytes','megahertz','rpm'].includes(m.unit)&&!Number.isSafeInteger(m.value)))throw Error('invalid_gpu_value');
       }
-      const expired=m.age_seconds!==null&&m.age_seconds>=3*m.interval_seconds;
+      const expired=m.age_seconds!==null&&m.age_seconds>=displayLimit(m);
       return {id:m.id,source:m.source,unit:m.unit,collected_at:m.collected_at,age_seconds:m.age_seconds,
+        ingress_age_seconds:ingress,information_age_seconds:ingress===undefined?null:m.age_seconds+ingress,
+        display_limit_seconds:displayLimit(m),
         interval_seconds:m.interval_seconds,data_kind:m.data_kind,state:expired&&available?'stale':m.state,
         stale:m.stale||expired,valid:available&&!expired,value:available&&!expired?m.value:null};
     });
@@ -56,8 +65,10 @@
   }
   function age(snapshot, elapsedSeconds) {
     return {...snapshot,metrics:snapshot.metrics.map(m=>{
-      const seconds=m.age_seconds===null?null:m.age_seconds+Math.max(0,elapsedSeconds),stale=m.stale||(seconds!==null&&seconds>=m.interval_seconds*3);
-      return {...m,age_seconds:seconds,stale,valid:m.valid&&!stale,value:m.valid&&!stale?m.value:null,state:stale&&m.state==='available'?'stale':m.state};
+      const elapsed=Number.isFinite(elapsedSeconds)&&elapsedSeconds>=0?elapsedSeconds:Infinity;
+      const seconds=m.age_seconds===null?null:m.age_seconds+elapsed,stale=m.stale||(seconds!==null&&seconds>=displayLimit(m));
+      return {...m,age_seconds:seconds,information_age_seconds:m.ingress_age_seconds===undefined||seconds===null?null:seconds+m.ingress_age_seconds,
+        stale,valid:m.valid&&!stale,value:m.valid&&!stale?m.value:null,state:stale&&m.state==='available'?'stale':m.state};
     })};
   }
   function format(metric){
@@ -74,5 +85,5 @@
     }
     return '—';
   }
-  return Object.freeze({normalize,age,format,ids:Object.freeze([...fields.keys()]),gpuIds:Object.freeze([...gpuFields.keys()])});
+  return Object.freeze({normalize,age,format,displayLimit,ids:Object.freeze([...fields.keys()]),gpuIds:Object.freeze([...gpuFields.keys()])});
 });

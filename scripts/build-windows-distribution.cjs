@@ -6,7 +6,7 @@ const root = path.resolve(__dirname, '..'), project = path.join(root, 'apps/wind
 const modules = path.join(project, 'node_modules');
 const config = require(path.join(project, 'electron-builder.development.cjs'));
 const output = path.resolve(project, config.directories.output);
-const evidence = path.join(root, '.cache/validation/windows-dev5');
+const evidence = path.join(root, '.cache/validation/windows-dev6');
 const inside = (file, directory) => {const relative = path.relative(directory, file);return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));};
 async function main() {
   if (!inside(output, path.join(root, '.cache/artifacts/windows'))) throw Error('Output outside artifact workspace');

@@ -93,7 +93,7 @@ if (!app.requestSingleInstanceLock()) {
       monitoringHost=createMonitoringHost({root:path.resolve(__dirname,'../..'),
         runId:app.isPackaged?crypto.randomBytes(16).toString('hex'):process.env.LONE_MONITORING_RUN_ID,
         packaged:app.isPackaged,resourcesPath:process.resourcesPath,version:app.getVersion(),
-        gpu:gpuDevelopment,
+        gpu:app.isPackaged||gpuDevelopment,
         simulated:!app.isPackaged&&process.argv.includes('--lone-monitoring-simulated'),publish:value=>{
           const wc=controller?.window?.webContents;
           if(wc&&!wc.isDestroyed()&&wc.mainFrame.url===policy.entryUrl)wc.send('monitoring:state',value);
@@ -101,7 +101,7 @@ if (!app.requestSingleInstanceLock()) {
       try{monitoringHost.start();}catch{
         console.error('Local monitoring unavailable; dashboard remains open');
       }
-      if(gpuDevelopment){
+      if(app.isPackaged||gpuDevelopment){
         const win=controller.window;
         for(const event of ['hide','minimize','blur'])win.on(event,()=>monitoringHost.setActive(false));
         for(const event of ['show','restore','focus'])win.on(event,()=>monitoringHost.setActive(true));
