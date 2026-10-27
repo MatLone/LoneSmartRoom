@@ -101,6 +101,27 @@ class BrokerTests(unittest.TestCase):
             (state/'DEVELOPMENT-TELEMETRY').write_bytes(b'operational')
             with self.assertRaises(ValueError):module.development_state(root,session)
 
+    def test_disk_reservations_are_not_repaired_or_confused_with_ram(self):
+        raw=copy.deepcopy(self.raw)
+        for m in raw['metrics']:
+            if m['id']=='storage.c.free':m['value']-=4096
+        projected=project(raw,simulation=True,now=self.wall)
+        self.assertEqual(next(m['value'] for m in projected['metrics'] if m['id']=='storage.c.free'),1024**3-4096)
+        for m in raw['metrics']:
+            if m['id']=='ram.available':m['value']-=4096
+        with self.assertRaises(ValueError):project(raw,simulation=True,now=self.wall)
+
+    def test_historical_real_snapshot_regression_and_sanitized_rule(self):
+        from telemetry.contract import stamp
+        evidence=json.loads((ROOT/'tests/fixtures/recorded-real-metrics-2026-10-26.json').read_text())
+        self.assertFalse(evidence['live']);s=evidence['snapshot']
+        self.assertEqual(len(project(s,simulation=False,now=stamp(s['generated_at'])+.01)['metrics']),29)
+        malformed=copy.deepcopy(self.raw);next(m for m in malformed['metrics'] if m['id']=='ram.available')['value']=0
+        with self.assertRaises(ValueError):self.broker.publish(malformed)
+        self.assertEqual(self.broker.diagnostics()['last_rule'],'inconsistent_capacity')
+        self.assertEqual(self.broker.diagnostics()['rejected'],1)
+
+
 
 class HttpsTests(unittest.TestCase):
     @classmethod
@@ -206,6 +227,20 @@ class HttpsTests(unittest.TestCase):
         (ROOT/'.cache/telemetry-tests/jvm-error.log').write_text(result.stderr,encoding='utf-8')
         self.assertEqual(result.returncode,0,'Isolated Android pin/HMAC JVM regression failed')
         self.assertEqual(json.loads(target.read_bytes())['telemetry_version'],1)
+
+    def test_https_recorded_real_replay_not_a_live_measurement(self):
+        from telemetry.contract import stamp
+        evidence=json.loads((ROOT/'tests/fixtures/recorded-real-metrics-2026-10-26.json').read_text())
+        s=evidence['snapshot'];frozen=stamp(s['generated_at'])+.01
+        replay=SnapshotBroker(simulation=False,utc=lambda:frozen,monotonic=lambda:100.)
+        replay.publish(s);self.server.telemetry=replay
+        try:
+            code,body=self.request(headers=self.headers());self.assertEqual(code,200)
+            self.assertEqual(body['snapshot']['generated_at'],s['generated_at'])
+            self.assertFalse(body['snapshot']['contains_simulated'])
+            target=ROOT/'.cache/telemetry-tests/recorded-real-https-replay.json'
+            target.write_text(json.dumps({'evidence_kind':'recorded_real_replay','live':False,'body':body}),encoding='utf-8')
+        finally:self.server.telemetry=self.broker
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

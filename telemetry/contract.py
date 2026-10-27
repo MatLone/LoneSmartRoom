@@ -89,7 +89,12 @@ def project(snapshot, *, simulation=False, now=None):
         group = [by_id.get(prefix + k) for k in parts]
         if all(m and m['valid'] for m in group) and len({m['collected_at'] for m in group}) == 1:
             total, used, free = [m['value'] for m in group]
-            if total <= 0 or used + free != total: raise ValueError('inconsistent_capacity')
+            # RAM is an exhaustive used/available split. DiskSpaceInformation
+            # also accounts for reserved/unavailable allocation units, so disk
+            # used+free may legitimately be LESS than total. Never invent a
+            # replacement used/free value to force equality.
+            if total <= 0 or (used + free != total if prefix == 'ram.' else used + free > total):
+                raise ValueError('inconsistent_capacity')
             ratio = by_id.get(prefix + ('utilization' if prefix == 'ram.' else 'occupation'))
             if ratio and ratio['valid'] and ratio['collected_at'] == group[0]['collected_at'] and abs(ratio['value'] - 100*used/total) > 1e-6:
                 raise ValueError('inconsistent_occupation')

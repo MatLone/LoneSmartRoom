@@ -66,11 +66,15 @@ def run():
         module_spec = importlib.util.spec_from_file_location('owned_pipe_client', ROOT / 'scripts/monitoring-pipe-client.py')
         module = importlib.util.module_from_spec(module_spec); module_spec.loader.exec_module(module)
         thread.start()
+        # Discovery for the fixed local test harness/main only; no credential output.
+        print(json.dumps({'v':1,'event':'telemetry_ready','host':'127.0.0.1',
+                          'port':server.server_port,'generation':broker.generation}),flush=True)
         return module.main(snapshot_sink=broker.publish)
     finally:
         if thread.is_alive(): server.shutdown()
         server.server_close()
         if thread.ident is not None: thread.join(timeout=2)
+        print(json.dumps({'v':1,'event':'telemetry_diagnostics',**broker.diagnostics()}),flush=True)
         broker.clear()
 
 

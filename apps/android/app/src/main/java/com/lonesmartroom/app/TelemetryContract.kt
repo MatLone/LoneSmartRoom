@@ -64,7 +64,7 @@ object TelemetryContract {
             val group = keys.map { byId[prefix + it] }
             if (group.all { it?.getBoolean("valid") == true } && group.map { it!!.getString("collected_at") }.distinct().size == 1) {
                 val total = group[0]!!.getDouble("value"); val used = group[1]!!.getDouble("value"); val free = group[2]!!.getDouble("value")
-                require(total > 0 && used + free == total)
+                require(total > 0 && if (prefix == "ram.") used + free == total else used + free <= total)
                 val ratio = byId[prefix + if (prefix == "ram.") "utilization" else "occupation"]
                 if (ratio?.getBoolean("valid") == true && ratio.getString("collected_at") == group[0]!!.getString("collected_at")) require(kotlin.math.abs(ratio.getDouble("value") - used / total * 100) <= 0.000001)
             }

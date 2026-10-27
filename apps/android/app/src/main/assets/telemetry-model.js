@@ -32,7 +32,7 @@
   const byId=new Map(metrics.map(m=>[m.id,m]));
   for(const [prefix,keys]of [['ram.',['total','used','available']],['storage.c.',['total','used','free']],['storage.d.',['total','used','free']]]){
    const a=keys.map(k=>byId.get(prefix+k));if(a.every(m=>m?.valid)&&new Set(a.map(m=>m.collected_at)).size===1){
-    if(!(a[0].value>0)||a[1].value+a[2].value!==a[0].value)throw Error('inconsistent_capacity');
+    if(!(a[0].value>0)||(prefix==='ram.'?a[1].value+a[2].value!==a[0].value:a[1].value+a[2].value>a[0].value))throw Error('inconsistent_capacity');
     const ratio=byId.get(prefix+(prefix==='ram.'?'utilization':'occupation'));
     if(ratio?.valid&&ratio.collected_at===a[0].collected_at&&Math.abs(ratio.value-a[1].value/a[0].value*100)>1e-6)throw Error('inconsistent_occupation');
    }

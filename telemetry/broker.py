@@ -15,10 +15,24 @@ class SnapshotBroker:
         self.lock = RLock()
         self.last = None
         self.at = None
+        self.accepted = 0
+        self.rejected = 0
+        self.last_rejection = None
 
     def publish(self, snapshot):
         received = self.monotonic()
-        value = project(snapshot, simulation=self.simulation, now=self.utc())
+        try:
+            value = project(snapshot, simulation=self.simulation, now=self.utc())
+        except (ValueError,TypeError) as error:
+            # Fixed internal rule only: never raw exception text/payloads/paths.
+            allowed = {'inconsistent_capacity','inconsistent_occupation','inconsistent_vram','invalid_provenance',
+                'invalid_timestamp','expired_snapshot','invalid_interval','unexpected_source','invalid_adlx_ingress',
+                'future_sample','missing_sample','null_required','unexpected_metric','unexpected_unit','invalid_state'}
+            code = error.args[0] if len(error.args)==1 and type(error.args[0]) is str else None
+            with self.lock:
+                self.rejected += 1
+                self.last_rejection = code if code in allowed else 'invalid_snapshot'
+            raise
         with self.lock:
             if self.last and value['sequence'] <= self.last['sequence']:
                 return False  # Re-reading a cache must not renew its residence time.
@@ -26,7 +40,12 @@ class SnapshotBroker:
             for m in value['metrics']:
                 if m['age_seconds'] is not None: m['age_seconds'] += lag
             self.last, self.at = value, received
+            self.accepted += 1
         return True
+
+    def diagnostics(self):
+        with self.lock:
+            return dict(v=1,accepted=self.accepted,rejected=self.rejected,last_rule=self.last_rejection)
 
     def clear(self):
         with self.lock:
