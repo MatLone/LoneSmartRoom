@@ -63,7 +63,7 @@ class BaselinePreservation(unittest.TestCase):
         parser = Scripts()
         parser.feed(html)
         self.assertEqual(parser.sources, ['mobile-shell.js', 'app-version.js', 'agent-status.js',
-                                          'app-launch.js', 'wol-ui.js', 'mobile-bindings.js'])
+                                          'app-launch.js', 'wol-ui.js', 'mobile-bindings.js', 'telemetry-model.js', 'telemetry-ui.js'])
         self.assertIn("connect-src 'none'", html)
         self.assertNotIn('icon-home', html)
         source = (ROOT / 'apps/android/app/src/main/assets/wol-ui.js').read_text(encoding='utf-8')

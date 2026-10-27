@@ -24,7 +24,7 @@ from monitoring.application_context import validate_mode,application_owner
 from monitoring.gpu_development import validate_gpu_mode
 
 
-def main():
+def main(*, snapshot_sink=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--session', required=True)
     lifetime=parser.add_mutually_exclusive_group()
@@ -90,6 +90,11 @@ def main():
                     api._io(connection, 'write', ct.create_string_buffer(b'\x06'), 1, deadline, stop)
                 finally: api.close(connection)
                 decoded = json.loads(response)
+                if snapshot_sink is not None and decoded.get('ok') and 'snapshot' in decoded:
+                    # Optional development fan-out of the SAME protected-pipe read.
+                    # No second collector; a rejected projection does not stop local monitoring.
+                    try: snapshot_sink(decoded['snapshot'])
+                    except (ValueError, TypeError): pass
                 emit({'v':1, 'event':'response', 'body':decoded})
             except (OSError, ValueError, TimeoutError):
                 emit({'v':1, 'event':'disconnected', 'error':'local_read_unavailable'})

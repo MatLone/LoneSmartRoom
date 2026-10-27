@@ -14,9 +14,13 @@ class AndroidVisualPreservation(unittest.TestCase):
         # Explicit asset-only changes approved after the original functional pins.
         # Geometry, source identity and permitted file set are independently tested.
         update=json.loads((ROOT/'docs/design/brand/e-red-windows-icon-2026-10-26/change-manifest.json').read_text(encoding='utf-8'))['authorizedChanges']
+        telemetry=json.loads((ROOT/'docs/development-night-2026-10-27/android-reviewed-changes.json').read_text())
         for name,digest in pins['files'].items():
             with self.subTest(file=name):
-                if name in update:
+                if name in telemetry:
+                    self.assertEqual(telemetry[name]['before'],digest)
+                    self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(),telemetry[name]['after'])
+                elif name in update:
                     self.assertEqual(update[name]['before'],digest)
                     self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(),update[name]['after'])
                 else:
@@ -36,7 +40,8 @@ class AndroidVisualPreservation(unittest.TestCase):
 
     def test_offline_mobile_sensors_are_not_fabricated(self):
         shell=(ROOT/'apps/android/app/src/main/assets/mobile-shell.js').read_text(encoding='utf-8')
-        self.assertIn('Indisponível no Android',shell)
+        self.assertIn('data-telemetry=',shell)
+        self.assertIn('Indisponível',shell)
         self.assertIn('const unavailableRow',shell)
         self.assertNotIn('Math.random',shell)
         self.assertNotIn('fetch(',shell)

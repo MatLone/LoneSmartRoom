@@ -42,7 +42,7 @@ class AgentClient {
         return value
     }
     private fun exchange(config: JSONObject, path: String, body: ByteArray? = null,
-                         headers: Map<String, String> = emptyMap(), accepted: Set<Int> = setOf(200)): JSONObject {
+                         headers: Map<String, String> = emptyMap(), accepted: Set<Int> = setOf(200), responseLimit: Int = 4096): JSONObject {
         validateEndpoint(config)
         val connection = URL(config.getString("url") + path).openConnection() as HttpsURLConnection
         try {
@@ -60,7 +60,8 @@ class AgentClient {
                 connection.outputStream.use { it.write(body) }
             }
             if (connection.responseCode !in accepted) throw AgentRequestException(connection.responseCode)
-            val data = connection.inputStream.use { it.readBytesBounded(4096) }
+            require(responseLimit in 1..32768)
+            val data = connection.inputStream.use { it.readBytesBounded(responseLimit) }
             return JSONObject(String(data, Charsets.UTF_8)).also { require(it.optBoolean("ok")) }
         } finally { connection.disconnect() }
     }
@@ -87,13 +88,15 @@ class AgentClient {
         require(result.optString("agent") == "online" && result.optString("scope") == "status")
     }
 
-    private fun authenticated(config: JSONObject, path: String, body: ByteArray? = null): JSONObject {
+    private fun authenticated(config: JSONObject, path: String, body: ByteArray? = null, responseLimit: Int = 4096): JSONObject {
         val stamp = (System.currentTimeMillis() / 1000).toString()
         val nonce = ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it.toInt() and 255) }
         val headers = AgentAuth.requestHeaders(config.getString("device_id"), config.getString("secret"),
             stamp, nonce, if (body == null) "GET" else "POST", path, body ?: byteArrayOf())
-        return exchange(config, path, body, headers, if (body == null) setOf(200) else setOf(200, 202))
+        return exchange(config, path, body, headers, if (body == null) setOf(200) else setOf(200, 202), responseLimit)
     }
+    fun telemetry(config: JSONObject): JSONObject = TelemetryContract.project(
+        authenticated(config, "/v2/telemetry", responseLimit = 32768))
     fun appPermissions(config: JSONObject): Set<String> {
         val values = authenticated(config, "/v2/apps").getJSONArray("allowed_apps")
         require(values.length() <= 2)

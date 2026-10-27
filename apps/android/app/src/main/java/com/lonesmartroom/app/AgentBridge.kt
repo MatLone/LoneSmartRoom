@@ -14,13 +14,35 @@ import java.security.SecureRandom
 
 /** No pairing code, key or credential is exposed to the WebView. */
 class AgentBridge(private val activity: Activity, private val deliver: (JSONObject) -> Unit,
-                  private val deliverApps: (JSONObject) -> Unit) {
+                  private val deliverApps: (JSONObject) -> Unit,
+                  private val deliverTelemetry: (JSONObject) -> Unit = {}) {
     private val executor = Executors.newSingleThreadExecutor()
     private val vault = AgentVault(activity)
     private val client = AgentClient()
     private val status = AgentStatus()
     @Volatile private var closed = false
     private val launchBusy = AtomicBoolean(false)
+    private val telemetryBusy = AtomicBoolean(false)
+    @Volatile private var foreground = false
+    private var telemetryLast = -2000L
+    fun setForeground(value: Boolean) { foreground = value }
+    @JavascriptInterface fun refreshTelemetry(requestId: Int) {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (closed || !foreground || requestId < 0 || now - telemetryLast < 1500 || !telemetryBusy.compareAndSet(false, true)) return
+        telemetryLast = now
+        executor.execute {
+            val started = android.os.SystemClock.elapsedRealtime()
+            val result = try {
+                if (!foreground || closed) return@execute
+                val config = vault.load() ?: throw IllegalStateException()
+                client.telemetry(config).put("request_id", requestId)
+                    .put("transport_seconds", (android.os.SystemClock.elapsedRealtime() - started) / 1000.0)
+            } catch (error: Exception) {
+                JSONObject().put("ok", false).put("request_id", requestId).put("error", "telemetry_unavailable")
+            } finally { telemetryBusy.set(false) }
+            activity.runOnUiThread { if (!closed && foreground) deliverTelemetry(result) }
+        }
+    }
     private fun emitApps(value: JSONObject) {
         activity.runOnUiThread { if (!closed) deliverApps(value) }
     }

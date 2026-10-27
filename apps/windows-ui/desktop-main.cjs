@@ -97,7 +97,8 @@ if (!app.requestSingleInstanceLock()) {
       metadata: {development: !app.isPackaged, reviewProfile: developmentReview}});
     registerIpc();controller.start();
     if(monitoringEnabled){
-      const {createMonitoringHost}=require('./monitoring-host.cjs');
+      const createMonitoringHost=monitoringDevelopment&&process.argv.includes('--lone-telemetry-development')
+        ?require('./monitoring-telemetry-host.cjs').createTelemetryDevelopmentHost:require('./monitoring-host.cjs').createMonitoringHost;
       monitoringHost=createMonitoringHost({root:path.resolve(__dirname,'../..'),
         runId:app.isPackaged?crypto.randomBytes(16).toString('hex'):process.env.LONE_MONITORING_RUN_ID,
         packaged:app.isPackaged,resourcesPath:process.resourcesPath,version:app.getVersion(),

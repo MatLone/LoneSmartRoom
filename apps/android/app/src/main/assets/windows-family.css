@@ -51,8 +51,11 @@ body[data-platform="android"] .sensor{padding:16px 13px;min-width:0;border-radiu
 .sensor-title{font-size:12px;gap:7px;line-height:1.5;align-items:flex-start}
 .sensor-title svg{flex-shrink:0;width:18px;height:18px;margin-top:1px}
 .sensor-value{color:#b2b2bf;font-size:32px;margin-top:20px}
+.sensor-value[data-telemetry]{font-size:clamp(18px,5vw,28px);overflow-wrap:anywhere}
+.sensor-value[data-state="unavailable"],.sensor-value[data-state="unsupported"],.sensor-value[data-state="stale"],.sensor-value[data-state="warming_up"]{font-size:14px;line-height:1.5}
 body[data-platform="android"] .sensor small{font-size:11px;color:var(--muted);line-height:1.6}
 .unavailable-track{height:4px;border-radius:5px;background:#31313b;margin-top:14px}
+.unavailable-track>span{display:block;height:100%;background:var(--red);width:0;max-width:100%}
 .metric-details{margin-top:14px}.metric-details h2{font-size:16px;margin:0 0 7px;line-height:1.4}
 .metric-details>p{font-size:12px;line-height:1.65;color:var(--muted);margin:0 0 10px}
 .metric-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-top:1px solid var(--border);padding:12px 0;font-size:12px;line-height:1.5}

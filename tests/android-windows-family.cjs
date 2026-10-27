@@ -29,7 +29,7 @@ app.whenReady().then(async()=>{
   for(const name of ['logo-horizontal.svg','logo-header-small.svg'])assert.deepEqual(fs.readFileSync(path.join(root,'apps/windows-ui/assets/brand',name)),fs.readFileSync(path.join(root,'apps/android/app/src/main/assets/brand',name)));
   await check(`document.querySelector('#panel-controls h1').textContent`,'Seu espaço,sob controle.');
   await check(`document.querySelectorAll('.sensor-value').length`,4);
-  await check(`[...document.querySelectorAll('.sensor-value')].every(e=>e.textContent==='—')`);
+  await check(`[...document.querySelectorAll('.sensor-value')].every(e=>e.textContent==='Indisponível')`);
   await check(`[...document.querySelectorAll('.metric-row strong')].every(e=>e.textContent==='Indisponível')`);
   await check(`document.querySelectorAll('[role="progressbar"]').length`,0);
   await ev(`window.__fixture.reset()`);

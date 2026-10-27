@@ -41,6 +41,8 @@ class MainActivity : Activity() {
             webView.evaluateJavascript("window.onLoneAgentStatus && window.onLoneAgentStatus(${result})", null)
         }, deliverApps = { result ->
             webView.evaluateJavascript("window.onLoneAppLaunch && window.onLoneAppLaunch(${result})", null)
+        }, deliverTelemetry = { result ->
+            webView.evaluateJavascript("window.onLoneTelemetry && window.onLoneTelemetry(${result})", null)
         })
         webView.addJavascriptInterface(agentBridge, "LoneAgent")
         setContentView(webView)
@@ -57,6 +59,9 @@ class MainActivity : Activity() {
     class AppInfoBridge {
         @JavascriptInterface fun getVersionName(): String = BuildConfig.VERSION_NAME
     }
+
+    override fun onResume() { super.onResume(); if (::agentBridge.isInitialized) agentBridge.setForeground(true) }
+    override fun onPause() { if (::agentBridge.isInitialized) agentBridge.setForeground(false); super.onPause() }
 
     inner class WakeBridge {
         @JavascriptInterface
