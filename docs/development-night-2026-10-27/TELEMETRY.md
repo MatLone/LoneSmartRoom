@@ -34,7 +34,7 @@ regenerado nem recebeu esses componentes de desenvolvimento.
 - Campos desconhecidos não são encaminhados ao renderer; fontes e unidades
   são conferidas. Nulos, zero válido, aquecimento, erro e desatualizado são distintos.
 - HMAC da rota exata, nonce/antirreplay e revogação usam o mecanismo existente.
-  Pareamento autoriza leitura; grants continuam exclusivos dos comandos. Nenhum
+  Pareamento e allowlist explícita de leitura são exigidos; grants continuam exclusivos dos comandos. Nenhum
   grant é criado. Certificado, hostname, pinagem e redirects proibidos são mantidos.
 - Resposta ≤32 KiB; bucket global limitado (2 consultas/s, burst 4), timeout
   Android de conexão/leitura 5 s cada. Sem parâmetros de caminhos ou comandos.
@@ -47,13 +47,13 @@ regenerado nem recebeu esses componentes de desenvolvimento.
 
 ## Validação executada
 
-- 10 testes Python: cache/projeção e HTTPS real **apenas em loopback**, identidade
+- 15 testes Python: cache/projeção e HTTPS real **apenas em loopback**, identidade
   e banco sintéticos, sem porta 8776. Autenticação, replay, revogação, rota assinada,
   rate limit, certificado não confiável, resposta sanitizada e expiração.
-- 23 verificações Node: resposta HTTPS de teste → modelo/UI Android reais,
+- 24 verificações Node: resposta HTTPS de teste → modelo/UI Android reais,
   origem simulada explícita, zero/nulo, retomada, sequência, fonte/unidade/idade.
 - Regressões: 378 testes Python, sem operações externas; 891 verificações Node
-  contadas em 12 suítes (uma suíte adicional sem contador próprio nesse total).
+  contadas em 12 suítes, das quais uma não fornece contador de verificações.
 - Renderer Android real em Chromium isolado: 352 verificações, 63 combinações
   responsivas, zero acesso a dispositivo/sensores ou requisições externas.
 - `assembleDebug`, `lintDebug`: aprovados; 0 erros, 10 avisos preexistentes.
@@ -86,3 +86,23 @@ nenhum código desta etapa concede permissões.
 Reversão: reverter o commit desta etapa na branch de desenvolvimento. Não há
 migração de dados, Registro ou instalação a desfazer. Não reverter checkpoints
 anteriores nem substituir o APK aprovado.
+
+## Complementos da validação final
+
+O teste JVM executou o pinner Android e o AgentAuth Kotlin de produção contra a
+rota de telemetria sintética. Identificou e corrigiu a ausência da rota na allowlist
+de assinatura: foi acrescentado **somente GET /v2/telemetry**, sem alterar o HMAC,
+corpo canônico, segredo, nonce ou limites. POST, query strings e caminhos arbitrários
+continuam rejeitados. Não se afirma que AgentAuth permaneceu byte a byte idêntico.
+A projeção JSON Kotlin foi compilada e lintada; sua execução completa ainda exige
+runtime Android. O modelo/UI JavaScript e o pinner/HMAC tiveram execução real
+no teste local. Nenhum teste utilizou identidade, endpoint ou certificado operacional.
+
+O pareamento sozinho NÃO permite ler métricas: o servidor de desenvolvimento exige
+allowlist explícita em memória, vazia por padrão, independente dos grants de ações.
+A composição requer marcador DEV, arquivos independentes sem links/junctions e
+`telemetry-readers.json` limitado a 2 KiB, no diretório isolado. Não cria identidade
+no startup e não importa o estado operacional. O contexto TLS usa ssl padrão para
+funcionar com o runtime -I -S existente, sem dependência nova. O servidor é fechado
+mesmo em erro de importação/bootstrap. LAN e configuração operacional continuam
+pendentes de autorização. Não há renovação automática de pareamento.

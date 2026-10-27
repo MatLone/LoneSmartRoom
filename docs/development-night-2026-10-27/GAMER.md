@@ -38,7 +38,7 @@ eventos, requisitos de permissões, seleção do processo e custo. Preferir leit
 externa ETW/saída documentada; nada de injeção, hooks, overlay em CS2, alterações
 do jogo ou interferência no VAC. Nenhum binário foi baixado, instalado ou executado.
 
-Testes: 125 verificações Node de matemática, limites, disponibilidade, origem,
+Testes: 127 verificações Node de matemática, limites, disponibilidade, origem,
 duplicação e resumos, além das regressões existentes. São frames fictícios somente
 de teste, não desempenho do PC. Reversão pelo commit desta etapa, sem dados de
 jogos/instalações para restaurar. FPS real continua pendente de fonte e homologação.
