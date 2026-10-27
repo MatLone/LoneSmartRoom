@@ -1,5 +1,6 @@
 """Opt-in development composition. Original operational server/launcher unchanged."""
 import json
+import re
 import threading
 import time
 
@@ -18,6 +19,8 @@ class TelemetryHandler(Handler):
             self._body_read = True
             return self.reply(400, {'ok': False})
         if not self.authenticated('GET'): return self.reply(401, {'ok': False, 'error': 'unauthorized'})
+        if self.headers['X-Lone-Device'] not in self.server.telemetry_readers:
+            return self.reply(403, {'ok': False, 'error': 'telemetry_forbidden'})
         if not self.server.telemetry_admit(): return self.reply(429, {'ok': False, 'error': 'rate_limited'})
         try:
             value = self.server.telemetry.read()
@@ -28,12 +31,16 @@ class TelemetryHandler(Handler):
 
 
 class DevelopmentTelemetryServer(StatusServer):
-    """Authenticated read scope follows existing pairing; grants remain launch-only.
+    """Pairing PLUS explicit read allowlist; operational grants remain launch-only.
 
     Default disabled. Source must be an already-owned trusted cache adapter, never
     a renderer-supplied path or command. Rate bucket is global (bounded memory).
     """
-    def __init__(self, *args, telemetry=None, development_enabled=False, clock=time.monotonic, **kwargs):
+    def __init__(self, *args, telemetry=None, development_enabled=False, telemetry_readers=frozenset(), clock=time.monotonic, **kwargs):
+        if (type(telemetry_readers) not in (tuple, list, set, frozenset) or len(telemetry_readers) > 32
+                or any(type(d) is not str or not re.fullmatch('[a-f0-9]{32}', d) for d in telemetry_readers)):
+            raise ValueError('invalid_telemetry_read_scope')
+        self.telemetry_readers = frozenset(telemetry_readers)
         self.telemetry = telemetry if development_enabled else None
         self.telemetry_clock = clock
         self.telemetry_lock = threading.Lock()

@@ -5,6 +5,7 @@ load the operational agent's config/store/certificates. Never installed/packaged
 Requires a separately prepared loopback test identity; creates nothing on startup.
 """
 import importlib.util
+import json
 from pathlib import Path
 import re
 import ssl
@@ -21,7 +22,7 @@ def development_state(root, session):
     state = Path(root).resolve() / '.cache/telemetry-development' / session
     if not state.is_dir() or state.resolve() != state or state.is_symlink() or state.is_junction():
         raise ValueError('development_identity_required')
-    for name in ('DEVELOPMENT-TELEMETRY', 'server.crt', 'server.key', 'tls.dpapi', 'devices.db'):
+    for name in ('DEVELOPMENT-TELEMETRY', 'server.crt', 'server.key', 'tls.dpapi', 'devices.db', 'telemetry-readers.json'):
         p = state / name
         if not p.is_file() or p.is_symlink() or p.resolve() != p or p.stat().st_nlink != 1:
             raise ValueError('development_identity_required')
@@ -54,8 +55,12 @@ def run():
     broker = SnapshotBroker(simulation='--simulated' in sys.argv)
     # Ephemeral loopback only. Future LAN deployment requires separate approval.
     protector = DPAPI()
+    readers_file = state / 'telemetry-readers.json'
+    if readers_file.stat().st_size > 2048: raise ValueError('invalid_telemetry_read_scope')
+    readers = json.loads(readers_file.read_bytes())
+    if type(readers) is not list: raise ValueError('invalid_telemetry_read_scope')
     server = DevelopmentTelemetryServer(('127.0.0.1', 0), development_context(state, protector),
-        Store(state / 'devices.db', protector), '127.0.0.0/8', telemetry=broker, development_enabled=True)
+        Store(state / 'devices.db', protector), '127.0.0.0/8', telemetry=broker, development_enabled=True, telemetry_readers=readers)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     try:
         module_spec = importlib.util.spec_from_file_location('owned_pipe_client', ROOT / 'scripts/monitoring-pipe-client.py')

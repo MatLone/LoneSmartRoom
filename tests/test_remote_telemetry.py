@@ -95,7 +95,7 @@ class BrokerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=ROOT/'.cache') as temp:
             root=Path(temp);session='a'*32;state=root/'.cache/telemetry-development'/session;state.mkdir(parents=True)
             with self.assertRaises(ValueError):module.development_state(root,session)
-            for name in ('server.crt','server.key','tls.dpapi','devices.db'):(state/name).write_bytes(b'synthetic fixture only')
+            for name in ('server.crt','server.key','tls.dpapi','devices.db','telemetry-readers.json'):(state/name).write_bytes(b'synthetic fixture only')
             (state/'DEVELOPMENT-TELEMETRY').write_bytes(b'LSR-TELEMETRY-DEV-LOOPBACK-v1\n')
             self.assertEqual(module.development_state(root,session),state)
             (state/'DEVELOPMENT-TELEMETRY').write_bytes(b'operational')
@@ -115,7 +115,7 @@ class HttpsTests(unittest.TestCase):
         spec=importlib.util.spec_from_file_location('development_telemetry_composition',ROOT/'scripts/monitoring-telemetry-client.py')
         composition=importlib.util.module_from_spec(spec);spec.loader.exec_module(composition)
         cls.server = DevelopmentTelemetryServer(('127.0.0.1', 0), composition.development_context(cls.state,cls.protector), cls.store,
-            '127.0.0.0/8', telemetry=cls.broker, development_enabled=True)
+            '127.0.0.0/8', telemetry=cls.broker, development_enabled=True, telemetry_readers=[cls.device['device_id']])
         cls.thread = threading.Thread(target=cls.server.serve_forever,daemon=True); cls.thread.start()
         cls.context = ssl.create_default_context(cafile=str(cls.state/'server.crt'))
 
@@ -169,6 +169,11 @@ class HttpsTests(unittest.TestCase):
         with self.assertRaises(ssl.SSLCertVerificationError):self.request(context=ssl.create_default_context())
         self.assertTrue(self.context.check_hostname)
         self.assertNotEqual(fingerprint(self.state),'00'*32)
+
+    def test_pairing_alone_does_not_grant_telemetry_read(self):
+        code,_=self.store.begin_pairing();other=self.store.pair(code,'NO READ SCOPE FIXTURE')
+        self.assertEqual(self.request(headers=self.headers(device=other))[0],403)
+        self.assertEqual(self.request('/v2/status',self.headers('/v2/status',device=other))[0],200)
 
     def test_source_failure_is_sanitized(self):
         class Broken:
