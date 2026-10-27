@@ -26,7 +26,9 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sdk-root', required=True, type=Path)
+    parser.add_argument('--candidate-tag', default='')
     args = parser.parse_args()
+    require(not args.candidate_tag or re.fullmatch(r'[a-z0-9-]{1,40}',args.candidate_tag), 'Invalid candidate tag')
     tools = args.sdk_root / 'build-tools/35.0.0'
     apk = ROOT / 'apps/android/app/build/outputs/apk/debug/app-debug.apk'
     recovery = ROOT / 'recovery/artifacts/android/intermediates/apk/debug/app-debug.apk'
@@ -71,18 +73,23 @@ def main():
     require(b'setDataDirectorySuffix' not in activity, 'WebView data directory changed')
     with zipfile.ZipFile(apk) as archive:
         for name in ('app.js', 'index.html', 'styles.css', 'agent-status.js', 'app-version.js', 'app-launch.js',
-                     'mobile-v2.css', 'windows-family.css', 'mobile-shell.js', 'mobile-bindings.js', 'wol-ui.js'):
+                     'mobile-v2.css', 'windows-family.css', 'mobile-shell.js', 'mobile-bindings.js', 'wol-ui.js',
+                     'telemetry-model.js', 'telemetry-ui.js'):
             require(archive.read('assets/' + name) == (android / 'assets' / name).read_bytes(),
                     'Packaged asset differs from reviewed source: ' + name)
         require(b'lone-wol-settings-v1' in archive.read('assets/app.js'), 'WoL storage key changed')
         require(b'lone-wol-settings-v1' in archive.read('assets/wol-ui.js'), 'New WoL client storage key changed')
+        dex = b''.join(archive.read(n) for n in archive.namelist() if re.fullmatch(r'classes\d*\.dex',n))
+        for marker in (b'Lcom/lonesmartroom/app/TelemetryContract;',b'/v2/telemetry',b'refreshTelemetry'):
+            require(marker in dex, 'Native telemetry component missing from APK')
         require(b'src="app.js"' not in archive.read('assets/index.html'), 'Legacy simulated UI loaded')
         for source in (android / 'assets/brand').iterdir():
             if source.suffix in ('.svg', '.png'):
                 require(archive.read('assets/brand/' + source.name) == source.read_bytes(),
                         'Packaged brand differs from reviewed source: ' + source.name)
 
-    output = ROOT / f'.cache/artifacts/android/LoneSmartRoom-{version_name}-v{version_code}.apk'
+    suffix = '-' + args.candidate_tag if args.candidate_tag else ''
+    output = ROOT / f'.cache/artifacts/android/LoneSmartRoom-{version_name}-v{version_code}{suffix}.apk'
     output.parent.mkdir(parents=True, exist_ok=True)
     # Preserve every previously prepared candidate if future builds differ.
     if output.exists():
