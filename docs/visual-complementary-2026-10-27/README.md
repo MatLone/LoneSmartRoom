@@ -4,9 +4,10 @@
 
 **Windows: retomada GPU não homologada.** A instrumentação não capturou a
 restauração e o protocolo completo ultrapassou o limite de 120 segundos.
-**Samsung: splash ainda não testada nesta etapa**, aguardando o fechamento
-normal do cartão LONE e a tela inicial pronta. Não houve nova abertura Android,
-instalação ou alteração de dados para tentar produzir uma evidência.
+**Samsung: uma abertura normal foi posteriormente gravada**, após a confirmação
+manual do usuário. A splash nativa permanece **inconclusiva**: o processo estava
+em cache e a gravação mostra o retorno à interface. Não houve reinstalação,
+limpeza de dados ou repetição física. Ver [adendo da splash Android](ANDROID-SPLASH.md).
 
 ## Windows — fatos e limitações
 
@@ -88,21 +89,24 @@ O cartão não estava na página visível. Foi solicitada ao usuário a ação:
 > Fechar somente o cartão Lone Smart Room pelo gesto normal dos Recentes,
 > sem Fechar tudo; deixar a tela inicial com o ícone LONE visível, sem abri-lo.
 
-Até este registro, não houve confirmação dessa preparação. As consultas de
-leitura ainda encontraram o processo/tarefa LONE; a última árvore visual não
-mostrou o ícone da tela inicial pronto para o toque. Nenhum gesto foi enviado
-concorrentemente à ação manual solicitada.
+No checkpoint `ce88c0f`, ainda não havia confirmação dessa preparação. As
+consultas de leitura encontravam o processo/tarefa LONE e a última árvore visual
+não mostrava o ícone da tela inicial pronto para o toque. Nenhum gesto foi
+enviado concorrentemente à ação manual solicitada. Na continuação autorizada,
+o usuário confirmou o fechamento normal e a tela inicial foi conferida antes
+da única abertura gravada.
 
-O gravador de tela e o decodificador local foram preparados em cache, mas
-**não executados para uma nova abertura**. O marcador de preparação não é uma
-tentativa de lançamento. O marcador exclusivo `android-launch-once.json` ainda
-não existe. Nenhuma splash foi capturada nesta etapa; nenhuma imagem de asset
-estático foi apresentada como captura nativa.
+Naquele checkpoint, o gravador e o decodificador estavam apenas preparados.
+Posteriormente, criou-se o marcador exclusivo `android-launch-once.json` e
+gravou-se uma única abertura pelo ícone observado. O marcador de preparação
+anterior não constitui uma segunda tentativa. Não se identificou splash nativa
+centralizada na gravação; nenhuma imagem de asset estático foi apresentada como
+captura nativa.
 
-A autorização original de fechamento/reabertura Android continua sendo o escopo
-do trabalho pendente. Não é necessária nova aprovação para cada comando;
-falta a preparação física solicitada. Não se fará `am force-stop`, limpeza,
-desinstalação, reinstalação ou mudança de segurança para obter um cold start.
+A execução Android utilizou a autorização original, sem nova confirmação por
+comando. Não se utilizou `am force-stop`, limpeza, desinstalação, reinstalação
+ou mudança de segurança para obter um cold start. A abertura não será repetida
+automaticamente para tentar capturar a splash.
 
 Imagens dos Recentes, que contêm outros aplicativos, permaneceram em cache local
 ignorado e não foram incluídas no Git.
@@ -133,9 +137,9 @@ ignorado e não foram incluídas no Git.
 
 ## Próximos passos, sem nova execução automática
 
-1. Concluir a splash somente depois de o Samsung estar pronto: conferir a tela
-   inicial, iniciar a gravação e tocar uma vez no ícone observado. Examinar o vídeo
-   localmente, sem outra abertura se a splash for breve ou inconclusiva.
+1. A abertura Android foi realizada; a splash continua inconclusiva. Uma futura
+   observação de início a frio natural exigirá autorização própria, sem provocar
+   encerramento forçado ou alterar o aplicativo para prolongar a splash.
 2. O Windows exige **nova autorização específica**, pois a sessão complementar
    foi consumida sem homologação. Não iniciar outra sessão nesta entrega.
 3. Em um protocolo futuro, deixar todo o sampler carregado antes do lançamento;
