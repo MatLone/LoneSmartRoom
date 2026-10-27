@@ -21,7 +21,31 @@ import time
 
 ROOT=Path(__file__).resolve().parents[1]
 PHASE=ROOT/'.cache/telemetry-homologation-preparation-2026-10-27'
+AUTHORIZED_PHASE=ROOT/'.cache/telemetry-loopback-authorized-2026-10-27'
+AUTHORIZATION_REFERENCE='direct-user-2026-10-27-after-b27e2fb-one-loopback-60s'
+PREVIOUS_MARKER_SHA256='098efb46d367616a6e8aa72f263ab23668acd70a20402787373d49334cd29dc8'
 sys.path[:0]=[str(ROOT),str(ROOT/'agent/windows')]
+
+
+def session_phase(args):
+    if args==['--real-once']:return PHASE
+    if args==['--authorized-once']:return AUTHORIZED_PHASE
+    raise ValueError('explicit_once_required')
+
+
+def claim_session(phase, session):
+    """Exclusive receipt for one explicitly authorized session; never resets one."""
+    record={'started_at':datetime.now(timezone.utc).isoformat(),'observation_seconds':30,'run_id':session}
+    if phase==AUTHORIZED_PHASE:
+        old=PHASE/'REAL-SESSION-CONSUMED.json'
+        if hashlib.sha256(old.read_bytes()).hexdigest()!=PREVIOUS_MARKER_SHA256:
+            raise ValueError('previous_session_marker_changed')
+        record.update(authorization_reference=AUTHORIZATION_REFERENCE,limit_seconds=60,
+            scope='real_windows_metrics_loopback_https_android_test_client',
+            previous_marker_sha256=PREVIOUS_MARKER_SHA256)
+    with (phase/'REAL-SESSION-CONSUMED.json').open('x',encoding='utf-8') as f:
+        json.dump(record,f)
+    return record
 
 
 class OwnedTransport:
@@ -36,6 +60,7 @@ class OwnedTransport:
         self.snapshot_pending=False
         self.telemetry_diagnostics=None
         self.ipc_records=[];self.publications=[]
+        self.absolute_end=None
 
     def start(self, session):
         from secure_tls import fingerprint
@@ -59,7 +84,7 @@ class OwnedTransport:
                 try:self.messages.put_nowait(json.loads(line))
                 except (ValueError,queue.Full):self.invalid_lines=True;break
         self.thread=threading.Thread(target=output,daemon=True);self.thread.start()
-        deadline=time.monotonic()+10
+        deadline=min(time.monotonic()+10,self.absolute_end or float('inf'))
         while time.monotonic()<deadline and self.alive() and (self.port is None or self.ready is None):
             self.drain();time.sleep(.05)
         if self.port is None or self.ready is None:raise ValueError('bootstrap_failed')
@@ -161,7 +186,7 @@ class OwnedTransport:
             return True
         if not self.stdin_closed:
             self.process.stdin.close();self.stdin_closed=True
-        deadline=time.monotonic()+10
+        deadline=min(time.monotonic()+10,self.absolute_end or float('inf'))
         while self.process.poll() is None and time.monotonic()<deadline:
             try:self.drain()
             except (ValueError,OSError):self.invalid_lines=True
@@ -183,10 +208,12 @@ class OwnedTransport:
 
 
 def main():
-    if sys.argv[1:]!=['--real-once']:raise ValueError('explicit_once_required')
-    if (PHASE/'REAL-SESSION-CONSUMED.json').exists():raise ValueError('physical_session_already_consumed')
-    gate=json.loads((PHASE/'real-session-gate.json').read_text())
+    phase=session_phase(sys.argv[1:])
+    if (phase/'REAL-SESSION-CONSUMED.json').exists():raise ValueError('physical_session_already_consumed')
+    gate=json.loads((phase/'real-session-gate.json').read_text())
     if gate.get('ok') is not True:raise ValueError('gates_required')
+    if phase==AUTHORIZED_PHASE and gate.get('authorization_reference')!=AUTHORIZATION_REFERENCE:
+        raise ValueError('specific_session_authorization_required')
     for name,digest in gate['source_hashes'].items():
         if hashlib.sha256((ROOT/name).read_bytes()).hexdigest()!=digest:raise ValueError('tested_source_changed')
     from monitoring.winpipe import WindowsPipeApi
@@ -206,12 +233,13 @@ def main():
     (state/'DEVELOPMENT-TELEMETRY').write_bytes(b'LSR-TELEMETRY-DEV-LOOPBACK-v1\n')
     store=Store(state/'devices.db',protector);token,_=store.begin_pairing();device=store.pair(token,'Loopback telemetry validation')
     (state/'telemetry-readers.json').write_text(json.dumps([device['device_id']]),encoding='ascii')
-    marker=PHASE/'REAL-SESSION-CONSUMED.json'
-    with marker.open('x',encoding='utf-8') as f:json.dump({'started_at':datetime.now(timezone.utc).isoformat(),'observation_seconds':30,'run_id':session},f)
+    receipt=claim_session(phase,session)
     transport=OwnedTransport(state,device,api);started=time.monotonic();result={}
+    transport.absolute_end=started+60
     try:
         transport.start(session)
-        result=run_observation(transport,now=time.monotonic,wait=time.sleep,duration=30)
+        duration=min(30,transport.absolute_end-time.monotonic()-15)
+        result=run_observation(transport,now=time.monotonic,wait=time.sleep,duration=duration)
     except Exception:
         result=dict(v=1,reason='bootstrap_failed',clean_stop=transport.close(),records=[],forced_shutdown=False,repeated=False,physical=True)
     finally:
@@ -219,9 +247,13 @@ def main():
         # Revoke only the temporary DEV read identity, never production state/grants.
         store.revoke(device['device_id']);(state/'telemetry-readers.json').write_text('[]',encoding='ascii')
         result['temporary_read_identity_revoked']=True;result['production_agent_modified']=False
-        (PHASE/'real-transport-result.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
+        result['receipt']=receipt
+        result['within_limit']=result['total_elapsed_seconds']<=60
+        result['previous_marker_preserved']=hashlib.sha256((PHASE/'REAL-SESSION-CONSUMED.json').read_bytes()).hexdigest()==PREVIOUS_MARKER_SHA256
+        with (phase/'real-transport-result.json').open('x',encoding='utf-8') as output:
+            output.write(json.dumps(result,indent=2)+'\n')
     summary={k:v for k,v in result.items() if k not in ('records','resources','stop','ipc_records','publications')}
     summary['https_reads']=len(result['records']);print(json.dumps(summary))
-    return 0 if result.get('clean_stop') and not result['residual_pids'] and result.get('transport_validated') is True else 1
+    return 0 if result.get('clean_stop') and not result['residual_pids'] and result.get('transport_validated') is True and result['within_limit'] else 1
 
 if __name__=='__main__':raise SystemExit(main())

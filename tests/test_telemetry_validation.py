@@ -1,6 +1,8 @@
 import unittest
 import importlib.util
 import json
+import hashlib
+import tempfile
 from pathlib import Path
 from unittest.mock import Mock,patch
 from telemetry.validation import run_observation
@@ -62,6 +64,29 @@ class BackendTests(unittest.TestCase):
         with patch.object(self.module,'PHASE',phase),patch.object(self.module.sys,'argv',['runner','--real-once']):
             with self.assertRaisesRegex(ValueError,'physical_session_already_consumed'):
                 self.module.main()
+    def test_new_authorization_receipt_preserves_old_and_cannot_repeat(self):
+        cache=Path(__file__).resolve().parents[1]/'.cache'
+        with tempfile.TemporaryDirectory(dir=cache) as folder:
+            root=Path(folder);old=root/'old';new=root/'new';old.mkdir();new.mkdir()
+            marker=old/'REAL-SESSION-CONSUMED.json';marker.write_bytes(b'{"old":true}')
+            digest=hashlib.sha256(marker.read_bytes()).hexdigest()
+            with patch.object(self.module,'PHASE',old),patch.object(self.module,'AUTHORIZED_PHASE',new),patch.object(self.module,'PREVIOUS_MARKER_SHA256',digest):
+                receipt=self.module.claim_session(new,'f'*32)
+                self.assertEqual(receipt['limit_seconds'],60)
+                self.assertEqual(receipt['authorization_reference'],self.module.AUTHORIZATION_REFERENCE)
+                self.assertEqual(receipt['previous_marker_sha256'],digest)
+                with self.assertRaises(FileExistsError):self.module.claim_session(new,'a'*32)
+                self.assertEqual(marker.read_bytes(),b'{"old":true}')
+                self.assertEqual(json.loads((new/'REAL-SESSION-CONSUMED.json').read_text())['run_id'],'f'*32)
+    def test_only_fixed_session_selectors_are_accepted(self):
+        self.assertEqual(self.module.session_phase(['--authorized-once']),self.module.AUTHORIZED_PHASE)
+        for args in ([],['--phase','arbitrary'],['--authorized-once','--again']):
+            with self.assertRaises(ValueError):self.module.session_phase(args)
+    def test_changed_old_marker_prevents_new_claim(self):
+        old=Mock();marker=Mock();marker.read_bytes.return_value=b'changed';old.__truediv__=Mock(return_value=marker)
+        with patch.object(self.module,'PHASE',old):
+            with self.assertRaisesRegex(ValueError,'previous_session_marker_changed'):
+                self.module.claim_session(self.module.AUTHORIZED_PHASE,'f'*32)
     def test_discovery_is_fixed_loopback_and_single(self):
         b=self.backend;b.messages.put({'event':'telemetry_ready','host':'127.0.0.1','port':34567});b.drain();self.assertEqual(b.port,34567)
         b.messages.put({'event':'telemetry_ready','host':'0.0.0.0','port':34568})
