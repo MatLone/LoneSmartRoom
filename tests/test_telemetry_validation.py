@@ -38,6 +38,13 @@ class ValidationTests(unittest.TestCase):
         for n in (0,41,True,float('nan'),float('inf')):
             f=Fake()
             with self.assertRaises(ValueError):run_observation(f,now=f.now,wait=f.wait,duration=n)
+    def test_http_success_without_metrics_is_not_transport_validation(self):
+        f=Fake();r=run_observation(f,now=f.now,wait=f.wait,duration=2)
+        self.assertTrue(r['clean_stop']);self.assertFalse(r['transport_validated']);self.assertEqual(r['snapshots_received'],0)
+    def test_required_valid_metric_evidence_is_necessary(self):
+        f=Fake();ids=['cpu.utilization','ram.total','ram.used','ram.available','storage.c.total','storage.d.total','gpu.adlx.utilization','gpu.adlx.temperature']
+        f.read_telemetry=Mock(return_value={'ok':True,'body':{'snapshot':{'metrics':[dict(id=k,valid=True,stale=False,value=0,age_seconds=0,expires_after_seconds=3) for k in ids]}}})
+        r=run_observation(f,now=f.now,wait=f.wait,duration=2);self.assertTrue(r['transport_validated']);self.assertEqual(len(r['valid_metric_ids']),8)
 
 
 class BackendTests(unittest.TestCase):

@@ -161,6 +161,7 @@ class OwnedTransport:
 
 def main():
     if sys.argv[1:]!=['--real-once']:raise ValueError('explicit_once_required')
+    if (PHASE/'REAL-SESSION-CONSUMED.json').exists():raise ValueError('physical_session_already_consumed')
     gate=json.loads((PHASE/'real-session-gate.json').read_text())
     if gate.get('ok') is not True:raise ValueError('gates_required')
     for name,digest in gate['source_hashes'].items():
@@ -198,6 +199,6 @@ def main():
         (PHASE/'real-transport-result.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
     summary={k:v for k,v in result.items() if k not in ('records','resources','stop')}
     summary['https_reads']=len(result['records']);print(json.dumps(summary))
-    return 0 if result.get('clean_stop') and not result['residual_pids'] and result['reason']=='observation_complete' else 1
+    return 0 if result.get('clean_stop') and not result['residual_pids'] and result.get('transport_validated') is True else 1
 
 if __name__=='__main__':raise SystemExit(main())

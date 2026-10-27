@@ -24,6 +24,14 @@ def run_observation(backend, *, now, wait, duration=30):
     finally:
         # Only owned stdio EOF; never terminate/kill a process or restart a source.
         closed = backend.close()
+    snapshots=[r['body']['snapshot'] for r in records if type(r.get('body')) is dict and r['body'].get('snapshot') is not None]
+    valid_ids={m['id'] for s in snapshots for m in s.get('metrics',[]) if m.get('valid') is True
+        and m.get('stale') is False and m.get('value') is not None and type(m.get('age_seconds')) in (int,float)
+        and m['age_seconds']<m.get('expires_after_seconds',0)}
+    required={'cpu.utilization','ram.total','ram.used','ram.available','storage.c.total','storage.d.total',
+              'gpu.adlx.utilization','gpu.adlx.temperature'}
     return dict(v=1, reason=reason,error=error,elapsed_seconds=now()-started,
         records=records,clean_stop=closed is True,physical=backend.physical,
+        snapshots_received=len(snapshots),valid_metric_ids=sorted(valid_ids),
+        transport_validated=closed is True and reason=='observation_complete' and required<=valid_ids,
         repeated=False,forced_shutdown=False)
