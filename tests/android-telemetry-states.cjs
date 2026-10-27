@@ -1,0 +1,31 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const root=path.resolve(__dirname,'..'),model=require('../apps/android/app/src/main/assets/telemetry-model.js');
+const raw=JSON.parse(fs.readFileSync(path.join(root,'.cache/telemetry-tests/https-frame.json')));
+let checks=0;const eq=(a,b)=>{assert.deepEqual(a,b);checks++;};
+const nullSource={ok:true,telemetry_version:1,generation:'f'.repeat(32),state:'unavailable',snapshot:null};eq(model.normalize(nullSource).snapshot,null);
+const gpuId='gpu.adlx.utilization',sample=r=>r.snapshot.metrics.find(m=>m.id===gpuId);
+const inactive=structuredClone(raw);Object.assign(sample(inactive),{interval_seconds:10,expires_after_seconds:11,age_seconds:10.9});
+eq(model.normalize(inactive,{simulation:true}).snapshot.metrics.find(m=>m.id===gpuId).valid,true);
+eq(model.age(model.normalize(inactive,{simulation:true}),.11).snapshot.metrics.find(m=>m.id===gpuId).value,null);
+const old=structuredClone(raw);sample(old).age_seconds=3;eq(model.normalize(old,{simulation:true}).snapshot.metrics.find(m=>m.id===gpuId).state,'stale');
+const unsupported=structuredClone(raw);Object.assign(sample(unsupported),{state:'unsupported',valid:false,value:null});eq(model.normalize(unsupported,{simulation:true}).snapshot.metrics.find(m=>m.id===gpuId).value,null);
+const badIngress=structuredClone(raw);sample(badIngress).ingress_age_seconds=1.501;assert.throws(()=>model.normalize(badIngress,{simulation:true}));checks++;
+let now=0,hidden=true,observer,visibility,id=0;const timers=new Map(),calls=[],nodes=new Map(model.ids.map(key=>[key,{dataset:{telemetry:key},parentElement:{matches:()=>false},textContent:'',title:''}]));
+const label={},last={},document={hidden:false,getElementById:n=>n==='panel-monitor'?{hidden}:n==='telemetryState'?label:last,querySelectorAll:s=>s==='[data-telemetry]'?[...nodes.values()]:[],addEventListener:(_n,f)=>visibility=f};
+const timer=(cb,delay,repeat=false)=>{const n=++id;timers.set(n,{cb,at:now+delay,delay,repeat});return n;};
+const window={loneTelemetry:{...model,normalize:(r,o)=>model.normalize(r,{...o,simulation:true})},LoneAgent:{refreshTelemetry:n=>calls.push(n)}};
+vm.runInNewContext(fs.readFileSync(path.join(root,'apps/android/app/src/main/assets/telemetry-ui.js'),'utf8'),{window,document,performance:{now:()=>now},MutationObserver:class{constructor(f){observer=f;}observe(){}},setTimeout:(f,n)=>timer(f,n),clearTimeout:n=>timers.delete(n),setInterval:(f,n)=>timer(f,n,true),Map,Date,Number,Math});
+function advance(ms){const end=now+ms;while(true){const next=[...timers.entries()].sort((a,b)=>a[1].at-b[1].at)[0];if(!next||next[1].at>end)break;now=next[1].at;timers.delete(next[0]);next[1].cb();if(next[1].repeat)timers.set(next[0],{...next[1],at:now+next[1].delay});}now=end;}
+function reply(payload=raw){window.onLoneTelemetry({...structuredClone(payload),request_id:calls.at(-1),transport_seconds:0});}
+eq(calls.length,0);hidden=false;observer();eq(calls.length,1);reply();eq(nodes.get(gpuId).textContent,'<0,1%');
+advance(3100);eq(nodes.get(gpuId).textContent,'Desatualizado');
+hidden=true;observer();const count=calls.length;advance(20000);eq(calls.length,count);eq(label.textContent,'Consulta pausada');
+hidden=false;observer();reply();eq(nodes.get(gpuId).textContent,'Indisponível');
+advance(2000);const fresh=structuredClone(raw);fresh.snapshot.sequence++;fresh.snapshot.generated_at=new Date(Date.parse(raw.snapshot.generated_at)+1000).toISOString();for(const m of fresh.snapshot.metrics)m.collected_at=fresh.snapshot.generated_at;
+Object.assign(sample(fresh),{state:'unavailable',valid:false,value:null});reply(fresh);eq(nodes.get(gpuId).textContent,'Indisponível');eq(nodes.get('cpu.utilization').textContent,'<0,1%');
+advance(2000);reply({ok:false});eq(nodes.get('cpu.utilization').textContent,'Indisponível');
+advance(4000);reply({...raw,telemetry_version:99});eq(nodes.get('ram.used').textContent,'Indisponível');
+advance(8000);const pendingId=calls.at(-1);advance(12000);window.onLoneTelemetry({...raw,request_id:pendingId,transport_seconds:0});eq(nodes.get('ram.used').textContent,'Indisponível');
+document.hidden=true;visibility();const paused=calls.length;advance(20000);eq(calls.length,paused);
+console.log(`PASS: ${checks} Android telemetry null/stale/GPU loss/reconnect/invalid/timeout/visibility assertions; virtual timers and simulated data only`);
