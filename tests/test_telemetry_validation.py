@@ -45,6 +45,8 @@ class ValidationTests(unittest.TestCase):
         f=Fake();ids=['cpu.utilization','ram.total','ram.used','ram.available','storage.c.total','storage.d.total','gpu.adlx.utilization','gpu.adlx.temperature']
         f.read_telemetry=Mock(return_value={'ok':True,'body':{'snapshot':{'metrics':[dict(id=k,valid=True,stale=False,value=0,age_seconds=0,expires_after_seconds=3) for k in ids]}}})
         r=run_observation(f,now=f.now,wait=f.wait,duration=2);self.assertTrue(r['transport_validated']);self.assertEqual(len(r['valid_metric_ids']),8)
+        f.time=0.;f.read_telemetry.return_value['transport_seconds']=3
+        r=run_observation(f,now=f.now,wait=f.wait,duration=2);self.assertFalse(r['transport_validated'])
 
 
 class BackendTests(unittest.TestCase):
