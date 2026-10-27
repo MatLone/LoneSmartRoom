@@ -4,6 +4,7 @@ const root=path.resolve(__dirname,'..'),model=require('../apps/android/app/src/m
 const raw=JSON.parse(fs.readFileSync(path.join(root,'.cache/telemetry-tests/https-frame.json'),'utf8'));
 let checks=0;const ok=(x)=>{assert(x);checks++;},equal=(a,b)=>{assert.deepEqual(a,b);checks++;};
 const view=model.normalize(raw,{simulation:true});equal(view.snapshot.metrics.length,29);
+const jvm=model.normalize(JSON.parse(fs.readFileSync(path.join(root,'.cache/telemetry-tests/jvm-frame.json'))),{simulation:true});equal(jvm.snapshot.metrics.length,29);
 equal(model.format(view.snapshot.metrics.find(m=>m.id==='gpu.adlx.fan_rpm')),'0 RPM');
 equal(model.format(view.snapshot.metrics.find(m=>m.id==='cpu.utilization')),'<0,1%');
 equal(model.age(view,1000).snapshot.metrics.every(m=>m.value===null),true);

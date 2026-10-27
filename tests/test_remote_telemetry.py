@@ -3,10 +3,12 @@ import copy
 import hashlib
 import hmac
 import http.client
+import importlib.util
 import json
 from pathlib import Path
 import secrets
 import ssl
+import subprocess
 import sys
 import tempfile
 import threading
@@ -81,6 +83,24 @@ class BrokerTests(unittest.TestCase):
         self.assertEqual(len(self.broker.read()['snapshot']['metrics']), 21)
         self.mono -= 1; self.assertIsNone(self.broker.read()['snapshot'])
 
+    def test_inconsistent_ratios_and_unsafe_integers(self):
+        for key, value in [('ram.utilization', 0), ('storage.c.occupation', 100), ('ram.total', 2**53)]:
+            raw = copy.deepcopy(self.raw)
+            next(m for m in raw['metrics'] if m['id'] == key)['value'] = value
+            with self.assertRaises(ValueError): self.broker.publish(raw)
+
+    def test_development_composition_cannot_use_production_state(self):
+        spec=importlib.util.spec_from_file_location('telemetry_development_composition',ROOT/'scripts/monitoring-telemetry-client.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory(dir=ROOT/'.cache') as temp:
+            root=Path(temp);session='a'*32;state=root/'.cache/telemetry-development'/session;state.mkdir(parents=True)
+            with self.assertRaises(ValueError):module.development_state(root,session)
+            for name in ('server.crt','server.key','tls.dpapi','devices.db'):(state/name).write_bytes(b'synthetic fixture only')
+            (state/'DEVELOPMENT-TELEMETRY').write_bytes(b'LSR-TELEMETRY-DEV-LOOPBACK-v1\n')
+            self.assertEqual(module.development_state(root,session),state)
+            (state/'DEVELOPMENT-TELEMETRY').write_bytes(b'operational')
+            with self.assertRaises(ValueError):module.development_state(root,session)
+
 
 class HttpsTests(unittest.TestCase):
     @classmethod
@@ -92,7 +112,9 @@ class HttpsTests(unittest.TestCase):
         code,_ = cls.store.begin_pairing(); cls.device = cls.store.pair(code, 'SYNTHETIC ANDROID')
         cls.broker = SnapshotBroker(simulation=True)
         cls.broker.publish(snapshot(time.time()))
-        cls.server = DevelopmentTelemetryServer(('127.0.0.1', 0), server_context(cls.state,cls.protector), cls.store,
+        spec=importlib.util.spec_from_file_location('development_telemetry_composition',ROOT/'scripts/monitoring-telemetry-client.py')
+        composition=importlib.util.module_from_spec(spec);spec.loader.exec_module(composition)
+        cls.server = DevelopmentTelemetryServer(('127.0.0.1', 0), composition.development_context(cls.state,cls.protector), cls.store,
             '127.0.0.0/8', telemetry=cls.broker, development_enabled=True)
         cls.thread = threading.Thread(target=cls.server.serve_forever,daemon=True); cls.thread.start()
         cls.context = ssl.create_default_context(cafile=str(cls.state/'server.crt'))
@@ -155,6 +177,30 @@ class HttpsTests(unittest.TestCase):
         try:
             status,body=self.request(headers=self.headers());self.assertEqual(status,503);self.assertNotIn('private',json.dumps(body))
         finally:self.server.telemetry=self.broker
+
+    def test_oversized_response_is_rejected(self):
+        class Oversized:
+            def read(self): return {'ok':True,'unexpected':'x'*40000}
+        self.server.telemetry=Oversized()
+        try: self.assertEqual(self.request(headers=self.headers())[0],503)
+        finally: self.server.telemetry=self.broker
+
+    def test_android_production_pin_and_hmac(self):
+        jdk=Path('C:/Program Files/Android/Android Studio/jbr/bin')
+        classes=ROOT/'apps/android/app/build/tmp/kotlin-classes/debug'
+        stdlib=next((ROOT/'.cache/gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.0.21').rglob('kotlin-stdlib-2.0.21.jar'))
+        output=self.state/'jvm';output.mkdir(exist_ok=True)
+        cp=str(classes)+';'+str(stdlib)
+        subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','-classpath',cp,'-d',str(output),
+            str(ROOT/'apps/android/app/src/main/java/com/lonesmartroom/app/PinnedTls.java'),str(ROOT/'tests/AndroidTelemetryTlsTest.java')],check=True,capture_output=True,timeout=15)
+        self.broker.clear();self.broker.publish(snapshot(time.time()))
+        target=ROOT/'.cache/telemetry-tests/jvm-frame.json';target.parent.mkdir(exist_ok=True,parents=True)
+        result=subprocess.run([str(jdk/'java.exe'),'-classpath',str(output)+';'+cp,'AndroidTelemetryTlsTest',
+            str(self.server.server_port),fingerprint(self.state),str(target)],input=self.device['device_id']+'\n'+self.device['secret']+'\n',
+            capture_output=True,text=True,timeout=15)
+        (ROOT/'.cache/telemetry-tests/jvm-error.log').write_text(result.stderr,encoding='utf-8')
+        self.assertEqual(result.returncode,0,'Isolated Android pin/HMAC JVM regression failed')
+        self.assertEqual(json.loads(target.read_bytes())['telemetry_version'],1)
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

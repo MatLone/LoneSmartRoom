@@ -15,6 +15,7 @@ object TelemetryContract {
     private fun number(v: Any): Double { require(v is Number && v !is Boolean); return (v as Number).toDouble().also { require(it.isFinite()) } }
     private fun nullable(v: Any): Any = if (v === JSONObject.NULL) JSONObject.NULL else number(v)
     fun project(raw: JSONObject): JSONObject {
+        require(raw.get("ok") == true)
         require(raw.get("telemetry_version") is Int && raw.getInt("telemetry_version") == 1)
         val generation = raw.getString("generation"); require(generation.matches(Regex("[a-f0-9]{32}")))
         val state = raw.getString("state"); require(state in setOf("available", "unavailable"))
@@ -41,6 +42,7 @@ object TelemetryContract {
             val value = nullable(m.get("value")); val age = nullable(m.get("age_seconds"))
             if (valid) {
                 val n = number(value); require(kind == "real" && age !== JSONObject.NULL && !m.isNull("collected_at"))
+                if (unit in setOf("bytes", "megabytes", "rpm")) require(n % 1.0 == 0.0)
                 require(n >= if (unit == "celsius") -273.15 else 0.0)
                 val max = when(unit) { "percent" -> 100.0; "celsius" -> 300.0; "megahertz" -> 100000.0; "watts" -> 5000.0; "rpm" -> 1000000.0; "megabytes" -> 2147483647.0; else -> 9007199254740991.0 }; require(n <= max)
             } else require(value === JSONObject.NULL)
@@ -55,6 +57,17 @@ object TelemetryContract {
             for (key in listOf("id", "source", "unit", "state", "data_kind", "collected_at")) out.put(key, m.get(key))
             out.put("valid", valid).put("stale", stale).put("value", value).put("age_seconds", age).put("interval_seconds", interval).put("expires_after_seconds", ttl).put("ingress_age_seconds", ingress)
             metrics.put(out)
+        }
+        val byId = (0 until metrics.length()).map { metrics.getJSONObject(it) }.associateBy { it.getString("id") }
+        for (prefix in listOf("ram.", "storage.c.", "storage.d.")) {
+            val keys = listOf("total", "used", if (prefix == "ram.") "available" else "free")
+            val group = keys.map { byId[prefix + it] }
+            if (group.all { it?.getBoolean("valid") == true } && group.map { it!!.getString("collected_at") }.distinct().size == 1) {
+                val total = group[0]!!.getDouble("value"); val used = group[1]!!.getDouble("value"); val free = group[2]!!.getDouble("value")
+                require(total > 0 && used + free == total)
+                val ratio = byId[prefix + if (prefix == "ram.") "utilization" else "occupation"]
+                if (ratio?.getBoolean("valid") == true && ratio.getString("collected_at") == group[0]!!.getString("collected_at")) require(kotlin.math.abs(ratio.getDouble("value") - used / total * 100) <= 0.000001)
+            }
         }
         return result.put("snapshot", JSONObject().put("schema_version", 1).put("contains_simulated", false).put("sequence", sequence).put("generated_at", generated).put("metrics", metrics))
     }

@@ -74,6 +74,8 @@ def project(snapshot, *, simulation=False, now=None):
         value = raw.get('value')
         if valid: spec.validate_value(value)
         elif value is not None: raise ValueError('null_required')
+        if valid and spec.unit.value in ('bytes','bytes_per_second') and value > 2**53 - 1:
+            raise ValueError('json_safe_number_required')
         ingress = raw.get('ingress_age_seconds')
         if ingress is not None and (not key.startswith('gpu.') or key.endswith('total_mb') or not 0 <= number(ingress) <= 1.5):
             raise ValueError('invalid_adlx_ingress')
@@ -88,6 +90,9 @@ def project(snapshot, *, simulation=False, now=None):
         if all(m and m['valid'] for m in group) and len({m['collected_at'] for m in group}) == 1:
             total, used, free = [m['value'] for m in group]
             if total <= 0 or used + free != total: raise ValueError('inconsistent_capacity')
+            ratio = by_id.get(prefix + ('utilization' if prefix == 'ram.' else 'occupation'))
+            if ratio and ratio['valid'] and ratio['collected_at'] == group[0]['collected_at'] and abs(ratio['value'] - 100*used/total) > 1e-6:
+                raise ValueError('inconsistent_occupation')
     used, total = by_id.get('gpu.adlx.vram_used_mb'), by_id.get('gpu.adlx.vram_total_mb')
     if total and total['valid'] and (total['value'] <= 0 or used and used['valid'] and used['value'] > total['value']):
         raise ValueError('inconsistent_vram')

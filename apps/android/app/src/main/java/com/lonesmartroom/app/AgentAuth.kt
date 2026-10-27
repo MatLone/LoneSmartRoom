@@ -13,7 +13,8 @@ object AgentAuth {
         require(device.matches(Regex("[0-9a-f]{32}")) && secret.matches(Regex("[0-9a-f]{64}")))
         require(stamp.matches(Regex("[0-9]{10,11}")) && nonce.matches(Regex("[0-9a-f]{32}")))
         val key = secret.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-        require(method in setOf("GET", "POST") && path.matches(Regex("/v2/(status|apps|apps/commands(/[0-9a-f]{32})?)")))
+        require(method in setOf("GET", "POST") && (path.matches(Regex("/v2/(status|apps|apps/commands(/[0-9a-f]{32})?)")) ||
+            method == "GET" && path == "/v2/telemetry"))
         require(body.size <= 1024 && (method == "POST" || body.isEmpty()))
         val canonical = "LSR2\n$device\n$stamp\n$nonce\n$method\n$path\n".toByteArray(Charsets.US_ASCII) + body
         val signature = Mac.getInstance("HmacSHA256").apply { init(SecretKeySpec(key, "HmacSHA256")) }

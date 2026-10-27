@@ -15,7 +15,7 @@
    if(node.parentElement.matches('.sensor'))node.parentElement.querySelector('.sensor-value')?.setAttribute('aria-label',node.textContent);
   }
   for(const bar of document.querySelectorAll('[data-telemetry-bar]')){
-   const m=metrics.get(bar.dataset.telemetryBar),valid=m?.valid&&m.collected_at>(watermark.get(m.id)||'');bar.style.width=(valid?m.value:0)+'%';bar.parentElement.setAttribute('aria-label',valid?model.format(m):'Indisponível');
+   const m=metrics.get(bar.dataset.telemetryBar),valid=m?.valid&&m.unit==='percent'&&m.collected_at>(watermark.get(m.id)||'');bar.parentElement.hidden=!valid;bar.style.width=(valid?m.value:0)+'%';bar.parentElement.setAttribute('aria-label',valid?model.format(m):'Indisponível');
   }
  }
  function lose(message){

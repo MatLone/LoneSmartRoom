@@ -24,10 +24,19 @@
    if(m.ingress_age_seconds!==null&&m.ingress_age_seconds!==undefined&&(!gpu||capacity||!num(m.ingress_age_seconds)||m.ingress_age_seconds<0||m.ingress_age_seconds>1.5))throw Error('invalid_ingress');
    const ranges={percent:[0,100],celsius:[-273.15,300],bytes:[0,Number.MAX_SAFE_INTEGER],bytes_per_second:[0,Number.MAX_SAFE_INTEGER],megabytes:[0,2147483647],megahertz:[0,100000],watts:[0,5000],rpm:[0,1000000]},[lo,hi]=ranges[m.unit];
    if(m.valid&&(!num(m.value)||m.value<lo||m.value>hi||m.collected_at===null||m.age_seconds===null||m.data_kind==='not_collected')||!m.valid&&m.value!==null)throw Error('invalid_value');
+   if(m.valid&&['bytes','megabytes','rpm'].includes(m.unit)&&!Number.isSafeInteger(m.value))throw Error('integer_required');
    const age=m.age_seconds===null?null:m.age_seconds+transportSeconds;
    const stale=m.stale||age!==null&&age>=ttl;
    return {id:m.id,source:m.source,unit:m.unit,value:m.valid&&!stale?m.value:null,valid:m.valid&&!stale,stale,state:stale&&m.state==='available'?'stale':m.state,collected_at:m.collected_at,age_seconds:age,expires_after_seconds:ttl,data_kind:m.data_kind};
   });
+  const byId=new Map(metrics.map(m=>[m.id,m]));
+  for(const [prefix,keys]of [['ram.',['total','used','available']],['storage.c.',['total','used','free']],['storage.d.',['total','used','free']]]){
+   const a=keys.map(k=>byId.get(prefix+k));if(a.every(m=>m?.valid)&&new Set(a.map(m=>m.collected_at)).size===1){
+    if(!(a[0].value>0)||a[1].value+a[2].value!==a[0].value)throw Error('inconsistent_capacity');
+    const ratio=byId.get(prefix+(prefix==='ram.'?'utilization':'occupation'));
+    if(ratio?.valid&&ratio.collected_at===a[0].collected_at&&Math.abs(ratio.value-a[1].value/a[0].value*100)>1e-6)throw Error('inconsistent_occupation');
+   }
+  }
   return {generation:raw.generation,snapshot:{sequence:s.sequence,generated_at:s.generated_at,contains_simulated:simulation,metrics}};
  }
  function age(view,elapsed){
@@ -42,7 +51,7 @@
   const n=m.value,units={percent:'%',celsius:' °C',megabytes:' MB',megahertz:' MHz',watts:' W',rpm:' RPM'};
   if(m.unit==='percent'&&n>0&&n<0.1)return '<0,1%';
   if(m.unit==='bytes')return (n/1024**3).toLocaleString('pt-BR',{maximumFractionDigits:1})+' GiB';
-  if(m.unit==='bytes_per_second')return (n/1024).toLocaleString('pt-BR',{maximumFractionDigits:2})+' KiB/s';
+  if(m.unit==='bytes_per_second')return (n>0&&n/1024<0.01?'<0,01':(n/1024).toLocaleString('pt-BR',{maximumFractionDigits:2}))+' KiB/s';
   return n.toLocaleString('pt-BR',{maximumFractionDigits:1})+(units[m.unit]||'');
  }
  return Object.freeze({normalize,age,format,ids:[...ids.keys()]});
