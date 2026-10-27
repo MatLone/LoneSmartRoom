@@ -1,5 +1,6 @@
 import unittest
 import importlib.util
+import json
 from pathlib import Path
 from unittest.mock import Mock,patch
 from telemetry.validation import run_observation
@@ -55,6 +56,12 @@ class BackendTests(unittest.TestCase):
         self.module=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.module)
         self.backend=self.module.OwnedTransport(Path('fixture'),{},Mock())
         self.backend.hold=Mock()
+    def test_consumed_physical_guard_remains_enforced(self):
+        phase=Mock();marker=Mock();marker.exists.return_value=True
+        phase.__truediv__=Mock(return_value=marker)
+        with patch.object(self.module,'PHASE',phase),patch.object(self.module.sys,'argv',['runner','--real-once']):
+            with self.assertRaisesRegex(ValueError,'physical_session_already_consumed'):
+                self.module.main()
     def test_discovery_is_fixed_loopback_and_single(self):
         b=self.backend;b.messages.put({'event':'telemetry_ready','host':'127.0.0.1','port':34567});b.drain();self.assertEqual(b.port,34567)
         b.messages.put({'event':'telemetry_ready','host':'0.0.0.0','port':34568})
@@ -74,5 +81,44 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(b.telemetry_diagnostics['last_rule'],'inconsistent_capacity')
         b.messages.put(dict(v=1,event='telemetry_diagnostics',accepted=0,rejected=30,last_rule='secret path'))
         with self.assertRaises(ValueError):b.drain()
+    def test_publication_stage_acceptance_and_limit(self):
+        b=self.backend
+        event=dict(v=1,event='telemetry_publication',sequence=1,accepted=True,rejected=False,rule=None)
+        for _ in range(40):b.messages.put(dict(event));b.drain()
+        self.assertEqual(len(b.publications),40)
+        b.messages.put(event)
+        with self.assertRaises(ValueError):b.drain()
+    def test_publication_rejects_free_text_and_unknown_fields(self):
+        for change in ({'rule':'private token'},{'secret':'private token'},{'sequence':True},{'accepted':1}):
+            event=dict(v=1,event='telemetry_publication',sequence=1,accepted=False,rejected=True,rule='inconsistent_capacity')
+            event.update(change);self.backend.messages.put(event)
+            with self.assertRaises(ValueError):self.backend.drain()
+    def test_ipc_rejection_never_retains_unvalidated_fields(self):
+        self.backend.messages.put(dict(event='response',body=dict(ok=True,snapshot=dict(sequence=3,secret='private token'))))
+        self.backend.drain()
+        self.assertFalse(self.backend.ipc_records[0]['ok'])
+        self.assertNotIn('private token',json.dumps(self.backend.ipc_records))
+
+
+class PublicationTests(unittest.TestCase):
+    def setUp(self):
+        spec=importlib.util.spec_from_file_location('development_traced_client',Path(__file__).resolve().parents[1]/'scripts/monitoring-telemetry-client.py')
+        self.module=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.module)
+    def test_trace_is_disabled_by_default(self):
+        broker=Mock();broker.diagnostics.return_value={'rejected':0,'last_rule':None};broker.publish.return_value=True
+        emit=Mock();publish=self.module.traced_publisher(broker,emit)
+        self.assertTrue(publish({'sequence':1}));emit.assert_not_called()
+    def test_actual_rejection_is_sanitized_and_propagated(self):
+        broker=Mock();broker.diagnostics.side_effect=[{'rejected':0,'last_rule':None},{'rejected':1,'last_rule':'inconsistent_capacity'}]
+        broker.publish.side_effect=ValueError('private token');emit=Mock()
+        publish=self.module.traced_publisher(broker,emit,enabled=True)
+        with self.assertRaises(ValueError):publish({'sequence':2,'secret':'private token'})
+        record=emit.call_args.args[0];self.assertTrue(record['rejected'])
+        self.assertEqual(record['rule'],'inconsistent_capacity');self.assertNotIn('private token',json.dumps(record))
+    def test_trace_limit_does_not_stop_normal_publications(self):
+        broker=Mock();broker.diagnostics.return_value={'rejected':0,'last_rule':None};broker.publish.return_value=True;emit=Mock()
+        publish=self.module.traced_publisher(broker,emit,enabled=True)
+        for i in range(45):self.assertTrue(publish({'sequence':i}))
+        self.assertEqual(emit.call_count,40);self.assertEqual(broker.publish.call_count,45)
 
 if __name__=='__main__':unittest.main(verbosity=2)

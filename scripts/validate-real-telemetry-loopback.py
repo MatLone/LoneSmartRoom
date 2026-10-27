@@ -35,6 +35,7 @@ class OwnedTransport:
         self.thread=None
         self.snapshot_pending=False
         self.telemetry_diagnostics=None
+        self.ipc_records=[];self.publications=[]
 
     def start(self, session):
         from secure_tls import fingerprint
@@ -47,7 +48,7 @@ class OwnedTransport:
         env={k:v for k,v in os.environ.items() if k.upper() in ('SYSTEMROOT','WINDIR','TEMP','TMP','PATH')}
         self.error_file=(self.state/'transport-stderr.log').open('xb')
         self.process=subprocess.Popen([str(python),'-I','-S','-B',str(ROOT/'scripts/monitoring-telemetry-client.py'),
-            '--session',session,'--duration','50','--gpu-development'],cwd=ROOT,shell=False,env=env,
+            '--session',session,'--duration','50','--gpu-development','--validation-trace'],cwd=ROOT,shell=False,env=env,
             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=self.error_file,creationflags=0x08000000,bufsize=0)
         self.hold(self.process.pid,'intermediary')
         def output():
@@ -88,7 +89,28 @@ class OwnedTransport:
                 self.events.append(event);self.snapshot_pending=False
             elif event=='response':
                 self.snapshot_pending=False
-                if value.get('body',{}).get('ok') is not True:self.events.append('snapshot_error')
+                body=value.get('body',{})
+                if body.get('ok') is not True:self.events.append('snapshot_error')
+                elif 'snapshot' in body and len(self.ipc_records)<40:
+                    from telemetry.contract import project
+                    try:
+                        projected=project(body['snapshot'],simulation=False)
+                        self.ipc_records.append(dict(ok=True,received_at=datetime.now(timezone.utc).isoformat(),snapshot=projected))
+                    except (ValueError,TypeError):
+                        # Broker emits its actual fixed rejection rule separately.
+                        raw=body['snapshot']
+                        self.ipc_records.append(dict(ok=False,snapshot_type=type(raw).__name__,
+                            sequence=raw.get('sequence') if type(raw) is dict and type(raw.get('sequence')) is int else None))
+            elif event=='telemetry_publication':
+                if (set(value)!={'v','event','sequence','accepted','rejected','rule'} or value['v']!=1
+                    or type(value['accepted']) is not bool or type(value['rejected']) is not bool
+                    or value['sequence'] is not None and (type(value['sequence']) is not int or not 0<=value['sequence']<=2**53-1)
+                    or value['rule'] not in (None,'inconsistent_capacity','inconsistent_occupation','inconsistent_vram',
+                        'invalid_provenance','invalid_timestamp','expired_snapshot','invalid_interval','unexpected_source',
+                        'invalid_adlx_ingress','future_sample','missing_sample','null_required','unexpected_metric',
+                        'unexpected_unit','invalid_state','invalid_snapshot')):raise ValueError('invalid_publication_record')
+                if len(self.publications)>=40:raise ValueError('publication_trace_limit')
+                self.publications.append(value)
             elif event=='telemetry_diagnostics':
                 rules={None,'inconsistent_capacity','inconsistent_occupation','inconsistent_vram','invalid_provenance',
                     'invalid_timestamp','expired_snapshot','invalid_interval','unexpected_source','invalid_adlx_ingress',
@@ -156,7 +178,8 @@ class OwnedTransport:
         residual=[pid for pid,(h,_) in self.handles.items() if self.api.alive(h)]
         for handle,_ in self.handles.values():self.api.close(handle)
         return dict(residual_pids=residual,events=self.events,stop=self.stop_record,resources=self.resources,
-            telemetry_diagnostics=self.telemetry_diagnostics,loopback_port=self.port,intermediary_pid=self.process.pid if self.process else None)
+            telemetry_diagnostics=self.telemetry_diagnostics,ipc_records=self.ipc_records,publications=self.publications,
+            loopback_port=self.port,intermediary_pid=self.process.pid if self.process else None)
 
 
 def main():
@@ -197,7 +220,7 @@ def main():
         store.revoke(device['device_id']);(state/'telemetry-readers.json').write_text('[]',encoding='ascii')
         result['temporary_read_identity_revoked']=True;result['production_agent_modified']=False
         (PHASE/'real-transport-result.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
-    summary={k:v for k,v in result.items() if k not in ('records','resources','stop')}
+    summary={k:v for k,v in result.items() if k not in ('records','resources','stop','ipc_records','publications')}
     summary['https_reads']=len(result['records']);print(json.dumps(summary))
     return 0 if result.get('clean_stop') and not result['residual_pids'] and result.get('transport_validated') is True else 1
 

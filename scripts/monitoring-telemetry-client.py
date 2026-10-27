@@ -41,12 +41,38 @@ def development_context(state, protector):
     return context
 
 
+def traced_publisher(broker, emit, *, enabled=False):
+    """Bounded opt-in stage receipts, never a raw snapshot or exception string."""
+    count = 0
+    def publish(snapshot):
+        nonlocal count
+        accepted = False
+        before = broker.diagnostics()['rejected']
+        try:
+            accepted = broker.publish(snapshot)
+            return accepted
+        finally:
+            if enabled and count < 40:
+                count += 1
+                diagnostics = broker.diagnostics()
+                sequence = snapshot.get('sequence') if type(snapshot) is dict else None
+                if type(sequence) is not int or not 0 <= sequence <= 2**53 - 1:
+                    sequence = None
+                emit({'v':1,'event':'telemetry_publication','sequence':sequence,
+                    'accepted':accepted is True,'rejected':diagnostics['rejected'] > before,
+                    'rule':diagnostics['last_rule'] if diagnostics['rejected'] > before else None})
+    return publish
+
+
 def run():
     if '--application' in sys.argv or '--session' not in sys.argv:
         raise ValueError('development_only')
     session = sys.argv[sys.argv.index('--session') + 1]
     if not re.fullmatch('[a-f0-9]{32}', session): raise ValueError('invalid_session')
     state = development_state(ROOT, session)
+    trace = '--validation-trace' in sys.argv
+    if trace:
+        sys.argv.remove('--validation-trace')
     # All credentials/certs here must be synthetic or separately authorized DEV identities.
     from secure_store import DPAPI
     from secure_protocol import Store
@@ -62,6 +88,7 @@ def run():
     server = DevelopmentTelemetryServer(('127.0.0.1', 0), development_context(state, protector),
         Store(state / 'devices.db', protector), '127.0.0.0/8', telemetry=broker, development_enabled=True, telemetry_readers=readers)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
+    publish = traced_publisher(broker, lambda value:print(json.dumps(value),flush=True), enabled=trace)
     try:
         module_spec = importlib.util.spec_from_file_location('owned_pipe_client', ROOT / 'scripts/monitoring-pipe-client.py')
         module = importlib.util.module_from_spec(module_spec); module_spec.loader.exec_module(module)
@@ -69,7 +96,7 @@ def run():
         # Discovery for the fixed local test harness/main only; no credential output.
         print(json.dumps({'v':1,'event':'telemetry_ready','host':'127.0.0.1',
                           'port':server.server_port,'generation':broker.generation}),flush=True)
-        return module.main(snapshot_sink=broker.publish)
+        return module.main(snapshot_sink=publish)
     finally:
         if thread.is_alive(): server.shutdown()
         server.server_close()
