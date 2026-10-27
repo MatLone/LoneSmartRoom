@@ -50,7 +50,10 @@
       "diagnostics.css",
       "performance-history.cjs",
       "history-renderer.js",
-      "history.css"
+      "history.css",
+      "gamer-session.js",
+      "gamer-session-renderer.js",
+      "gamer-session.css"
     ],
     "directories": {
       "output": "dist"

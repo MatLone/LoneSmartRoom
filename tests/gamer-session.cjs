@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict'),{createSession,createArchive,unavailable}=require('../apps/windows-ui/gamer-session.js');
+let checks=0;const check=x=>{assert(x);checks++;};
+check(unavailable().fps===null);check(unavailable().state==='not_started');
+const startedAt='2026-10-27T00:00:00.000Z',session=createSession({startedAt,simulation:true,maxFrames:100});
+for(let i=0;i<100;i++)check(session.record({v:1,sequence:i,monotonic_seconds:i*.01,frametime_ms:i===99?100:10}));
+const v=session.view();check(v.fps===10);check(Math.abs(v.average_fps-100000/1090)<1e-10);check(v.one_percent_low_fps===10);check(v.simulation&&v.source==='fixture.frames');
+check(!session.record({v:1,sequence:101,monotonic_seconds:1.01,frametime_ms:10}));check(session.view().state==='capacity_reached');
+const archive=createArchive(2),summary=session.finish('2026-10-27T00:01:00Z');archive.append(summary);archive.append(summary);check(archive.list().sessions.length===1);archive.append({...summary,session_id:'a'.repeat(32)});archive.append({...summary,session_id:'b'.repeat(32)});check(archive.list().sessions.length===2);check(!('history' in archive.list().sessions[0]));
+const real=createSession({startedAt});check(!real.record({v:1,sequence:0,monotonic_seconds:0,frametime_ms:10}));check(real.view().fps===null&&real.view().state==='source_unavailable');
+const invalid=createSession({startedAt,simulation:true});
+for(const frame of [null,{},[],{v:2,sequence:1,monotonic_seconds:1,frametime_ms:10},{v:1,sequence:1,monotonic_seconds:1,frametime_ms:NaN},{v:1,sequence:1,monotonic_seconds:1,frametime_ms:Infinity},{v:1,sequence:1,monotonic_seconds:1,frametime_ms:0}])check(!invalid.record(frame));
+check(invalid.record({v:1,sequence:1,monotonic_seconds:1,frametime_ms:20}));check(!invalid.record({v:1,sequence:1,monotonic_seconds:2,frametime_ms:20}));check(invalid.view().one_percent_low_fps===null);
+assert.throws(()=>createSession({startedAt,game:'shell'}));checks++;assert.throws(()=>archive.append({...summary,source:'presentmon',simulation:false}));checks++;
+console.log(`PASS: ${checks} gamer session, exact FPS/1% low math, bounds, unavailable source and simulated archive assertions`);

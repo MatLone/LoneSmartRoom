@@ -1,0 +1,4 @@
+.game-session{margin-top:20px;padding:22px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}.game-session h2{font-size:18px}
+.game-session-note{color:var(--muted);font-size:13px;line-height:1.7}.game-session-values{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.game-session-values article{padding:16px;border:1px solid var(--border);border-radius:12px;min-width:0}.game-session-values h3{font-size:12px;color:var(--muted);font-weight:500}.game-session-values strong{display:block;font-size:18px;margin-top:12px;overflow-wrap:anywhere}
+@media(max-width:800px){.game-session-values{grid-template-columns:repeat(2,minmax(0,1fr))}}body[data-window-mode="widget"] .game-session-values{grid-template-columns:repeat(2,minmax(0,1fr))}

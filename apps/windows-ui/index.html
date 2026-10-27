@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="monitoring.css">
   <link rel="stylesheet" href="diagnostics.css">
   <link rel="stylesheet" href="history.css">
+  <link rel="stylesheet" href="gamer-session.css">
 </head>
 <body>
 <div class="window" id="dashboard" data-mode="dashboard">
@@ -63,6 +64,7 @@
       <div class="game-layout"><section class="cs2-card"><div class="game-kicker"><span>STEAM · APP 730</span><span class="badge locked">Bloqueado</span></div><div class="game-title">COUNTER<br>STRIKE<span>2</span></div><p>Lançamento via Steam já validado.<br>Cliente desktop ainda não conectado.</p><button class="button primary" data-action="cs2" disabled><span data-icon="lock"></span>Abrir CS2</button><span class="game-watermark" aria-hidden="true">730</span></section><div class="game-aside"><section class="surface steam-card"><span class="icon-tile"><span data-icon="globe"></span></span><div class="steam-title"><h2>Steam</h2><span class="badge locked">Bloqueado</span></div><p>Inicialização direta validada.<br>Sem protocolo URI ou argumentos livres.</p><button class="button" data-action="steam" disabled><span data-icon="lock"></span>Abrir Steam</button></section><section class="permission-card"><div><span data-icon="shield"></span><h2>Autorizações individuais</h2></div><p><strong id="grantsCount">—</strong> permissões não consultadas.</p><small id="auditTime">O cliente desktop ainda não foi autenticado.</small><button class="text-button" data-panel="permissions">Entender as permissões<span data-icon="arrow"></span></button></section></div></div>
       <section class="surface command-card"><div class="section-heading"><div><h2>Última solicitação</h2><p>Sem consulta nesta versão.</p></div><span class="badge">Desconhecida</span></div><ol class="command-steps"><li><span>01</span>Solicitado</li><li><span>02</span>Aceito</li><li><span>03</span>Executado</li><li><span>04</span>Falha</li></ol><p class="muted">“Executado” confirma o despacho ao Windows. A abertura da janela ou do jogo exige verificação separada.</p></section>
       <div class="disabled-strip"><span data-icon="lock"></span><div><strong>FPS, overlays e perfis de desempenho</strong><span>Indisponíveis. Nenhuma interferência no jogo ou no VAC.</span></div></div>
+      <section id="gameSession" class="game-session" aria-label="Métricas da sessão de jogo indisponíveis"></section>
     </section>
     <footer class="page-footer"><span><span data-icon="lock"></span>Interface Electron · cliente autenticado não integrado</span><span><span id="runtimeLabel">Inicializando janela Electron…</span></span></footer>
   </main>
@@ -76,5 +78,7 @@
 <script src="diagnostics-model.js"></script>
 <script src="diagnostics-renderer.js"></script>
 <script src="history-renderer.js"></script>
+<script src="gamer-session.js"></script>
+<script src="gamer-session-renderer.js"></script>
 </body>
 </html>
