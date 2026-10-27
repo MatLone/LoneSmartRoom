@@ -12,4 +12,8 @@ const invalid=createSession({startedAt,simulation:true});
 for(const frame of [null,{},[],{v:2,sequence:1,monotonic_seconds:1,frametime_ms:10},{v:1,sequence:1,monotonic_seconds:1,frametime_ms:NaN},{v:1,sequence:1,monotonic_seconds:1,frametime_ms:Infinity},{v:1,sequence:1,monotonic_seconds:1,frametime_ms:0}])check(!invalid.record(frame));
 check(invalid.record({v:1,sequence:1,monotonic_seconds:1,frametime_ms:20}));check(!invalid.record({v:1,sequence:1,monotonic_seconds:2,frametime_ms:20}));check(invalid.view().one_percent_low_fps===null);
 assert.throws(()=>createSession({startedAt,game:'shell'}));checks++;assert.throws(()=>archive.append({...summary,source:'presentmon',simulation:false}));checks++;
+const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),ctx=vm.createContext({document:{getElementById:()=>null}});
+vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../apps/windows-ui/gamer-session-renderer.js'),'utf8'),ctx);
+assert.throws(()=>ctx.loneGameSessionView.render({}, {...unavailable(),fps:60}),/unverified_game_metric/);checks++;
+assert.throws(()=>createSession({startedAt:'2026-02-30T00:00:00Z',simulation:true}),/invalid_session/);checks++;
 console.log(`PASS: ${checks} gamer session, exact FPS/1% low math, bounds, unavailable source and simulated archive assertions`);

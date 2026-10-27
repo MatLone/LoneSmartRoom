@@ -1,7 +1,9 @@
 'use strict';
 ((root)=>{
  function render(target,report){
-  if(!target||!report||report.v!==1||report.game!=='cs2'||report.simulation!==true&&report.source!=='not_connected')throw Error('invalid_game_view');
+  if(!target||!report||report.v!==1||report.game!=='cs2'||typeof report.simulation!=='boolean'||
+    (report.simulation?report.source!=='fixture.frames':report.source!=='not_connected'))throw Error('invalid_game_view');
+  if(!report.simulation&&['fps','frametime_ms','average_fps','one_percent_low_fps'].some(k=>report[k]!==null))throw Error('unverified_game_metric');
   const title=document.createElement('h2');title.textContent='Sessão de jogo · desempenho';
   const note=document.createElement('p');note.className='game-session-note';note.textContent=report.simulation?'SIMULAÇÃO · frames de teste, sem jogo ou captura real':'FPS e frametime indisponíveis · fonte de captura ainda não integrada. Nenhum jogo foi iniciado.';
   const grid=document.createElement('div');grid.className='game-session-values';

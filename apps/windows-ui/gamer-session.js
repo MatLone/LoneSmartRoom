@@ -1,7 +1,7 @@
 'use strict';
 // Session math only. No process access, capture library, injection, hooks or I/O.
 ((root,factory)=>{const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.loneGameSessions=api;})(globalThis,()=>{
- const finite=x=>typeof x==='number'&&Number.isFinite(x),stamp=x=>typeof x==='string'&&x.length<=32&&Number.isFinite(Date.parse(x))&&x.endsWith('Z');
+ const finite=x=>typeof x==='number'&&Number.isFinite(x),stamp=x=>typeof x==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z$/.test(x)&&Number.isFinite(Date.parse(x))&&new Date(x).toISOString().replace('.000Z','Z')===x.replace('.000Z','Z');
  const unavailable=()=>({v:1,session_id:null,game:'cs2',state:'not_started',source:'not_connected',simulation:false,started_at:null,ended_at:null,samples:0,rejected:0,
   fps:null,frametime_ms:null,average_fps:null,one_percent_low_fps:null,low_state:'unavailable',method:'frames_per_elapsed_time_and_mean_slowest_ceil_1_percent',semantic:'presented_frames',history:[]});
  function createSession({game='cs2',startedAt,simulation=false,maxFrames=60000,sessionId=globalThis.crypto.randomUUID().replaceAll('-','')}={}){
