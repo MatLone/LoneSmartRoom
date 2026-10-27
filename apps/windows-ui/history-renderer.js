@@ -7,6 +7,7 @@
  function draw(report){
   if(!report||report.v!==1||!Array.isArray(report.fields)||!Array.isArray(report.rows)||report.rows.length>120||JSON.stringify(report).length>131072)throw Error();
   label.textContent=report.state==='disabled'?'Histórico desativado · disponível apenas em desenvolvimento':report.rows.length?(report.simulation?'DEMONSTRAÇÃO · dados simulados':'Histórico de medições locais'):'Sem amostras registradas';
+  const legacy=document.querySelector('.chart-card');if(legacy)legacy.hidden=report.state!=='disabled';
   grid.replaceChildren();
   if(!report.rows.length)return;
   for(let i=0;i<report.fields.length;i++){
