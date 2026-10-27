@@ -38,6 +38,8 @@
       "desktop-window.cjs",
       "monitoring-host.cjs",
       "monitoring-model.js",
+      "hardware-diagnostics.js",
+      "hardware-diagnostics-renderer.js",
       "monitoring-renderer.js",
       "monitoring.css",
       "monitoring-runtime.cjs",

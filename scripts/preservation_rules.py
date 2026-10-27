@@ -8,13 +8,15 @@ by exact hash. The authorized Tray extension adds only a fixed zero-argument
 window action. The authorized monitoring extension adds exactly getMetrics() and
 onMetrics(callback), both cache-only, without transport paths or execution arguments.
 It does not broaden exceptions for Android or legacy handlers.
+Preload review: a7310a4 added only the enumerated simulated diagnostics query.
+Its exact delta and previous pin are checked by test_preload_review.py.
 """
 import hashlib
 from pathlib import Path
 
 DESKTOP_VISUAL_SOURCES = {
     'apps/windows-ui/main.cjs': '9f98b6fb5b721792a545a85b27147c4f9b7efed14ebffe9a5a4e502b65cb6df9',
-    'apps/windows-ui/preload.cjs': '5fc9553bd9f9cddb98f099a8fc1c0d7ea53ae197c12e87eb5f628755a6481eba',
+    'apps/windows-ui/preload.cjs': 'c20b427fea83d32c456cabacdc894fa5286df2647dbf5c693ea005b2011d3046',
 }
 
 

@@ -1,4 +1,12 @@
 /* Real monitoring additions; existing tabs, window controls and brand preserved. */
+.hardware-diagnostics{margin:20px 0;min-width:0;overflow-wrap:anywhere}
+.hardware-diagnostics>summary{cursor:pointer;font-weight:600}
+.hardware-diagnostics>p{font-size:12px;line-height:1.6;color:var(--muted);margin-top:12px}
+#hardwareDiagnosticRows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+#hardwareDiagnosticRows section{min-width:0;border-top:1px solid #ffffff12;padding-top:12px}
+#hardwareDiagnosticRows h3{font-size:13px}
+#hardwareDiagnosticRows section>p{font-size:11px;line-height:1.6;white-space:pre-line}
+@media(max-width:760px){#hardwareDiagnosticRows{grid-template-columns:minmax(0,1fr)}}
 .monitoring-status{font-size:12px;line-height:1.7;color:#c3c3cd;overflow-wrap:anywhere}
 #monitoringNotice[data-connection=connected]{border-color:#773043}
 .sensor .value{font-size:30px;white-space:normal;overflow-wrap:anywhere}

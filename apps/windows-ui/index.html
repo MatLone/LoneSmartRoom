@@ -48,6 +48,14 @@
         <section class="diagnostic-pending" aria-labelledby="diagnosticPendingTitle"><div class="diagnostic-section-label"><span data-icon="lock"></span><h3 id="diagnosticPendingTitle">Pendências preservadas</h3></div><p>Uma consulta normal ou uma demonstração saudável não encerra estas investigações.</p><ul id="diagnosticPending"></ul></section>
         <p class="diagnostic-footnote">Sem acesso a credenciais ou comandos. Ausência de evidências não confirma falha nem computador desligado.</p>
       </section>
+      <details class="surface hardware-diagnostics" id="hardwareDiagnostics">
+        <summary>Diagnóstico das leituras de hardware · somente leitura</summary>
+        <p>Disponibilidade dos dados do coletor local. Não certifica saúde física, segurança ou desempenho. Temperatura da CPU e SMART não estão integrados.</p>
+        <p>Consulta pontual. Os resultados descrevem o instante da consulta e não se atualizam automaticamente.</p>
+        <button class="button" id="hardwareDiagnosticRefresh">Consultar cache existente</button>
+        <p id="hardwareDiagnosticOrigin" role="status">Sem consulta ao cache.</p>
+        <div id="hardwareDiagnosticRows"></div>
+      </details>
       <div class="sensor-grid" id="sensorGrid"></div>
       <section class="surface gpu-details" id="gpuMetrics" aria-label="Sensores AMD Radeon RX 6750 XT"></section>
       <div class="storage-metrics" id="storageMetrics" aria-label="Armazenamento local"></div>
@@ -69,6 +77,8 @@
 <script src="app-version.js"></script>
 <script src="desktop.js"></script>
 <script src="monitoring-model.js"></script>
+<script src="hardware-diagnostics.js"></script>
+<script src="hardware-diagnostics-renderer.js"></script>
 <script src="monitoring-renderer.js"></script>
 <script src="diagnostics-contract.js"></script>
 <script src="diagnostics-model.js"></script>
