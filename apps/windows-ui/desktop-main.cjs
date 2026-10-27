@@ -20,7 +20,10 @@ const performanceHistory=createHistory({enabled:historyEnabled,directory:history
 app.on('will-quit',()=>performanceHistory.close());
 const monitoringEnabled=app.isPackaged||monitoringDevelopment;
 const {createDiagnosticsHost}=require('./diagnostics-host.cjs');
-const diagnosticsHost=createDiagnosticsHost({enabled:diagnosticsReview});
+const adapterReview=diagnosticsReview&&process.argv.includes('--lone-diagnostic-adapters-development');
+const diagnosticAdapters=adapterReview?require('./diagnostic-adapter-provider.cjs').createAdapterProvider({root:path.resolve(__dirname,'../..'),enabled:true}):null;
+const diagnosticsHost=createDiagnosticsHost({enabled:diagnosticsReview,provider:diagnosticAdapters?scenario=>diagnosticAdapters.get(scenario):null});
+app.on('will-quit',()=>diagnosticAdapters?.stop());
 app.on('will-quit',()=>diagnosticsHost.stop());
 if (developmentReview) {
   const raw = process.argv.find(value => value.startsWith('--force-device-scale-factor='))?.split('=')[1] || '1';
