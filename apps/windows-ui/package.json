@@ -47,7 +47,10 @@
       "diagnostics-renderer.js",
       "diagnostics-host.cjs",
       "diagnostics-fixtures.json",
-      "diagnostics.css"
+      "diagnostics.css",
+      "performance-history.cjs",
+      "history-renderer.js",
+      "history.css"
     ],
     "directories": {
       "output": "dist"

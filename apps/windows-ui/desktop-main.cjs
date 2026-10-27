@@ -14,6 +14,10 @@ const monitoringDevelopment = !diagnosticsReview && developmentReview && process
   /^[a-f0-9]{32}$/.test(process.env.LONE_MONITORING_RUN_ID || '');
 const gpuDevelopment=monitoringDevelopment&&process.argv.includes('--lone-gpu-development');
 let monitoringHost=null, monitoringQuitReady=false, monitoringQuitting=false;
+const {createHistory}=require('./performance-history.cjs');
+const historyEnabled=developmentReview&&process.argv.includes('--lone-history-development')&&/^[a-f0-9]{32}$/.test(process.env.LONE_MONITORING_RUN_ID||'');
+const performanceHistory=createHistory({enabled:historyEnabled,directory:historyEnabled?path.resolve(__dirname,'../../.cache/performance-history',process.env.LONE_MONITORING_RUN_ID):null});
+app.on('will-quit',()=>performanceHistory.close());
 const monitoringEnabled=app.isPackaged||monitoringDevelopment;
 const {createDiagnosticsHost}=require('./diagnostics-host.cjs');
 const diagnosticsHost=createDiagnosticsHost({enabled:diagnosticsReview});
@@ -34,6 +38,7 @@ if (developmentReview) {
 }
 app.commandLine.appendSwitch('disable-background-networking');
 let controller;
+let lastHistoryRead=-Infinity;
 function state() {return controller?.state() || null;}
 function registerIpc() {
   const trusted = (event, args, count) => policy.trustedSender(event, controller?.window?.webContents) && args.length === count;
@@ -49,6 +54,11 @@ function registerIpc() {
   handle('monitoring:snapshot', 0, () => monitoringHost?.view() ||
     ({v:1,connection:'disabled',simulated:false,error:null,snapshot:null,last_valid_at:{}}));
   handle('diagnostics:snapshot', 1, query => diagnosticsHost.snapshot(query));
+  handle('history:read',1,query=>{
+    if(!query||query.v!==1||Object.keys(query).sort().join(',')!=='minutes,v'||![5,30,60].includes(query.minutes))throw Error('invalid_history_query');
+    const now=performance.now();if(now-lastHistoryRead<500)throw Error('history_rate_limited');lastHistoryRead=now;
+    return performanceHistory.query(query.minutes);
+  });
   ipcMain.on('widget:minimize', (event, ...args) => {if (trusted(event, args, 0)) controller.minimize();});
   ipcMain.on('widget:close', (event, ...args) => {if (trusted(event, args, 0)) controller.close();});
 }
@@ -104,6 +114,7 @@ if (!app.requestSingleInstanceLock()) {
         packaged:app.isPackaged,resourcesPath:process.resourcesPath,version:app.getVersion(),
         gpu:app.isPackaged||gpuDevelopment,
         simulated:!app.isPackaged&&process.argv.includes('--lone-monitoring-simulated'),publish:value=>{
+          performanceHistory.record(value);
           const wc=controller?.window?.webContents;
           if(wc&&!wc.isDestroyed()&&wc.mainFrame.url===policy.entryUrl)wc.send('monitoring:state',value);
         }});

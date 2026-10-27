@@ -21,7 +21,7 @@ async function main(){
  const ipc={invoke:(name,...args)=>{calls.push([name,...args]);return Promise.resolve({mode:'dashboard'});},send:(name,...args)=>calls.push([name,...args]),on:(name,handler)=>listeners.set(name,handler),removeListener:(name,handler)=>{if(listeners.get(name)===handler)listeners.delete(name);}};
  const context=vm.createContext({require:name=>{assert.equal(name,'electron');return {contextBridge:{exposeInMainWorld:(name,value)=>{assert.equal(name,'loneDesktop');api=value;}},ipcRenderer:ipc};}});
  vm.runInContext(fs.readFileSync(path.join(app,'preload.cjs'),'utf8'),context);
- check(Object.keys(api).sort().join(',')===['minimizeToTray','close','getVersion','getWindowState','minimize','onWindowState','setWindowMode','toggleMaximize','getMetrics','onMetrics','getDiagnostics'].sort().join(','),'Strict window API, cache-only metrics and one bounded diagnostic query');
+ check(Object.keys(api).sort().join(',')===['minimizeToTray','close','getVersion','getWindowState','minimize','onWindowState','setWindowMode','toggleMaximize','getMetrics','onMetrics','getDiagnostics','getPerformanceHistory'].sort().join(','),'Strict window API, cache-only metrics and one bounded diagnostic query');
  for(const mode of ['dashboard','widget'])await api.setWindowMode(mode);
  const count=calls.length;
  for(const bad of [null,{},[],'steam','cmd.exe','widget && calc']){await assert.rejects(api.setWindowMode(bad));checks++;}

@@ -132,6 +132,7 @@ async function mainWiring(lock,monitorFailure=false) {
     if(name==='./desktop-preferences.cjs')return {createStore:()=>({})};
     if(name==='./desktop-policy.cjs')return policy;
     if(name==='./monitoring-host.cjs')return {createMonitoringHost:()=>monitor};
+    if(name==='./performance-history.cjs')return require(path.join(directory,'performance-history.cjs'));
     if(name==='./diagnostics-host.cjs')return require(path.join(directory,'diagnostics-host.cjs'));
     return require(name);
   }});
@@ -147,7 +148,7 @@ async function mainWiring(lock,monitorFailure=false) {
   }
   check(hides===1,'Rejected IPC requests do not hide window');
   assert.throws(()=>ipcHandlers.get('window:mode')(trusted,'cmd.exe'));checks++;
-  check([...ipcHandlers.keys()].sort().join(',')===['widget:version','window:state','window:mode','window:maximize','window:tray','monitoring:snapshot','diagnostics:snapshot'].sort().join(','),'Only explicitly allowed window/metric/diagnostic channels');
+  check([...ipcHandlers.keys()].sort().join(',')===['widget:version','window:state','window:mode','window:maximize','window:tray','monitoring:snapshot','diagnostics:snapshot','history:read'].sort().join(','),'Only explicitly allowed window/metric/diagnostic channels');
   check((await ipcHandlers.get('diagnostics:snapshot')(trusted,{v:1,scenario:'overview'})).error==='disabled','Packaged application never activates diagnostic preview or live probes');
 }
 async function ownedShutdown(){

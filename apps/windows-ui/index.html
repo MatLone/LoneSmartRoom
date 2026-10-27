@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="desktop.css">
   <link rel="stylesheet" href="monitoring.css">
   <link rel="stylesheet" href="diagnostics.css">
+  <link rel="stylesheet" href="history.css">
 </head>
 <body>
 <div class="window" id="dashboard" data-mode="dashboard">
@@ -54,6 +55,7 @@
       <div class="monitor-layout"><section class="surface chart-card"><div class="section-heading"><div><h2>Uso de recursos</h2><p>Histórico local · sem amostras</p></div><div class="segmented" role="group" aria-label="Recurso do gráfico"><button data-metric="CPU" aria-pressed="true">CPU</button><button data-metric="GPU" aria-pressed="false">GPU</button><button data-metric="RAM" aria-pressed="false">RAM</button></div></div><div class="empty-chart"><span data-icon="chart"></span><h3 id="chartTitle">Aguardando medições de CPU</h3><p>Sem amostras, sem curva e sem estimativas.<br>O gráfico será preenchido pelo provedor de sensores.</p></div><div class="chart-caption"><span><i></i>Coleta não iniciada</span><span>Última amostra: nenhuma</span></div></section><section class="surface provider-card"><div class="section-heading"><div><h2>Coleta local</h2><p>Arquitetura em avaliação</p></div><span data-icon="chip"></span></div><div class="provider-row"><span>CPU e memória</span><span class="badge">Planejado</span></div><div class="provider-row"><span>GPU e temperaturas</span><span class="badge">Em avaliação</span></div><p class="muted">O dashboard não instala drivers nem altera frequências, ventoinhas ou configurações gráficas.</p><button class="text-button" data-panel="sensors">Como serão obtidos os dados<span data-icon="arrow"></span></button></section></div>
       <section class="surface thermal-card"><div><h2>Temperaturas</h2><p>Um sensor ausente não significa 0 °C.</p></div><div class="thermal-values"><span>CPU <b>— °C</b></span><span>GPU <b>— °C</b></span><span>Placa-mãe <b>— °C</b></span></div><span class="badge">Sem provedor</span></section>
       <div class="disabled-strip"><span data-icon="lock"></span><div><strong>Perfis, controle de ventoinhas e otimizações do Windows</strong><span>Nenhuma alteração de hardware ou do sistema disponível.</span></div></div>
+      <section id="performanceHistory" class="performance-history" aria-labelledby="historyTitle"><header><h2 id="historyTitle">Histórico de desempenho</h2><label>Intervalo <select id="historyWindow"><option value="5">Últimos 5 minutos</option><option value="30">Últimos 30 minutos</option><option value="60">Última hora</option></select></label></header><p id="historyState" role="status">Histórico desativado · sem amostras</p><div id="historyCharts" class="history-charts"></div></section>
     </section>
     <section id="panel-gamer" role="tabpanel" aria-labelledby="tab-gamer" hidden>
       <div class="page-heading"><div><span class="eyebrow">LONE SMART ROOM / GAMER LAUNCHER</span><h1>Hora do jogo<span>.</span></h1><p>Seus atalhos. Suas permissões.</p></div><span class="section-index" aria-hidden="true">03</span></div>
@@ -73,5 +75,6 @@
 <script src="diagnostics-contract.js"></script>
 <script src="diagnostics-model.js"></script>
 <script src="diagnostics-renderer.js"></script>
+<script src="history-renderer.js"></script>
 </body>
 </html>
