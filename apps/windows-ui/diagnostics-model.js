@@ -12,6 +12,7 @@
     {id:'tls10054',title:'TLS 10054',status:'Ainda não corrigido'},
     {id:'startup',title:'Inicialização automática',status:'Inconclusiva'},
     {id:'shutdown',title:'Encerramento gracioso do agente',status:'Não validado operacionalmente'},
+    {id:'crashpad',title:'Crashpad 0xE9',status:'Mensagens ainda não esclarecidas'},
     {id:'dev7',title:'Windows dev.7',status:'Homologação física parcial'}]);
   const exact=(x,keys)=>Boolean(x&&typeof x==='object'&&!Array.isArray(x)&&Object.keys(x).length===keys.length&&keys.every(k=>Object.hasOwn(x,k)));
   const finite=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0;
@@ -52,18 +53,44 @@
     for(const state of ['error','unknown','stale','offline','unavailable','unsupported'])if(rows.some(r=>r.state===state))return state;
     return rows.length&&rows.every(r=>r.state==='healthy')?'healthy':'unknown';
   }
+  const securityIds=['process_identity','tls_identity','hmac','antireplay','device_permissions','pipe_acl','local_only'];
+  const issueIds=['tls_10054','startup_unresolved','graceful_shutdown_unvalidated','crashpad_0xe9','dev7_partial'];
+  function securityEvidence(value,generated){
+    if(value===null)return true;
+    if(bytes(value)>8192||!exact(value,['schema_version','simulation','state','observed_at','checks','known_issues','repair_capability'])||
+      value.schema_version!==1||value.simulation!==true||value.repair_capability!==false||!utc(value.observed_at)||
+      Date.parse(value.observed_at)>Date.parse(generated)||!Array.isArray(value.known_issues)||value.known_issues.length!==5||
+      !issueIds.every(id=>value.known_issues.includes(id))||!Array.isArray(value.checks)||value.checks.length>7)return false;
+    const seen=new Set();let failed=false,stale=false;
+    for(const r of value.checks){
+      if(!exact(r,['id','authorized','result','checked_at','age_seconds','stale'])||!securityIds.includes(r.id)||seen.has(r.id)||
+        typeof r.authorized!=='boolean'||!['verified','failed','unknown','not_checked'].includes(r.result)||
+        !r.authorized&&!['unknown','not_checked'].includes(r.result)||typeof r.stale!=='boolean')return false;
+      if(r.checked_at===null){if(r.age_seconds!==null||r.stale||['verified','failed'].includes(r.result))return false;}
+      else if(!utc(r.checked_at)||!finite(r.age_seconds)||Date.parse(r.checked_at)>Date.parse(generated)||Date.parse(r.checked_at)>Date.parse(value.observed_at)||
+        Math.abs((Date.parse(generated)-Date.parse(r.checked_at))/1000-r.age_seconds)>.002||r.stale!==(r.age_seconds>=10))return false;
+      failed||=r.authorized&&r.result==='failed'&&!r.stale;stale||=r.stale;seen.add(r.id);
+    }
+    return value.state===(failed?'error':stale?'stale':'unknown');
+  }
+  function adapterBundle(value){
+    return exact(value,['schema_version','simulation','report','security'])&&value.schema_version===1&&value.simulation===true&&
+      bytes(value)<=32768&&validate(value.report)&&securityEvidence(value.security,value.report.generated_at);
+  }
   function empty(error='disabled'){
     return {v:1,simulation:false,clock:null,error,scenario:null,pending,
       cards:definitions.map(([id,title,icon])=>({id,title,icon,state:'unknown',label:labels.unknown,checkedAt:null,
         summary:'Sem evidência disponível nesta interface. Nenhuma verificação real foi feita.',details:[],simulated:false}))};
   }
   function project(envelope){
-    if(!exact(envelope,['v','mode','scenario','error','report'])||envelope.v!==1||!['simulation','disabled'].includes(envelope.mode)||bytes(envelope)>18432)return empty('invalid_message');
+    const hasEvidence=Boolean(envelope&&Object.hasOwn(envelope,'evidence'));
+    if(!exact(envelope,['v','mode','scenario','error','report',...(hasEvidence?['evidence']:[])])||envelope.v!==1||!['simulation','disabled'].includes(envelope.mode)||bytes(envelope)>18432)return empty('invalid_message');
     if(envelope.error!==null){
       if(!['disabled','invalid_request','rate_limited','busy','provider_unavailable','provider_timeout','invalid_report'].includes(envelope.error))return empty('invalid_message');
       return empty(envelope.error);
     }
     if(envelope.mode!=='simulation'||!scenarios.includes(envelope.scenario)||!validate(envelope.report))return empty('invalid_message');
+    if(hasEvidence&&(!exact(envelope.evidence,['schema_version','simulation','security'])||envelope.evidence.schema_version!==1||envelope.evidence.simulation!==true||!securityEvidence(envelope.evidence.security,envelope.report.generated_at)))return empty('invalid_message');
     const report=envelope.report,byId=new Map(report.checks.map(r=>[r.component,r]));
     const cards=definitions.map(([id,title,icon,ids])=>{
       const rows=ids.map(key=>byId.get(key));let state=aggregate(rows);
@@ -84,8 +111,19 @@
         checkedAt:r.observed_at,age:r.age_seconds,ttl:r.freshness_seconds,lastCommunication:r.last_communication}));
       return {id,title,icon,state,label:labels[state],checkedAt,summary,details,simulated:true};
     });
+    const security=hasEvidence?envelope.evidence.security:null;
+    if(security){
+      const card=cards.find(c=>c.id==='security'),baseError=card.state==='error',baseDetails=baseError?card.details:[];
+      card.state=baseError?'error':security.state;card.label=labels[card.state];
+      if(!baseError)card.checkedAt=security.checks.map(r=>r.checked_at).filter(Boolean).sort()[0]||null;
+      card.summary=card.state==='error'?'Falha confirmada em uma verificação simulada de segurança. O estado do agente continua sendo avaliado separadamente.':
+        security.state==='stale'?'Verificações simuladas antigas. Nenhuma consulta renovou suas evidências.':'Verificações disponíveis são parciais. As cinco investigações conhecidas permanecem abertas.';
+      card.details=baseDetails.concat(security.checks.map(r=>({component:r.id,state:r.stale?labels.stale:r.result==='failed'?labels.error:r.authorized&&r.result==='verified'?labels.healthy:labels.unknown,
+        code:r.stale?'security_check_stale':r.result==='failed'?'security_check_failed':r.result==='verified'?'security_check_verified':'security_check_unverified',
+        message:r.authorized?'Evidência de demonstração de uma verificação autorizada; não contém dados de credenciais.':'Verificação não autorizada ou não realizada neste cenário; não permite uma conclusão positiva.',checkedAt:r.checked_at,age:r.age_seconds,ttl:10,lastCommunication:null})));
+    }
     return {v:1,simulation:true,clock:report.generated_at,error:null,scenario:envelope.scenario,pending,cards};
   }
-  const api=Object.freeze({scenarios,labels,pending,request,validate,project,empty,bytes});
+  const api=Object.freeze({scenarios,labels,pending,request,validate,project,empty,bytes,securityEvidence,adapterBundle});
   if(typeof module==='object'&&module.exports)module.exports=api;else root.loneDiagnosticModel=api;
 })(typeof window==='object'?window:globalThis);

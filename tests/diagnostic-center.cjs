@@ -12,7 +12,7 @@ function projections(){
   for(const scenario of model.scenarios){
     const report=fixtures[scenario];check(model.validate(report),'Approved Python fixture: '+scenario);
     const view=model.project(envelope(scenario));check(view.simulation&&view.cards.length===7,'Seven explicitly simulated cards');
-    check(view.pending.length===4,'All pending issues retained');
+    check(view.pending.length===5,'All five pending issues retained, including Crashpad');
     view.cards.forEach(c=>{states.add(c.label);check(c.simulated&&c.details.every(d=>!d.message.includes('fixture-private-error')),'Sanitized fixture provenance');});
   }
   check(['Saudável','Inativo normalmente','Indisponível','Desatualizado','Falha','Não verificado'].every(s=>states.has(s)),'All six health presentations');

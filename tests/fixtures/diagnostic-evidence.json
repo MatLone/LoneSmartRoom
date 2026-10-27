@@ -1,0 +1,2554 @@
+{
+  "schema_version": 1,
+  "simulation": true,
+  "scenarios": {
+    "online": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:02.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "healthy",
+            "code": "authenticated_https",
+            "detail_code": "https_status_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "adlx_frame_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "offline": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:02.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "offline",
+            "code": "no_authenticated_response",
+            "detail_code": "connection_failed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "offline",
+            "code": "listener_absent",
+            "detail_code": "listener_owner_unverified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "adlx_frame_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "auth-failure": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:02.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "error",
+            "code": "unverified_identity",
+            "detail_code": "authentication_failed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "adlx_frame_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "listener-mismatch": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:02.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "passive_evidence_unavailable",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "error",
+            "code": "listener_identity_mismatch",
+            "detail_code": "listener_owner_unverified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "adlx_frame_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "inactive": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:02.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "healthy",
+            "code": "authenticated_https",
+            "detail_code": "https_status_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "unavailable",
+            "code": "provider_unavailable",
+            "detail_code": "application_normally_inactive",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "unavailable",
+            "code": "provider_unavailable",
+            "detail_code": "application_normally_inactive",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "unavailable",
+            "code": "provider_unavailable",
+            "detail_code": "application_normally_inactive",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "unavailable",
+            "code": "provider_unavailable",
+            "detail_code": "application_normally_inactive",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "unavailable",
+            "code": "provider_unavailable",
+            "detail_code": "application_normally_inactive",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "unsupported": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:02.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "healthy",
+            "code": "authenticated_https",
+            "detail_code": "https_status_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "unsupported",
+            "code": "provider_unsupported",
+            "detail_code": "metrics_unsupported",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "unsupported",
+            "code": "provider_unsupported",
+            "detail_code": "metrics_unsupported",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "unsupported",
+            "code": "provider_unsupported",
+            "detail_code": "metrics_unsupported",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "unavailable",
+            "code": "provider_unavailable",
+            "detail_code": "adlx_frame_rejected",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "stale": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:05.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "healthy",
+            "code": "authenticated_https",
+            "detail_code": "https_status_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 5.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 5.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "stale",
+            "code": "observation_stale",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 5.0,
+            "valid": false,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "stale",
+            "code": "observation_stale",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 4.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "stale",
+            "code": "observation_stale",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 4.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "stale",
+            "code": "observation_stale",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 4.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "stale",
+            "code": "observation_stale",
+            "detail_code": "adlx_frame_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 4.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 5.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 5.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 5.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 5.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 5.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 5.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 5.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 5.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "recovery": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:03.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "healthy",
+            "code": "authenticated_https",
+            "detail_code": "https_status_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:03.000Z",
+            "age_seconds": 0.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:03.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:03.000Z",
+            "age_seconds": 0.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "adlx_frame_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "permanent-failure": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:02.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "error",
+            "code": "unverified_identity",
+            "detail_code": "authentication_failed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "adlx_frame_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "reconnecting": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:03.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "healthy",
+            "code": "authenticated_https",
+            "detail_code": "https_status_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:03.000Z",
+            "age_seconds": 0.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "awaiting_new_sample",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:03.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "awaiting_new_sample",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:03.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "awaiting_new_sample",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:03.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "awaiting_new_sample",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:03.000Z",
+            "age_seconds": 0.0,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 3.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "reconnected": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:04.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "healthy",
+            "code": "authenticated_https",
+            "detail_code": "https_status_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 4.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 4.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:03.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:04.000Z",
+            "age_seconds": 0.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:04.000Z",
+            "age_seconds": 0.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:04.000Z",
+            "age_seconds": 0.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "adlx_frame_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:04.000Z",
+            "age_seconds": 0.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 4.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 4.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 4.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 4.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 4.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 4.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 4.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 4.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "provider-error": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:02.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "healthy",
+            "code": "authenticated_https",
+            "detail_code": "https_status_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "unknown",
+            "code": "provider_failure",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": null,
+            "age_seconds": null,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "unknown",
+            "code": "provider_failure",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": null,
+            "age_seconds": null,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "unknown",
+            "code": "provider_failure",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": null,
+            "age_seconds": null,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "unknown",
+            "code": "provider_failure",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": null,
+            "age_seconds": null,
+            "valid": false,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "startup-inconclusive": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:02.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "healthy",
+            "code": "authenticated_https",
+            "detail_code": "https_status_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "adlx_frame_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "unknown",
+        "observed_at": "2026-10-26T12:00:00.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    },
+    "security-failure": {
+      "schema_version": 1,
+      "simulation": true,
+      "report": {
+        "schema_version": 1,
+        "generated_at": "2026-10-26T12:00:02.000Z",
+        "mode": "active",
+        "simulation": true,
+        "repair_capability": false,
+        "power_state": "unknown",
+        "checks": [
+          {
+            "component": "agent_https",
+            "state": "healthy",
+            "code": "authenticated_https",
+            "detail_code": "https_status_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": "2026-10-26T12:00:00.000Z"
+          },
+          {
+            "component": "listener_8776",
+            "state": "healthy",
+            "code": "expected_listener",
+            "detail_code": "listener_identity_verified",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 10,
+            "last_communication": null
+          },
+          {
+            "component": "monitoring_ipc",
+            "state": "healthy",
+            "code": "validated_ipc",
+            "detail_code": null,
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": true,
+            "freshness_seconds": 5,
+            "last_communication": null
+          },
+          {
+            "component": "cpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "gpu_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "ram_collector",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "metrics_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "adlx_bridge",
+            "state": "healthy",
+            "code": "valid_sample",
+            "detail_code": "adlx_frame_valid",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:01.000Z",
+            "age_seconds": 1.0,
+            "valid": true,
+            "freshness_seconds": 3,
+            "last_communication": null
+          },
+          {
+            "component": "agent_startup",
+            "state": "unknown",
+            "code": "provider_unknown",
+            "detail_code": "startup_dispatch_unconfirmed",
+            "evidence_kind": "simulated",
+            "observed_at": "2026-10-26T12:00:00.000Z",
+            "age_seconds": 2.0,
+            "valid": false,
+            "freshness_seconds": 300,
+            "last_communication": null
+          }
+        ]
+      },
+      "security": {
+        "schema_version": 1,
+        "simulation": true,
+        "state": "error",
+        "observed_at": "2026-10-26T12:00:02.000Z",
+        "checks": [
+          {
+            "id": "process_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "stale": false
+          },
+          {
+            "id": "tls_identity",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "stale": false
+          },
+          {
+            "id": "hmac",
+            "authorized": true,
+            "result": "failed",
+            "checked_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "stale": false
+          },
+          {
+            "id": "antireplay",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "stale": false
+          },
+          {
+            "id": "device_permissions",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "stale": false
+          },
+          {
+            "id": "pipe_acl",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "stale": false
+          },
+          {
+            "id": "local_only",
+            "authorized": true,
+            "result": "verified",
+            "checked_at": "2026-10-26T12:00:02.000Z",
+            "age_seconds": 0.0,
+            "stale": false
+          }
+        ],
+        "known_issues": [
+          "tls_10054",
+          "startup_unresolved",
+          "graceful_shutdown_unvalidated",
+          "crashpad_0xe9",
+          "dev7_partial"
+        ],
+        "repair_capability": false
+      }
+    }
+  }
+}

@@ -28,6 +28,11 @@ function createDiagnosticsHost({enabled=false,provider=null,now=Date.now,schedul
       const report=await Promise.race([Promise.resolve().then(()=>provider?provider(query.scenario):fixtures[query.scenario]),timed]);
       if(closed)return response(query.scenario,'disabled');
       if(report===null)return response(query.scenario,'provider_timeout');
+      if(model.adapterBundle(report)){
+        const result=response(query.scenario,null,JSON.parse(JSON.stringify(report.report)));
+        result.evidence={schema_version:1,simulation:true,security:JSON.parse(JSON.stringify(report.security))};
+        return model.bytes(result)<=18432?result:response(query.scenario,'invalid_report');
+      }
       if(!model.validate(report))return response(query.scenario,'invalid_report');
       // Clone so a recipient/test cannot alter the immutable scenario catalogue.
       return response(query.scenario,null,JSON.parse(JSON.stringify(report)));
