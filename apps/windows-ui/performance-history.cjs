@@ -8,10 +8,12 @@ const FIELDS=Object.freeze([
 const STATES=['available','unavailable','stale','unsupported','error','warming_up','permission_denied'];
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const validValue=(v,u)=>finite(v)&&v>=(u==='celsius'?-273.15:0)&&v<=({percent:100,celsius:300,bytes:Number.MAX_SAFE_INTEGER,bytes_per_second:Number.MAX_SAFE_INTEGER}[u]);
-function createHistory({enabled=false,directory=null,now=Date.now,intervalMs=2000,retentionSeconds=3600,maxPoints=1800,maxBytes=2097152,flushMs=30000}={}){
- if(typeof enabled!=='boolean'||!Number.isInteger(intervalMs)||intervalMs<1000||intervalMs>60000||!Number.isInteger(retentionSeconds)||retentionSeconds<300||retentionSeconds>3600||!Number.isInteger(maxPoints)||maxPoints<1||maxPoints>3600||!Number.isInteger(maxBytes)||maxBytes<4096||maxBytes>4194304||flushMs<30000)throw Error('invalid_history_policy');
- if(directory!==null&&(!path.isAbsolute(directory)||!directory.includes(path.sep+'.cache'+path.sep)))throw Error('development_history_directory');
- let rows=[],simulation=null,sequence=-1,generation=null,last=-Infinity,lastFlush=now(),dirty=false,closed=false,error=null;
+function createHistory({enabled=false,directory=null,storageRoot=null,extended=false,now=Date.now,intervalMs=2000,retentionSeconds=3600,maxPoints=1800,maxBytes=2097152,flushMs=30000}={}){
+ if(typeof enabled!=='boolean'||typeof extended!=='boolean'||!Number.isInteger(intervalMs)||intervalMs<1000||intervalMs>60000||!Number.isInteger(retentionSeconds)||retentionSeconds<300||retentionSeconds>(extended?604800:3600)||!Number.isInteger(maxPoints)||maxPoints<1||maxPoints>(extended?20000:3600)||!Number.isInteger(maxBytes)||maxBytes<4096||maxBytes>4194304||flushMs<30000)throw Error('invalid_history_policy');
+ const owned=storageRoot!==null&&path.isAbsolute(storageRoot)&&directory!==null&&path.relative(storageRoot,directory)!==''&&!path.relative(storageRoot,directory).startsWith('..')&&!path.isAbsolute(path.relative(storageRoot,directory));
+ if(directory!==null&&(!path.isAbsolute(directory)||!directory.includes(path.sep+'.cache'+path.sep)&&!owned))throw Error('development_history_directory');
+ const windows=extended?[5,30,60,360,1440,10080]:[5,30,60];
+ let rows=[],simulation=null,sequence=-1,generation=null,last=-Infinity,lastFlush=now(),dirty=false,closed=false,error=null,storageReadOnly=false;
  const filename=directory&&path.join(directory,'performance-history-v1.json');
  function safeDirectory(){
   if(!directory)return;
@@ -26,7 +28,7 @@ function createHistory({enabled=false,directory=null,now=Date.now,intervalMs=200
  const payload=()=>({v:1,simulation,fields:FIELDS,rows});
  function trim(t){rows=rows.filter(r=>r[0]<=t&&t-r[0]<=retentionSeconds*1000).slice(-maxPoints);}
  function flush(force=false){
-  if(!enabled||closed||!filename||!dirty||!force&&now()-lastFlush<flushMs)return false;
+  if(storageReadOnly||!enabled||closed||!filename||!dirty||!force&&now()-lastFlush<flushMs)return false;
   let temp,created=false;
   try{
    safeDirectory();trim(now());let bytes=JSON.stringify(payload());
@@ -55,7 +57,7 @@ function createHistory({enabled=false,directory=null,now=Date.now,intervalMs=200
     }
    }
    rows=p.rows;simulation=p.simulation;trim(now());
-  }catch{rows=[];error='history_file_rejected';}
+  }catch{rows=[];error='history_file_rejected';storageReadOnly=true;}
  }
  load();
  function record(view){
@@ -83,7 +85,7 @@ function createHistory({enabled=false,directory=null,now=Date.now,intervalMs=200
   rows.push(row);last=t;dirty=true;trim(t);flush();return true;
  }
  function query(minutes){
-  if(![5,30,60].includes(minutes))throw Error('invalid_history_window');
+  if(!windows.includes(minutes))throw Error('invalid_history_window');
   if(!enabled||closed)return {v:1,state:'disabled',simulation:false,minutes,fields:FIELDS,rows:[]};
   const t=now();trim(t);const selected=rows.filter(r=>t-r[0]<=minutes*60000),stride=Math.max(1,Math.ceil(selected.length/120));
   // Keep the latest actual point of each bucket; no fabricated interpolation.
@@ -92,6 +94,13 @@ function createHistory({enabled=false,directory=null,now=Date.now,intervalMs=200
   if(Buffer.byteLength(JSON.stringify(value))>131072)throw Error('history_response_limit');
   return JSON.parse(JSON.stringify(value));
  }
- return Object.freeze({record,query,flush,close(){flush(true);closed=true;},stats:()=>({enabled,points:rows.length,maxPoints,maxBytes,error,dirty,closed})});
+ function exportCsv(minutes){
+  if(!windows.includes(minutes))throw Error('invalid_history_window');
+  const cell=require('./workbench-model.js').csvCell,t=now(),lines=[['timestamp_utc','sequence','simulation','metric','unit','source','value','state','collected_at'].map(cell).join(',')];let bytes=lines[0].length;
+  if(enabled&&!closed)for(const row of rows.filter(r=>t-r[0]<=minutes*60000))for(let i=0;i<FIELDS.length;i++){
+   const [id,unit,source]=FIELDS[i],m=row[i+2],line=[new Date(row[0]).toISOString(),row[1],simulation,id,unit,simulation?(id.startsWith('gpu.')?'fixture.adlx':'fixture.metrics'):source,m[0],m[1],m[2]===null?'':new Date(m[2]).toISOString()].map(cell).join(',');bytes+=Buffer.byteLength(line)+2;if(bytes>8388608)throw Error('history_csv_size_reduce_window');lines.push(line);
+  }return lines.join('\r\n');
+ }
+ return Object.freeze({record,query,flush,exportCsv,close(){flush(true);closed=true;},stats:()=>({enabled,points:rows.length,maxPoints,maxBytes,retentionSeconds,error,dirty,closed,storageReadOnly})});
 }
 module.exports={createHistory,FIELDS};

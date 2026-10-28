@@ -45,6 +45,6 @@
     return {name,samples:frames.length,average_fps:1000*frames.length/total,mean_frametime_ms:total/frames.length,one_percent_low_fps:frames.length>=100?1000/(slow.reduce((a,b)=>a+b,0)/slow.length):null,points:frames.filter((_v,i)=>i%stride===0).slice(0,120)};
    })};
  }
- function csvCell(value){const s=String(value??'');return '"'+(/^[\s]*[=+@-]/.test(s)?"'"+s:s).replaceAll('"','""')+'"';}
+ function csvCell(value){if(typeof value==='number'&&Number.isFinite(value))return String(value);const s=String(value??'');return '"'+(/^[\s]*[=+@-]/.test(s)?"'"+s:s).replaceAll('"','""')+'"';}
  return Object.freeze({latency,createInputSession,presentmon,csvRows,csvCell});
 });

@@ -1,0 +1,23 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{EventEmitter}=require('node:events');
+const {createAuxiliaryWindows,ENTRY}=require('../apps/windows-ui/auxiliary-windows.cjs'),policy=require('../apps/windows-ui/desktop-policy.cjs'),{createHistory}=require('../apps/windows-ui/performance-history.cjs');
+let checks=0;const yes=x=>{assert(x);checks++;},eq=(a,b)=>{assert.deepEqual(a,b);checks++;};
+const root=path.resolve(__dirname,'../.cache/windows-panels-tests');fs.mkdirSync(root,{recursive:true});const dir=fs.mkdtempSync(path.join(root,'owned-'));
+class Window extends EventEmitter{constructor(options){super();this.options=options;this.bounds=options;this.webContents=new EventEmitter();Object.assign(this.webContents,{mainFrame:{url:ENTRY},isDestroyed:()=>this.dead,send:()=>{},setWindowOpenHandler:h=>this.handler=h});this.full=false;this.visible=false;}loadFile(){}isDestroyed(){return !!this.dead;}getBounds(){const{x,y,width,height}=this.bounds;return{x,y,width,height};}setBounds(b){this.bounds=b;}isFullScreen(){return this.full;}setFullScreen(v){this.full=v;}show(){this.visible=true;this.emit('show');}isVisible(){return this.visible;}close(){this.emit('close');this.dead=true;this.emit('closed');}}
+const screen=new EventEmitter(),primary={id:1,workArea:{x:0,y:0,width:1920,height:1080}};let displays=[primary,{id:2,workArea:{x:1920,y:0,width:1920,height:1080}}];screen.getAllDisplays=()=>displays;screen.getPrimaryDisplay=()=>primary;
+let navigated=null,restored=0;
+const aux=createAuxiliaryWindows({BrowserWindow:Window,screen,policy,metrics:()=>({v:1,connection:'disabled'}),restoreMain:()=>restored++,navigate:s=>navigated=s,enabled:true,directory:dir});
+eq(aux.open('touch',2).reused,false);eq(aux.open('touch',2).reused,true);eq(aux.views().length,1);const win=aux.views()[0].window,event={sender:win.webContents,senderFrame:win.webContents.mainFrame};
+eq(win.options.webPreferences.nodeIntegration,false);eq(win.options.webPreferences.contextIsolation,true);eq(win.options.webPreferences.sandbox,true);eq(win.handler().action,'deny');eq(aux.context(event).role,'touch');eq(aux.snapshot(event).connection,'disabled');
+assert.throws(()=>aux.snapshot({sender:win.webContents,senderFrame:{url:ENTRY}}));checks++;assert.throws(()=>aux.open('execute',1));checks++;
+aux.fullscreen(event,true);yes(win.full);aux.showMain(event,'hardware');eq(restored,1);eq(navigated,'hardware');assert.throws(()=>aux.showMain(event,'shell'));checks++;
+displays=[primary];screen.emit('display-removed');yes(!win.full);yes(win.bounds.x<1920);aux.open('overlay',1);eq(aux.views().length,2);const overlay=aux.views()[1].window;assert.throws(()=>aux.fullscreen({sender:overlay.webContents,senderFrame:overlay.webContents.mainFrame},true));checks++;
+aux.closeAll();eq(aux.views().length,0);yes(win.dead&&overlay.dead);yes(fs.existsSync(path.join(dir,'panel-bounds-v1.json')));
+const t=Date.now(),history=createHistory({enabled:true,extended:true,storageRoot:dir,directory:path.join(dir,'history'),retentionSeconds:604800,maxPoints:20000,maxBytes:4194304,now:()=>t});
+const raw=JSON.parse(fs.readFileSync(path.resolve(__dirname,'../.cache/telemetry-tests/https-frame.json'))).snapshot;
+const view={connection:'connected',simulated:true,snapshot:{...raw,sequence:1,metrics:raw.metrics.map(m=>({...m,collected_at:new Date(t).toISOString()}))}};
+yes(history.record(view));eq(history.query(10080).rows.length,1);const csv=history.exportCsv(10080);yes(csv.includes('timestamp_utc'));yes(csv.includes('fixture.metrics'));history.close();
+const reloaded=createHistory({enabled:true,extended:true,directory:path.join(dir,'history'),storageRoot:dir,retentionSeconds:604800,maxPoints:20000,maxBytes:4194304,now:()=>t});eq(reloaded.query(1440).rows.length,1);reloaded.close();
+assert.throws(()=>createHistory({directory:path.resolve(dir,'../..'),storageRoot:dir}));checks++;
+const model=require('../apps/windows-ui/workbench-model.js');eq(model.csvCell(-20),'-20');yes(model.csvCell('=cmd').startsWith('"\''));
+console.log(JSON.stringify({ok:true,checks,physicalSensors:false,realWindowsActions:false}));
