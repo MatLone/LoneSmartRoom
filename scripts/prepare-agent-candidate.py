@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import zipfile
 ROOT=Path(__file__).resolve().parents[1]
-OUT=ROOT/'.cache/artifacts/agent/agent-reliability-dev9-r1'
+OUT=ROOT/'.cache/artifacts/agent/agent-reliability-dev9-r2'
 
 def main():
     OUT.mkdir(parents=True,exist_ok=False)

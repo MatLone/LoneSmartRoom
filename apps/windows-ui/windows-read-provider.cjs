@@ -9,12 +9,17 @@ function createProvider({script=path.join(__dirname,'windows-inventory.ps1'),exe
   if(kind==='ping'||kind==='dns'){if(typeof target!=='string'||target.length>253||!/^[a-zA-Z0-9][a-zA-Z0-9.:-]*$/.test(target)||target.includes('..'))throw Error('invalid_target');}
   if(platform!=='win32')return {v:1,state:'unavailable',source:'unsupported_platform',items:[],simulation:false};
   const t=now(),key=kind+'|'+target;
-  if(cache.has(key)&&t-cache.get(key).at<(['network'].includes(kind)?3000:15000))return structuredClone(cache.get(key).value);
+  if(cache.has(key)&&t>=cache.get(key).at&&t-cache.get(key).at<(cache.get(key).value.state==='available'?(['network'].includes(kind)?3000:15000):2000))return structuredClone(cache.get(key).value);
   if(pending)return {v:1,state:'unavailable',source:'busy_readonly_provider',items:[],simulation:false};
   if(!path.isAbsolute(script)||!fs.existsSync(script)||fs.lstatSync(script).isSymbolicLink())throw Error('trusted_inventory_script_required');
   const system=process.env.SystemRoot||'C:\\Windows',program=path.join(system,'System32','WindowsPowerShell','v1.0','powershell.exe');
   const args=['-NoLogo','-NoProfile','-NonInteractive','-File',script,'-Kind',kind];if(target)args.push('-Target',target);
-  pending=new Promise(resolve=>execute(program,args,{shell:false,windowsHide:true,encoding:'utf8',timeout:10000,maxBuffer:262144},(error,stdout)=>{
+  // A GUI launcher can inherit a PSModulePath belonging to PowerShell 7 or an
+  // unrelated tool. Restrict this fixed Windows PowerShell helper to OS modules;
+  // no user module, Node/Python options, token or credential environment forwarding.
+  const environment={};for(const key of ['SystemRoot','WINDIR','PATH','TEMP','TMP','USERPROFILE','LOCALAPPDATA','APPDATA','ProgramData','ProgramFiles','ProgramFiles(x86)'])if(typeof process.env[key]==='string')environment[key]=process.env[key];
+  environment.SystemRoot=system;environment.PSModulePath=path.join(system,'System32','WindowsPowerShell','v1.0','Modules');
+  pending=new Promise(resolve=>execute(program,args,{shell:false,windowsHide:true,encoding:'utf8',timeout:10000,maxBuffer:262144,env:environment},(error,stdout)=>{
    // Timeout applies only to this helper we created, never a caller-supplied PID.
    if(error)return resolve({v:1,state:'unavailable',source:'windows.readonly.'+kind,items:[],error:
      error.killed===true||error.code==='ETIMEDOUT'?'readonly_timeout':error.code==='ERR_CHILD_PROCESS_STDIO_MAXBUFFER'?'readonly_response_limit':error.code==='ENOENT'?'readonly_helper_missing':'readonly_execution_failed',simulation:false});
@@ -27,11 +32,15 @@ function createProvider({script=path.join(__dirname,'windows-inventory.ps1'),exe
   }));
   let value;try{value=await pending;}finally{pending=null;}
   if(kind==='network'&&value.state==='available'){
-   const dt=lastNetwork?(t-lastNetwork.at)/1000:0;
-   for(const item of value.items){const before=lastNetwork?.items.find(n=>n.name===item.name);
-    item.download_bytes_per_second=before&&dt>0&&item.received_bytes>=before.received_bytes?(item.received_bytes-before.received_bytes)/dt:null;
-    item.upload_bytes_per_second=before&&dt>0&&item.sent_bytes>=before.sent_bytes?(item.sent_bytes-before.sent_bytes)/dt:null;
-   }lastNetwork={at:t,items:structuredClone(value.items)};
+   const observed=Date.parse(value.observed_at),dt=lastNetwork&&Number.isFinite(observed)?(observed-lastNetwork.at)/1000:0;
+   for(const item of value.items){const before=typeof item.id==='string'?lastNetwork?.items.find(n=>n.id===item.id):null;
+    for(const [direction,counter]of [['download','received_bytes'],['upload','sent_bytes']]){
+     const a=item[counter],b=before?.[counter];
+     item[direction+'_bytes_per_second']=before&&dt>0&&dt<=60&&Number.isSafeInteger(a)&&Number.isSafeInteger(b)&&a>=b&&b>=0?(a-b)/dt:null;
+    }
+   }
+   value.extra={...value.extra,rate_interval_seconds:dt>0&&dt<=60?dt:null,rate_semantic:'Mean bytes/s between source observations; link speed is separate'};
+   lastNetwork=Number.isFinite(observed)?{at:observed,items:structuredClone(value.items)}:null;
   }
   if(kind==='ping'&&value.state==='available')value.statistics=model.latency(value.items.filter(i=>i.status==='Success'&&Number.isFinite(i.rtt_ms)).map(i=>i.rtt_ms),4);
   cache.set(key,{at:t,value});if(cache.size>32)cache.delete(cache.keys().next().value);return structuredClone(value);

@@ -1,0 +1,20 @@
+'use strict';
+const assert=require('node:assert/strict'),view=require('../apps/windows-ui/inventory-presentation.js');
+let checks=0;const eq=(a,b)=>{assert.deepEqual(a,b);checks++;},yes=x=>{assert(x);checks++;};
+class Element{constructor(tag){this.tag=tag;this.children=[];this.events={};this.style={};this.textContent='';}append(...v){this.children.push(...v);}replaceChildren(...v){this.children=v;}addEventListener(k,fn){this.events[k]=fn;}}
+const document={createElement:t=>new Element(t)},target=new Element('div');
+const nodes=(n,tag)=>[...(n.tag===tag?[n]:[]),...n.children.flatMap(c=>nodes(c,tag))];
+const text=n=>n.textContent+' '+n.children.map(text).join(' ');
+const items=Array.from({length:183},(_,i)=>({name:'Application '+i,version:'1',resident_bytes:1024}));
+view.render(document,{state:'available',source:'fixture.only',items},target);
+eq(nodes(target,'tbody')[0].children.length,50);eq(nodes(target,'button').length,2);yes(nodes(target,'button')[0].disabled);
+for(let i=0;i<3;i++)nodes(target,'button')[1].events.click();
+eq(nodes(target,'tbody')[0].children.length,33);yes(nodes(target,'button')[1].disabled);yes(text(target).includes('151–183 de 183'));
+nodes(target,'button')[0].events.click();eq(nodes(target,'tbody')[0].children.length,50);
+view.render(document,{items:[{name:'a',a:1,b:2,c:3,d:4,e:5,f:6,g:7,download_bytes_per_second:0,upload_bytes_per_second:1}],extra:{cores:[{id:'0',utilization_percent:0},{id:'1',utilization_percent:.0001},{id:'2',utilization_percent:null}]}},target);
+yes(text(target).includes('Recebimento'));yes(text(target).includes('Envio'));yes(text(target).includes('0 B/s'));yes(text(target).includes('1 B/s'));
+yes(text(target).includes('0%'));yes(text(target).includes('<0,1%'));yes(text(target).includes('Indisponível'));
+eq(view.cell('free_bytes',null),'Indisponível');eq(view.cell('free_bytes',0),'0 B');eq(view.cell('capacity_bytes',2**30),'1 GiB');eq(view.cell('link_bits_per_second',1000000000),'1.000 Mb/s');
+view.render(document,{state:'available',extra:{partial:true,cores:[null]},items:[null,{name:'<img onerror=alert(1)>'}]},target);
+yes(text(target).includes('Parcialmente disponível'));yes(text(target).includes('<img onerror=alert(1)>'));yes(!('innerHTML' in target));
+console.log(`PASS: ${checks} source-only inventory pagination, units, zero/null and safe text rendering checks`);

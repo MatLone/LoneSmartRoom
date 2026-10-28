@@ -29,6 +29,8 @@ function createService({directory,enabled=false,inventory=async()=>({v:1,state:'
  const file=path.join(directory,'workbench-v1.json');let state=defaults(),readOnly=false,error=null,conversation=[];
  function safeDirectory(){let current=path.parse(directory).root;for(const part of path.relative(current,directory).split(path.sep)){current=path.join(current,part);if(fs.existsSync(current)){const s=fs.lstatSync(current);if(!s.isDirectory()||s.isSymbolicLink())throw Error('unsafe_app_directory');}else fs.mkdirSync(current);}if(fs.existsSync(file)){const s=fs.lstatSync(file);if(!s.isFile()||s.isSymbolicLink()||s.nlink!==1)throw Error('unsafe_state_file');}}
  if(enabled)try{safeDirectory();if(fs.existsSync(file)){if(fs.statSync(file).size>131072)throw Error();state=validateState(JSON.parse(fs.readFileSync(file,'utf8')));}}catch{error='state_rejected_preserved';readOnly=true;}
+ const conversationStore=enabled&&!readOnly?require('./nex-conversation.cjs').createConversation(directory):null;
+ conversation=conversationStore?.view().entries||[];
  function save(next,op,outcome='saved'){
   if(!enabled||readOnly)throw Error('app_settings_disabled');
   next.audit=[...state.audit,{at:now(),operation:op,outcome}].slice(-120);validateState(next);safeDirectory();
@@ -66,9 +68,14 @@ function createService({directory,enabled=false,inventory=async()=>({v:1,state:'
    if(!text(a.message,1000))throw Error('nex_message');
    const message=a.message.toLocaleLowerCase('pt-BR');let intent='explain',reply='Sou o NEX em modo local. Posso organizar as ferramentas e resumir evidências disponíveis. Nenhum provedor de IA ou voz está configurado.',section=null;
    for(const [pattern,id]of [[/temperatura|cpu|gpu|memória|memoria|monitor/,'hardware'],[/limp|repar|sfc|dism/,'maintenance'],[/jogo|fps|gamer/,'games'],[/rede|internet|ping|dns/,'network'],[/rgb|quarto|luz|cena/,'environment']])if(pattern.test(message)){intent='navigate';section=id;reply='Abra '+catalog.SECTIONS.find(s=>s.id===id).title+'. Ações no Windows e em equipamentos exigem autorização específica.';break;}
-   if(/estado|diagn[oó]stico|resumo/.test(message)){intent='summarize_evidence';const v=metrics();reply=v?.connection==='connected'?'O monitoramento local informa conexão com o coletor. Consulte origem e horário de cada métrica; isso não comprova a saúde do agente HTTPS.':'Não há evidência atual suficiente para confirmar a saúde dos serviços. A ausência de dados não comprova falha ou PC desligado.';}
-   conversation.push({role:'user',text:a.message},{role:'nex',text:reply});conversation=conversation.slice(-40);
-   return {v:1,provider:'local_rules',ai:false,intent,section,reply,execution:false,history_persisted:false};
+   if(/estado|diagn[oó]stico|resumo|cpu|gpu|ram|mem[oó]ria|temperatura|hotspot|vram|disco|armazenamento/.test(message)){
+    intent='summarize_evidence';let topic='all';
+    if(!/estado|diagn[oó]stico|resumo/.test(message))topic=/cpu/.test(message)?'cpu':/gpu|hotspot|vram/.test(message)?'gpu':/ram|mem[oó]ria/.test(message)?'ram':/disco|armazenamento/.test(message)?'storage':'all';
+    reply=require('./nex-local.cjs').summarize(metrics(),{now:Date.parse(now()),topic});
+   }
+   const at=now(),persisted=conversationStore?.append(a.message,reply,at)===true;
+   conversation.push({at,role:'user',text:a.message},{at,role:'nex',text:reply});conversation=conversation.slice(-40);
+   return {v:1,provider:'local_rules',ai:false,intent,section,reply,execution:false,history_persisted:persisted,history_error:conversationStore?.view().error||null};
   }
   if(q.op==='scenePreview'){
    const s=state.scenes.find(s=>s.id===a.id);if(!s)throw Error('scene_id');

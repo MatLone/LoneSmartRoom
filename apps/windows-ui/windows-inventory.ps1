@@ -3,8 +3,9 @@ $ErrorActionPreference='Stop'
 [Console]::OutputEncoding=New-Object System.Text.UTF8Encoding($false)
 $ProgressPreference='SilentlyContinue'
 function Short($value){if($null -eq $value){return $null};$s=[string]$value;if($s.Length -gt 180){return $s.Substring(0,180)};return $s}
+function FailureCode($record,[string]$stage){$rule=($record.FullyQualifiedErrorId -split ',')[0];if($rule -notin @('CimException','OperationTimeout','AccessDenied','UnauthorizedAccessException','CommandNotFoundException','CouldNotAutoloadMatchingModule','PathNotFound','NoMatchingEventsFound','InvalidOperation')){$rule='other'};return @{stage=$stage;code=$record.Exception.HResult;rule=$rule}}
 try {
- $items=@();$extra=@{}
+ $items=@();$extra=@{};$resultState='available'
  switch($Kind){
   'games' {
    $steam=(Get-ItemProperty -LiteralPath 'HKCU:\Software\Valve\Steam' -ErrorAction SilentlyContinue).SteamPath
@@ -22,12 +23,16 @@ try {
    $items=@($items | Select-Object -First 128)
   }
   'hardware' {
-   $items=@(Get-CimInstance Win32_Processor -OperationTimeoutSec 3 | ForEach-Object {@{name=(Short $_.Name);logical_cores=$_.NumberOfLogicalProcessors;physical_cores=$_.NumberOfCores;reported_clock_mhz=$_.CurrentClockSpeed;max_clock_mhz=$_.MaxClockSpeed;cpu_temperature_celsius=$null;cpu_power_watts=$null}})
-   $cores=@(Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -OperationTimeoutSec 3 | Where-Object Name -ne '_Total' | Select-Object -First 128 | ForEach-Object {@{id=(Short $_.Name);utilization_percent=$_.PercentProcessorTime}})
-   $extra=@{cores=$cores;clock_semantic='Windows reported clock; not a calibrated frequency measurement'}
+   $failures=@();$cores=@();$descriptorState='available';$coreState='available'
+   try{$items=@(Get-CimInstance Win32_Processor -OperationTimeoutSec 3 | ForEach-Object {@{name=(Short $_.Name);logical_cores=$_.NumberOfLogicalProcessors;physical_cores=$_.NumberOfCores;reported_clock_mhz=$_.CurrentClockSpeed;max_clock_mhz=$_.MaxClockSpeed;cpu_temperature_celsius=$null;cpu_power_watts=$null}});if(!$items.Count){$descriptorState='unavailable'}}catch{$descriptorState='unavailable';$failures+=FailureCode $_ 'cpu_descriptor'}
+   # A transient WMI performance-counter failure must not erase a valid CPU
+   # descriptor/clock. Each source retains its own availability, never fake zero.
+   try{$cores=@(Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -OperationTimeoutSec 3 | Where-Object Name -ne '_Total' | Select-Object -First 128 | ForEach-Object {@{id=(Short $_.Name);utilization_percent=$_.PercentProcessorTime}});if(!$cores.Count){$coreState='unavailable'}}catch{$coreState='unavailable';$failures+=FailureCode $_ 'per_core_counters'}
+   $extra=@{cores=$cores;cpu_descriptor_state=$descriptorState;per_core_state=$coreState;partial=($descriptorState -ne 'available' -or $coreState -ne 'available');failures=$failures;clock_semantic='Windows reported clock; not a calibrated frequency measurement'}
+   if(!$items.Count -and !$cores.Count){$resultState='unavailable'}
   }
   'memory' {$items=@(Get-CimInstance Win32_PhysicalMemory -OperationTimeoutSec 3 | Select-Object -First 32 | ForEach-Object {@{name=(Short $_.DeviceLocator);capacity_bytes=$_.Capacity;configured_clock_mhz=$_.ConfiguredClockSpeed;reported_speed_mhz=$_.Speed;manufacturer=(Short $_.Manufacturer)}})}
-  'network' {$items=@([Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() | Where-Object OperationalStatus -eq 'Up' | Select-Object -First 32 | ForEach-Object {$s=$_.GetIPStatistics();@{name=(Short $_.Name);description=(Short $_.Description);link_bits_per_second=$_.Speed;received_bytes=$s.BytesReceived;sent_bytes=$s.BytesSent;type=[string]$_.NetworkInterfaceType}})}
+  'network' {$items=@([Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() | Where-Object OperationalStatus -eq 'Up' | Select-Object -First 32 | ForEach-Object {$s=$_.GetIPStatistics();@{id=(Short $_.Id);name=(Short $_.Name);description=(Short $_.Description);link_bits_per_second=$_.Speed;received_bytes=$s.BytesReceived;sent_bytes=$s.BytesSent;type=[string]$_.NetworkInterfaceType}})}
   'processes' {$items=@(Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 100 | ForEach-Object {@{name=(Short $_.ProcessName);pid=$_.Id;resident_bytes=$_.WorkingSet64;cpu_total_seconds=$_.CPU;responding=$_.Responding}})}
   'applications' {
    $keys=@('HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*')
@@ -49,7 +54,7 @@ try {
    $items=@([Net.Dns]::GetHostAddresses($Target) | Select-Object -First 16 | ForEach-Object {@{address=$_.IPAddressToString;family=[string]$_.AddressFamily}})
   }
  }
- @{v=1;state='available';source=('windows.readonly.'+$Kind);observed_at=[DateTime]::UtcNow.ToString('o');items=@($items);extra=$extra;simulation=$false} | ConvertTo-Json -Depth 7 -Compress
+ @{v=1;state=$resultState;source=('windows.readonly.'+$Kind);observed_at=[DateTime]::UtcNow.ToString('o');items=@($items);extra=$extra;simulation=$false} | ConvertTo-Json -Depth 7 -Compress
 } catch {
- @{v=1;state='unavailable';source=('windows.readonly.'+$Kind);observed_at=[DateTime]::UtcNow.ToString('o');items=@();error='readonly_provider_unavailable';simulation=$false} | ConvertTo-Json -Compress
+ @{v=1;state='unavailable';source=('windows.readonly.'+$Kind);observed_at=[DateTime]::UtcNow.ToString('o');items=@();error='readonly_provider_unavailable';extra=@{failure=(FailureCode $_ 'inventory')};simulation=$false} | ConvertTo-Json -Depth 4 -Compress
 }

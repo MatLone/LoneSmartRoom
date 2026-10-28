@@ -3,8 +3,8 @@ const {app,session}=require('electron'),fs=require('node:fs'),path=require('node
 app.disableHardwareAcceleration(); // Owned visual review only; installed app unchanged.
 const run=process.env.LONE_WORKBENCH_RUN_ID;if(!/^[a-f0-9]{32}$/.test(run||'')||!process.argv.includes('--lone-development-review')||!process.argv.includes('--lone-workbench-development'))throw Error('explicit_isolated_workbench_review');
 const scale=(process.argv.find(v=>v.startsWith('--force-device-scale-factor='))?.split('=')[1]||'1').replace('.','_');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/windows-dev9/captures','scale-'+scale);fs.mkdirSync(out,{recursive:true});
-const sourceHashes=Object.fromEntries(['desktop-main.cjs','monitoring-host.cjs','monitoring-renderer.js','preload.cjs','presentmon-source.cjs','workbench-renderer.js','panel.js','desktop-window.cjs','development-deadline.cjs'].map(n=>[n,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'apps/windows-ui',n))).digest('hex')]));
+const root=path.resolve(__dirname,'..'),out=path.join(root,'.cache/windows-workbench-review',run,'captures');fs.mkdirSync(out,{recursive:true});
+const sourceHashes=Object.fromEntries(['desktop-main.cjs','monitoring-host.cjs','monitoring-renderer.js','preload.cjs','presentmon-source.cjs','workbench-renderer.js','panel.js','desktop-window.cjs','development-deadline.cjs','windows-read-provider.cjs','windows-inventory.ps1','hardware-diagnostics.js','hardware-diagnostics-renderer.js','nex-local.cjs','nex-conversation.cjs','inventory-presentation.js','index.html','workbench.css'].map(n=>[n,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'apps/windows-ui',n))).digest('hex')]));
 let checks=0,started=false,completed=false;const errors=[],network=[],captures=[];
 const wait=n=>new Promise(r=>setTimeout(r,n));
 setTimeout(()=>{if(!completed){console.error('Owned review deadline; requesting normal quit');app.quit();}},45000).unref();
@@ -20,10 +20,23 @@ app.on('browser-window-created',(_e,win)=>{
    await until(()=>ev('Boolean(window.loneTools&&document.getElementById("toolSelect").options.length===12)'));
    check(app.getPath('userData').includes(run),'Unique isolated profile');
    check(require('../apps/windows-ui/desktop-main.cjs').monitoringDiagnostics()===null,'No physical collector started');
-   await ev(`(()=>{const b=document.createElement('div');b.className='development-evidence-banner';b.textContent='DESENVOLVIMENTO ISOLADO · SEM COLETA FÍSICA · AÇÕES WINDOWS BLOQUEADAS';document.body.append(b)})()`);
+   await ev(`(()=>{const b=document.createElement('div');b.className='development-evidence-banner';b.textContent='DESENVOLVIMENTO ISOLADO · INVENTÁRIOS EM LEITURA · SEM COLETORES OU COMANDOS OPERACIONAIS';document.body.append(b)})()`);
    for(const section of ['overview','maintenance','optimization','applications','peripherals','display','network','games','environment','nex','audit','hardware']){
     await ev(`document.querySelector('[data-tool="${section}"]').click()`);await until(()=>ev(`!document.getElementById('panel-tools').hidden&&document.getElementById('toolSelect').value==='${section}'`));
     check(await ev(`document.documentElement.scrollWidth<=innerWidth+1&&document.getElementById('workspace').scrollWidth<=document.getElementById('workspace').clientWidth+1`),'No outer overflow '+section);
+    if(section==='hardware'){
+     const observed=await ev(`window.loneTools.inventory('hardware')`);
+     check(observed.simulation===false&&observed.source==='windows.readonly.hardware','Actual readonly inventory through main/preload');
+     check(['available','unavailable'].includes(observed.state),'Unavailable is explicit, never mocked as healthy');
+     await ev(`Array.from(document.querySelectorAll('#toolBody button')).find(b=>b.textContent==='Atualizar informações').click()`);
+     await until(()=>ev(`document.querySelector('#toolBody .tool-output').textContent.includes('windows.readonly.hardware')`));
+    }
+    if(section==='hardware') check(await ev(`document.querySelector('#toolBody .tool-output table')!==null||document.querySelector('#toolBody .tool-output').textContent.includes('unavailable')`),'Inventory renders actual values or explicit unavailability');
+    if(section==='nex'){
+     await ev(`document.querySelector('#toolBody input').value='Resumo do estado';Array.from(document.querySelectorAll('#toolBody button')).find(b=>b.textContent==='Enviar ao NEX local').click()`);
+     await until(()=>ev(`document.querySelectorAll('.nex-messages p').length>=2`));
+     check(await ev(`document.querySelector('.nex-messages').textContent.includes('Sem amostras reais atuais')`),'NEX does not invent measurements without collector');
+    }
     if(section==='games'){
       const fixture=path.join(root,'.cache/windows-workbench-review',run,'presentmon-fixture.csv');
       fs.writeFileSync(fixture,'Application,ProcessID,SwapChainAddress,MsBetweenPresents\nfixture.exe,1,0,10\n');
@@ -34,11 +47,11 @@ app.on('browser-window-created',(_e,win)=>{
       fs.appendFileSync(fixture,Array.from({length:100},()=> 'fixture.exe,1,0,10\n').join(''));
       await until(async()=> (await ev('window.loneTools.fpsSnapshot()')).state==='available');
       const fps=await ev('window.loneTools.fpsSnapshot()');check(fps.report.streams[0].average_fps===100&&!fps.live_game_verified,'Actual main/preload/file pipeline with explicit CSV fixture');
-      await ev(`const banner=document.createElement('p');banner.textContent='TESTE ISOLADO — CSV SIMULADO, SEM JOGO';banner.style.color='#FF153F';document.getElementById('toolTitle').after(banner);`);
+      await ev(`const banner=document.createElement('p');banner.id='fpsFixtureBanner';banner.textContent='TESTE ISOLADO — CSV SIMULADO, SEM JOGO';banner.style.color='#FF153F';document.getElementById('toolTitle').after(banner);`);
       await wait(2100);
       check((await ev('window.loneTools.stopFpsSource()')).archived,'Fixture report archived without capture process');
     }
-    await capture(section);
+    await capture(section);if(section==='games') await ev(`document.getElementById('fpsFixtureBanner')?.remove()`);
    }
    await ev(`document.getElementById('tab-monitor').click();document.getElementById('diagnosticOpen').click()`);await wait(200);check(await ev(`document.querySelectorAll('#diagnosticGrid .diagnostic-card').length===7`),'Local diagnostic cards, without probes');await capture('diagnostics');
    const response=await ev(`window.loneTools.saveProfile('Equilibrado',['notifications'])`);check(response.saved&&!response.applied_to_windows,'App-local profile only');
@@ -62,7 +75,7 @@ app.on('browser-window-created',(_e,win)=>{
    await until(()=>Promise.resolve(BrowserWindow.getAllWindows().length===1));check(BrowserWindow.getAllWindows().length===1,'Auxiliary windows closed');
    const resources=[];app.getAppMetrics();for(let i=0;i<3;i++){await wait(1000);resources.push(app.getAppMetrics().map(m=>({type:m.type,cpuPercentRaw:m.cpu.percentCPUUsage,residentMiB:m.memory.workingSetSize/1024,peakResidentMiB:m.memory.peakWorkingSetSize/1024})));}
    check(errors.length===0,'No renderer errors');
-   const immutable=path.join(root,'.cache/windows-workbench-review',run,'captures');fs.mkdirSync(immutable,{recursive:true});for(const name of captures)fs.copyFileSync(path.join(out,name),path.join(immutable,name));
+   const immutable=path.join(root,'.cache/windows-workbench-review',run,'captures');fs.mkdirSync(immutable,{recursive:true});if(path.resolve(out)!==path.resolve(immutable))for(const name of captures)fs.copyFileSync(path.join(out,name),path.join(immutable,name));
    const report={ok:true,checks,scale,sourceHashes,resources,resourceMethod:'Electron getAppMetrics; raw per-process CPU API units; RSS sum can count shared pages; no sensors or games; UI test, not comparable idle/game benchmark',runId:run,realElectron:true,actualMainPreloadRenderer:true,physicalCollectors:false,operationalCommands:false,profile:app.getPath('userData'),captures,errors,network};
    fs.writeFileSync(path.join(root,'.cache','windows-workbench-review',run,'result.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({...report,profile:'isolated'}));completed=true;app.quit();
   }catch(error){console.error(error.stack);fs.writeFileSync(path.join(root,'.cache','windows-workbench-review',run,'failure.json'),JSON.stringify({ok:false,error:String(error.message),errors,captures}));completed=true;app.quit();process.exitCode=1;}

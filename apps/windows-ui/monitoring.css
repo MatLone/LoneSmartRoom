@@ -30,3 +30,11 @@ progress::-webkit-progress-value{background:#ff153f;border-radius:4px}
 .chart-caption{flex-wrap:wrap;gap:8px}
 .chart-caption>span{min-width:0;overflow-wrap:anywhere}
 @media(max-width:760px){.storage-metrics{grid-template-columns:minmax(0,1fr)}.sensor .value{font-size:25px}.mini-sensor strong{font-size:18px}.metric-row{font-size:11px}.metric-meta{font-size:10px}}
+.hardware-diagnostics{margin:20px 0;min-width:0;overflow-wrap:anywhere}
+.hardware-diagnostics>summary{cursor:pointer;font-weight:600}
+.hardware-diagnostics>p{font-size:12px;line-height:1.6;color:var(--muted);margin-top:12px}
+#hardwareDiagnosticRows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+#hardwareDiagnosticRows section{min-width:0;border-top:1px solid #ffffff12;padding-top:12px}
+#hardwareDiagnosticRows h3{font-size:13px}
+#hardwareDiagnosticRows section>p{font-size:11px;line-height:1.6;white-space:pre-line}
+@media(max-width:760px){#hardwareDiagnosticRows{grid-template-columns:minmax(0,1fr)}}

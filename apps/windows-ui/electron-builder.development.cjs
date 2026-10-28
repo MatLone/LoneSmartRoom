@@ -4,7 +4,7 @@ const path = require('node:path');
 const existing = require('./package.json').build;
 module.exports = {
   ...existing,
-  directories: {...existing.directories, output: '../../.cache/artifacts/windows/desktop-dev9-consolidated-candidate-r9'},
+  directories: {...existing.directories, output: '../../.cache/artifacts/windows/desktop-dev9-consolidated-candidate-r10'},
   electronDist: 'node_modules/electron/dist',
   npmRebuild: false,
   afterPack: require('./build/preservation.cjs').afterPack,

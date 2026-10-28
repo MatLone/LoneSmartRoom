@@ -10,11 +10,7 @@
  function button(text,action,secondary=false){const n=el('button',text,secondary?'button':'button primary');n.type='button';n.addEventListener('click',async()=>{n.disabled=true;message.textContent='';try{await action();}catch{message.textContent='Operação indisponível ou entrada inválida. Nenhuma alteração de sistema foi executada.';}finally{n.disabled=false;}});return n;}
  function card(title,description){const n=el('section',undefined,'surface tool-card');n.append(el('h2',title));if(description)n.append(note(description));body.append(n);return n;}
  function output(parent){const n=el('div',undefined,'tool-output');parent.append(n);return n;}
- function show(value,target){target.replaceChildren();if(!value)return;const state=el('p',value.state?`Estado: ${value.state} · Fonte: ${value.source||'LSR local'}${value.simulation?' · SIMULAÇÃO':''}`:'Resultado local');target.append(state);if(value.observed_at)target.append(note('Verificado: '+new Date(value.observed_at).toLocaleString('pt-BR')));
-  const items=value.items||value.entries||value.streams||value.actions;
-  if(Array.isArray(items)&&items.length){const table=el('table'),keys=Object.keys(items[0]).slice(0,8),head=el('tr');for(const k of keys)head.append(el('th',k.replaceAll('_',' ')));const thead=el('thead');thead.append(head);table.append(thead);const tbody=el('tbody');for(const item of items.slice(0,150)){const row=el('tr');for(const key of keys){const v=item[key];row.append(el('td',v===null||v===undefined?'Indisponível':typeof v==='object'?JSON.stringify(v).slice(0,160):String(v).slice(0,180)));}tbody.append(row);}table.append(tbody);target.append(table);}else if(Array.isArray(items))target.append(note('Nenhum item disponível neste escopo.'));
-  for(const [k,v]of Object.entries(value)){if(['items','entries','streams','actions','v','state','source','simulation','observed_at','settings'].includes(k))continue;target.append(note(k.replaceAll('_',' ')+': '+(typeof v==='object'?JSON.stringify(v):String(v))));}
- }
+ function show(value,target){window.loneInventoryView.render(document,value,target);}
  function afterSave(result){message.textContent=result?.saved?'Configuração local salva. Nenhuma alteração aplicada ao Windows.':'Ação concluída.';return reload();}
  function showFps(value,target){
   target.replaceChildren();const states={inactive:'Fonte desativada',awaiting_frames:'Aguardando novos frames',available:'Leitura do arquivo atualizada',stale:'Dados desatualizados',unavailable:'Fonte indisponível'};
@@ -111,8 +107,9 @@
    for(const v of data.settings.scenes){const out=output(s);s.append(button('Prévia: '+v.name,async()=>show(await api.scenePreview(v.id),out),true));}
   }
   if(id==='nex'){
-   const c=card('NEX · Next Environment Executive','Modo local por regras e evidências. Nenhuma IA externa, transmissão de dados ou escuta contínua. Conversa desta sessão somente em memória.');const chat=el('div',undefined,'nex-messages'),entry=input('Pergunte sobre estado, hardware, rede ou ferramentas');entry.maxLength=1000;
-   c.append(chat,label('Mensagem',entry),button('Enviar ao NEX local',async()=>{const text=entry.value;const r=await api.askNex(text);chat.append(el('p',text,'nex-user'),el('p',r.reply,'nex-reply'));entry.value='';if(r.section)chat.append(button('Abrir ferramenta recomendada',()=>open(r.section),true));}),note('Voz: microfone por toque e motor configurável ainda não habilitados. Nenhuma ação sensível é executada por texto.'));
+   const c=card('NEX · Next Environment Executive','Modo local por regras e cache validado. Histórico local limitado a 40 mensagens. Nenhuma IA externa, transmissão de dados ou escuta contínua.');const chat=el('div',undefined,'nex-messages'),entry=input('Pergunte sobre estado, hardware, rede ou ferramentas');entry.maxLength=1000;
+   for(const r of data.conversation||[])chat.append(el('p',r.text,r.role==='user'?'nex-user':'nex-reply'));
+   c.append(chat,label('Mensagem',entry),button('Enviar ao NEX local',async()=>{const text=entry.value;const r=await api.askNex(text);chat.append(el('p',text,'nex-user'),el('p',r.reply,'nex-reply'));if(r.history_error)chat.append(note('Histórico indisponível; arquivo anterior preservado.'));entry.value='';if(r.section)chat.append(button('Abrir ferramenta recomendada',()=>open(r.section),true));}),note('Voz: microfone por toque e motor configurável ainda não habilitados. Nenhuma ação sensível é executada por texto.'));
   }
   if(id==='audit'){
    const c=card('Backup e importação de configurações','Exporta apenas dados deste módulo, sem credenciais, certificados ou bancos operacionais. Importação validada; não aplica configurações Windows.');c.append(button('Exportar configurações',()=>api.exportSettings()),button('Importar configurações validadas',async()=>{await api.importSettings();await open(id);},true));

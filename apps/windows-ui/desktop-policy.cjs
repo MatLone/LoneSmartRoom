@@ -6,11 +6,13 @@ const entryUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
 const resources = new Set([
   'index.html', 'desktop.css', 'desktop.js', 'app-version.js',
   'monitoring-model.js', 'monitoring-renderer.js', 'monitoring.css',
+  'hardware-diagnostics.js', 'hardware-diagnostics-renderer.js',
   'diagnostics-contract.js', 'diagnostics-model.js', 'diagnostics-renderer.js', 'diagnostics.css',
   'history-renderer.js','history.css','gamer-session.js','gamer-session-renderer.js','gamer-session.css',
   'audio-session.js',
   'panel.html','panel.css','panel.js',
   'workbench-model.js','workbench-renderer.js','workbench.css',
+  'inventory-presentation.js',
   'assets/brand/logo-horizontal.svg', 'assets/brand/logo-header-small.svg',
   'assets/brand/windows-icon.svg', 'assets/brand/windows-icon.png'
 ].map(name => pathToFileURL(path.join(__dirname, name)).href));
