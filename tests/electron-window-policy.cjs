@@ -17,11 +17,12 @@ async function main(){
    const b=policy.initialBounds(mode,area);check(b.x>=area.x&&b.y>=area.y&&b.x+b.width<=area.x+area.width&&b.y+b.height<=area.y+area.height,'Window fits work area');
   }
  }
- const calls=[],listeners=new Map();let api;
+ const calls=[],listeners=new Map();let api,tools;
  const ipc={invoke:(name,...args)=>{calls.push([name,...args]);return Promise.resolve({mode:'dashboard'});},send:(name,...args)=>calls.push([name,...args]),on:(name,handler)=>listeners.set(name,handler),removeListener:(name,handler)=>{if(listeners.get(name)===handler)listeners.delete(name);}};
- const context=vm.createContext({require:name=>{assert.equal(name,'electron');return {contextBridge:{exposeInMainWorld:(name,value)=>{assert.equal(name,'loneDesktop');api=value;}},ipcRenderer:ipc};}});
+ const context=vm.createContext({require:name=>{assert.equal(name,'electron');return {contextBridge:{exposeInMainWorld:(name,value)=>{if(name==='loneDesktop')api=value;else if(name==='loneTools')tools=value;else assert.fail('Unknown preload API');}},ipcRenderer:ipc};}});
  vm.runInContext(fs.readFileSync(path.join(app,'preload.cjs'),'utf8'),context);
  check(Object.keys(api).sort().join(',')===['minimizeToTray','close','getVersion','getWindowState','minimize','onWindowState','setWindowMode','toggleMaximize','getMetrics','onMetrics','getDiagnostics','getPerformanceHistory'].sort().join(','),'Strict window API, cache-only metrics and one bounded diagnostic query');
+ check(tools&&Object.isFrozen(tools)&&!['execute','exec','spawn','shell','request','fetch','readFile'].some(k=>k in tools),'Tool bridge is a finite named API without generic execution or filesystem');
  for(const mode of ['dashboard','widget'])await api.setWindowMode(mode);
  const count=calls.length;
  for(const bad of [null,{},[],'steam','cmd.exe','widget && calc']){await assert.rejects(api.setWindowMode(bad));checks++;}

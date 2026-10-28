@@ -53,7 +53,14 @@
       "history.css",
       "gamer-session.js",
       "gamer-session-renderer.js",
-      "gamer-session.css"
+      "gamer-session.css",
+      "workbench-model.js",
+      "workbench-catalog.cjs",
+      "workbench-service.cjs",
+      "workbench-renderer.js",
+      "workbench.css",
+      "windows-read-provider.cjs",
+      "windows-inventory.ps1"
     ],
     "directories": {
       "output": "dist"
@@ -78,7 +85,10 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
-    }
+    },
+    "asarUnpack": [
+      "windows-inventory.ps1"
+    ]
   },
   "engines": {
     "node": "22.16.x",

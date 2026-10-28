@@ -1,5 +1,18 @@
 'use strict';
 const {contextBridge, ipcRenderer} = require('electron');
+const tool=(op,args={})=>ipcRenderer.invoke('tools:request',{v:1,op,args});
+contextBridge.exposeInMainWorld('loneTools',Object.freeze({
+  snapshot:section=>tool('snapshot',{section}),inventory:kind=>tool('inventory',{kind}),
+  cleanupPreview:()=>tool('cleanup'),repairPlan:id=>tool('repair',{id}),
+  saveProfile:(name,adjustments)=>tool('profile',{name,adjustments}),
+  saveBundle:(name,packages)=>tool('bundle',{name,packages}),
+  saveDevice:device=>tool('device',device),saveScene:scene=>tool('scene',scene),scenePreview:id=>tool('scenePreview',{id}),
+  saveGameProfile:profile=>tool('gameProfile',profile),askNex:message=>tool('nex',{message}),
+  readAudit:()=>tool('audit'),networkTest:(kind,target)=>tool('network',{kind,target}),
+  displays:()=>ipcRenderer.invoke('tools:displays'),exportSettings:()=>ipcRenderer.invoke('tools:export'),
+  importSettings:()=>ipcRenderer.invoke('tools:import'),importPresentmon:()=>ipcRenderer.invoke('tools:presentmon'),
+  exportHistory:minutes=>{if(![5,30,60].includes(minutes))return Promise.reject(Error('history_window'));return ipcRenderer.invoke('history:export',minutes);}
+}));
 contextBridge.exposeInMainWorld('loneDesktop', Object.freeze({
   getVersion: () => ipcRenderer.invoke('widget:version'),
   getMetrics: () => ipcRenderer.invoke('monitoring:snapshot'),

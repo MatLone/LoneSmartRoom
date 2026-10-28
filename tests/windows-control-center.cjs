@@ -1,0 +1,41 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
+const root=path.resolve(__dirname,'..'),{createService,validateState}=require('../apps/windows-ui/workbench-service.cjs');
+const model=require('../apps/windows-ui/workbench-model.js'),{createProvider}=require('../apps/windows-ui/windows-read-provider.cjs');
+const cache=path.join(root,'.cache');fs.mkdirSync(cache,{recursive:true});const directory=fs.mkdtempSync(path.join(cache,'windows-tools-test-'));let checks=0;
+const equal=(a,b)=>{assert.deepEqual(a,b);checks++;},yes=x=>{assert(x);checks++;};
+(async()=>{
+ const service=createService({directory,enabled:true,inventory:async kind=>({v:1,state:'available',source:'fixture.'+kind,simulation:true,items:[]})});
+ const call=(op,args={})=>service.handle({v:1,op,args});
+ equal((await call('snapshot',{section:'overview'})).catalog.SECTIONS.length,12);
+ for(const op of ['execute','constructor','__proto__'])await assert.rejects(()=>call(op),/reject/);checks+=3;
+ await assert.rejects(()=>call('profile',{name:'Gamer',adjustments:['disable-defender']}));checks++;
+ await call('profile',{name:'Gamer',adjustments:['notifications']});equal((await call('snapshot',{section:'optimization'})).settings.profile.name,'Gamer');
+ const reopen=createService({directory,enabled:true});equal((await reopen.handle({v:1,op:'snapshot',args:{section:'overview'}})).settings.profile.name,'Gamer');
+ const repair=await call('repair',{id:'sfc-repair'});equal(repair.execution_enabled,false);equal(repair.arguments,['/scannow']);
+ await call('bundle',{name:'Trabalho',packages:['Microsoft.VisualStudioCode']});const exported=await call('export');equal(exported.kind,'lone_workbench_settings');
+ const bad=structuredClone(exported);bad.settings.credentials='secret';await assert.rejects(()=>call('import',{data:bad}));checks++;
+ await call('device',{id:'lampada',name:'Luz',connector:'home-assistant',entity:'light.quarto'});
+ await call('scene',{name:'Trabalho',deviceIds:['lampada'],color:'#ff153f',brightness:50});
+ const s=(await call('snapshot',{section:'environment'})).settings.scenes[0];equal((await call('scenePreview',{id:s.id})).physical_actions,0);
+ const nex=await call('nex',{message:'Resumo do estado'});equal(nex.ai,false);equal(nex.execution,false);yes(nex.reply.includes('evidência'));
+ yes(!JSON.stringify(await call('export')).includes('Resumo do estado'));
+ const cleanup=await call('cleanup');equal(cleanup.scope,'cache_proprio_lsr');equal(cleanup.execution_enabled,false);
+ await assert.rejects(()=>call('network',{kind:'ping',target:'x; shutdown /s'}));checks++;
+ equal(model.latency([10,20,15],4).loss_percent,25);equal(model.latency([10,20,15],4).jitter_ms,7.5);
+ const input=model.createInputSession();input.record({type:'click',at:1});input.record({type:'click',at:101});input.record({type:'down',at:102,code:'KeyA'});equal(input.view().possible_double_clicks,1);equal(input.view().pressed,['KeyA']);equal(input.view().hardware_polling_rate_hz,null);
+ const frames='Application,ProcessID,SwapChainAddress,MsBetweenPresents\n'+Array.from({length:100},()=> 'cs2.exe,12,0x1,10').join('\n');
+ const report=model.presentmon(frames);equal(report.live,false);equal(report.streams[0].average_fps,100);equal(report.streams[0].one_percent_low_fps,100);
+ assert.throws(()=>model.presentmon('x,y\n1,2'),/frametime/);checks++;
+ yes(model.csvCell('=RUN()').startsWith('"\''));
+ let executions=0;const provider=createProvider({platform:'win32',script:path.join(root,'apps/windows-ui/windows-inventory.ps1'),execute:(program,args,options,callback)=>{
+  executions++;yes(program.endsWith('powershell.exe'));equal(options.shell,false);yes(args.includes('-File'));callback(null,JSON.stringify({v:1,state:'available',source:'windows.readonly.processes',simulation:false,items:[]}));
+ }});
+ await provider.inventory('processes');await provider.inventory('processes');equal(executions,1);
+ await assert.rejects(()=>provider.inventory('arbitrary-shell'));checks++;
+ const file=path.join(directory,'workbench-v1.json'),before=fs.readFileSync(file,'utf8');fs.writeFileSync(file,'invalid json');
+ const rejected=createService({directory,enabled:true});equal(rejected.stats().readOnly,true);await assert.rejects(()=>rejected.handle({v:1,op:'profile',args:{name:'Gamer',adjustments:[]}}));checks++;equal(fs.readFileSync(file,'utf8'),'invalid json');fs.writeFileSync(file,before);
+ service.close();reopen.close();rejected.close();console.log(JSON.stringify({ok:true,checks,realSystemActions:0,hardwareSessions:0,storage:'isolated owned temp directory'}));
+})().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>{
+ const resolved=fs.realpathSync(directory),expected=fs.realpathSync(cache)+path.sep;if(!resolved.startsWith(expected))throw Error('test_cleanup_scope');fs.rmSync(resolved,{recursive:true,force:false});
+});

@@ -32,6 +32,8 @@ if (developmentReview) {
   const diagnosticId=/^[a-f0-9]{32}$/.test(process.env.LONE_DIAGNOSTICS_REVIEW_ID||'')?process.env.LONE_DIAGNOSTICS_REVIEW_ID:'local';
   const base = diagnosticsReview
     ? path.resolve(__dirname, '../../.cache/windows-diagnostics-review', diagnosticId, scale)
+    : process.argv.includes('--lone-workbench-development')&&/^[a-f0-9]{32}$/.test(process.env.LONE_WORKBENCH_RUN_ID||'')
+    ? path.resolve(__dirname,'../../.cache/windows-workbench-review',process.env.LONE_WORKBENCH_RUN_ID)
     : monitoringDevelopment
     ? path.resolve(__dirname, '../../.cache/windows-monitoring-development', process.env.LONE_MONITORING_RUN_ID)
     : path.resolve(__dirname, '../../.cache/windows-tray-review/dev5', review, scale);
@@ -41,6 +43,7 @@ if (developmentReview) {
 }
 app.commandLine.appendSwitch('disable-background-networking');
 let controller;
+let workbench=null;
 let lastHistoryRead=-Infinity;
 function state() {return controller?.state() || null;}
 function registerIpc() {
@@ -50,6 +53,33 @@ function registerIpc() {
     return callback(...args);
   });
   handle('widget:version', 0, () => app.getVersion());
+  handle('tools:request',1,query=>workbench.handle(query));
+  handle('tools:displays',0,()=>screen.getAllDisplays().map(d=>({id:d.id,label:d.label,
+    width:d.size.width,height:d.size.height,scale_factor:d.scaleFactor,refresh_hz:d.displayFrequency,
+    color_depth:d.colorDepth,touch_support:d.touchSupport,primary:d.id===screen.getPrimaryDisplay().id})));
+  handle('tools:export',0,async()=>{
+    const {dialog}=require('electron');const report=await workbench.handle({v:1,op:'export',args:{}});
+    const selected=await dialog.showSaveDialog(controller.window,{defaultPath:'Lone-Smart-Room-configuracoes.json',filters:[{name:'Configurações LSR',extensions:['json']}]});
+    if(selected.canceled)return {v:1,canceled:true};fs.writeFileSync(selected.filePath,JSON.stringify(report,null,2),{flag:'wx'});return {v:1,saved:true};
+  });
+  handle('tools:import',0,async()=>{
+    const {dialog}=require('electron');const selected=await dialog.showOpenDialog(controller.window,{properties:['openFile'],filters:[{name:'Configurações LSR',extensions:['json']}]});
+    if(selected.canceled)return {v:1,canceled:true};const file=selected.filePaths[0];if(fs.statSync(file).size>131072)throw Error('settings_import_size');
+    return workbench.handle({v:1,op:'import',args:{data:JSON.parse(fs.readFileSync(file,'utf8'))}});
+  });
+  handle('tools:presentmon',0,async()=>{
+    const {dialog}=require('electron');const selected=await dialog.showOpenDialog(controller.window,{properties:['openFile'],filters:[{name:'PresentMon CSV',extensions:['csv']}]});
+    if(selected.canceled)return {v:1,canceled:true};const file=selected.filePaths[0];if(fs.statSync(file).size>8388608)throw Error('presentmon_import_size');
+    return require('./workbench-model.js').presentmon(fs.readFileSync(file,'utf8'));
+  });
+  handle('history:export',1,async minutes=>{
+    const report=performanceHistory.query(minutes),{dialog}=require('electron'),cell=require('./workbench-model.js').csvCell;
+    const selected=await dialog.showSaveDialog(controller.window,{defaultPath:'Lone-Smart-Room-historico.csv',filters:[{name:'CSV',extensions:['csv']}]});
+    if(selected.canceled)return {v:1,canceled:true};
+    const header=['timestamp_utc','simulation',...report.fields.flatMap(f=>[f[0],f[0]+'.state',f[0]+'.collected_at'])];
+    const rows=report.rows.map(r=>[new Date(r[0]).toISOString(),report.simulation,...r.slice(2).flatMap(m=>[m[0],m[1],m[2]===null?'':new Date(m[2]).toISOString()])]);
+    fs.writeFileSync(selected.filePath,[header,...rows].map(r=>r.map(cell).join(',')).join('\r\n'),{flag:'wx'});return {v:1,saved:true,points:rows.length};
+  });
   handle('window:state', 0, state);
   handle('window:mode', 1, next => {controller.setMode(next);return state();});
   handle('window:maximize', 0, () => {controller.toggleMaximize();return state();});
@@ -108,6 +138,12 @@ if (!app.requestSingleInstanceLock()) {
       beforeExit:monitoringEnabled?stopMonitoring:null,
       icon: path.join(__dirname, 'assets/brand/windows-icon.ico'), version: app.getVersion(),
       metadata: {development: !app.isPackaged, reviewProfile: developmentReview}});
+    const provider=require('./windows-read-provider.cjs').createProvider({script:app.isPackaged
+      ?path.join(process.resourcesPath,'app.asar.unpacked','windows-inventory.ps1'):path.join(__dirname,'windows-inventory.ps1')});
+    workbench=require('./workbench-service.cjs').createService({directory:path.join(app.getPath('userData'),'workbench'),
+      enabled:app.isPackaged||developmentReview&&process.argv.includes('--lone-workbench-development'),
+      inventory:provider.inventory,network:provider.network,metrics:()=>monitoringHost?.view()||null});
+    app.on('will-quit',()=>workbench.close());
     registerIpc();controller.start();
     if(monitoringEnabled){
       const createMonitoringHost=monitoringDevelopment&&process.argv.includes('--lone-telemetry-development')
