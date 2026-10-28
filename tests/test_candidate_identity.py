@@ -9,7 +9,7 @@ from diagnostics.windows_readers import candidate_arguments,WindowsReaders,norm
 class CandidateIdentityTests(unittest.TestCase):
     def test_fixed_candidate_and_worker(self):
         image=norm(ROOT/'.venv/Scripts/pythonw.exe')
-        for script,suffix,worker in [('agent/development/reliable_bootstrap.py',[],False),('agent/windows/graceful_launcher.py',['_worker'],True)]:
+        for script,suffix,worker in [('agent/development/reliable_bootstrap.py',[],False),('agent/development/reliable_bootstrap.py',['_worker'],True),('agent/windows/graceful_launcher.py',['_worker'],True)]:
             args=[image,'-I','-B',str(ROOT/script),*suffix]
             self.assertEqual(candidate_arguments(args,{image},ROOT),(True,worker))
 

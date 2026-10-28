@@ -60,6 +60,8 @@ def candidate_arguments(args,python_images,root):
     rest=args[3:]
     if len(rest)==1 and norm(rest[0])==norm(root/'agent/development/reliable_bootstrap.py'):
         return True,False
+    if len(rest)==2 and norm(rest[0])==norm(root/'agent/development/reliable_bootstrap.py') and rest[1]=='_worker':
+        return True,True
     if len(rest)==2 and norm(rest[0])==norm(root/'agent/windows/graceful_launcher.py') and rest[1]=='_worker':
         return True,True
     return False,False

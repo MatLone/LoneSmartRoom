@@ -1,7 +1,7 @@
 'use strict';
 // Consumes only the existing host cache. Does not probe agent, ports, Registry or sensors.
 const model=require('./diagnostics-model.js'),contract=require('./diagnostics-contract.js');
-function createLocalDiagnostics({metrics=()=>null,now=Date.now}={}){
+function createLocalDiagnostics({metrics=()=>null,agentEvidence=()=>null,now=Date.now}={}){
  let last=-Infinity;
  function snapshot(query){
   const t=now(),generated=new Date(t).toISOString();
@@ -26,6 +26,16 @@ function createLocalDiagnostics({metrics=()=>null,now=Date.now}={}){
     const stale=readings.some(m=>m.stale||m.state==='stale');
     if(available){const oldest=readings.map(m=>m.collected_at).sort()[0],age=(t-Date.parse(oldest))/1000;if(age<row.freshness_seconds)Object.assign(row,{state:'healthy',code:'valid_sample',detail_code:detail,observed_at:oldest,age_seconds:age,valid:true});else Object.assign(row,{state:'stale',code:'sample_stale',detail_code:'metrics_stale',observed_at:oldest,age_seconds:age});}
     else Object.assign(row,{state:stale?'stale':'unavailable',code:stale?'sample_stale':'provider_unavailable',detail_code:view.refreshing&&component.includes('gpu')?'awaiting_new_sample':stale?'metrics_stale':'metrics_missing'});
+   }
+  }
+  let observed;try{observed=agentEvidence();}catch{observed=null;}
+  if(observed&&model.validate(observed,true)&&Date.parse(observed.generated_at)<=t){
+   for(const id of ['agent_https','listener_8776','agent_startup']){
+    const source=observed.checks.find(r=>r.component===id),row=byId.get(id);
+    if(source.observed_at===null)continue;
+    const age=Math.max(source.age_seconds||0,(t-Date.parse(source.observed_at))/1000);
+    Object.assign(row,structuredClone(source),{age_seconds:age});
+    if(age>=row.freshness_seconds)Object.assign(row,{state:'stale',code:'observation_stale',valid:false});
    }
   }
   const report={schema_version:1,generated_at:generated,mode,simulation:false,repair_capability:false,power_state:'unknown',checks};

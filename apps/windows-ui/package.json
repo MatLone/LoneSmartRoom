@@ -68,6 +68,7 @@
       "panel.css",
       "panel.js",
       "local-diagnostics.cjs",
+      "agent-evidence-provider.cjs",
       "game-archive.cjs",
       "maintenance-inspector.cjs",
       "audio-session.js",

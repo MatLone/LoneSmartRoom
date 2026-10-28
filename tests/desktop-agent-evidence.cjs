@@ -1,0 +1,30 @@
+'use strict';
+const assert=require('node:assert/strict'),{EventEmitter}=require('node:events'),path=require('node:path');
+const {createProvider}=require('../apps/windows-ui/agent-evidence-provider.cjs');
+const {createLocalDiagnostics}=require('../apps/windows-ui/local-diagnostics.cjs');
+const model=require('../apps/windows-ui/diagnostics-model.js');
+let checks=0;const eq=(a,b)=>{assert.deepEqual(a,b);checks++;};
+(async()=>{
+ const root=path.resolve(__dirname,'..');let t=Date.now(),calls=0,child,configuration;
+ const baseline=createLocalDiagnostics({now:()=>t}).snapshot({v:1,scenario:'overview'}).report;
+ const spawn=(...args)=>{calls++;configuration=args;child=new EventEmitter();child.stdout=new EventEmitter();return child;};
+ const disabled=createProvider({root,spawnChild:spawn});eq(await disabled.get(),null);eq(calls,0);
+ const provider=createProvider({root,enabled:true,spawnChild:spawn,now:()=>t});
+ const response=provider.get();eq(provider.get(),response);eq(calls,1);
+ eq(configuration[0],path.join(root,'.venv/Scripts/python.exe'));eq(configuration[1],['-I','-B',path.join(root,'scripts/desktop-agent-evidence.py')]);eq(configuration[2].shell,false);
+ const report=structuredClone(baseline),listener=report.checks.find(r=>r.component==='listener_8776');
+ Object.assign(listener,{state:'healthy',valid:true,code:'expected_listener',detail_code:'listener_identity_verified',observed_at:new Date(t).toISOString(),age_seconds:0});
+ child.stdout.emit('data',Buffer.from(JSON.stringify(report)+'\n'));child.emit('close',0);
+ eq((await response).simulation,false);eq(model.validate(provider.peek(),true),true);
+ const diag=createLocalDiagnostics({now:()=>t,agentEvidence:()=>provider.peek()});
+ eq(model.project(diag.snapshot({v:1,scenario:'overview'})).cards.find(c=>c.id==='https').state,'unknown');
+ // Listener alone cannot make HTTPS healthy; expiration is evaluated on use.
+ t+=12000;const aged=diag.snapshot({v:1,scenario:'overview'});eq(aged.report.checks.find(r=>r.component==='listener_8776').state,'stale');
+ const invalid=provider.get();child.stdout.emit('data',Buffer.from('{"password":"must never reach renderer"}'));child.emit('close',0);eq(await invalid,null);eq(provider.peek(),null);
+ t+=12000;const oversized=provider.get();child.stdout.emit('data',Buffer.alloc(16386));child.emit('close',0);eq(await oversized,null);
+ eq(await provider.stop(),true);eq(await provider.get(),null);eq(provider.stats().authenticatedHttp,false);
+ const main=require('node:fs').readFileSync(path.join(root,'apps/windows-ui/desktop-main.cjs'),'utf8');assert(main.includes('agentEvidenceDevelopment=developmentReview&&!diagnosticsReview'));checks++;
+ const timeoutProvider=createProvider({root,enabled:true,spawnChild:spawn,schedule:fn=>{queueMicrotask(fn);return 1;},cancel:()=>{},now:()=>t});
+ const timed=timeoutProvider.get();eq(await timed,null);eq(timeoutProvider.stats().workerActive,true);timeoutProvider.get();eq(calls,4);eq(await timeoutProvider.stop(),false);child.emit('close',0);eq(timeoutProvider.stats().workerActive,false);
+ console.log(`PASS: ${checks} passive evidence main/cache/UI/timeout assertions; mocks only, no operational probes`);
+})().catch(e=>{console.error(e.stack);process.exitCode=1;});

@@ -8,6 +8,10 @@ from secure_http import StatusServer
 from launcher_logs import error_code
 
 
+class ServerExited(RuntimeError):
+    """Serve thread returned unexpectedly AFTER cooperative cleanup completed."""
+
+
 class DrainingServer(StatusServer):
     def __init__(self, *args, **kwargs):
         self.admission = threading.Condition()
@@ -204,5 +208,5 @@ def serve(config, store, channel, log, *, private_guard, context_factory,
                     apps.close()
         if reason == 'server_failure' and not channel.wait_stop(0):
             # An unexpected serve thread exit is not silently relaunched.
-            raise RuntimeError('serve_loop_exited')
+            raise ServerExited('serve_loop_exited')
     return 0

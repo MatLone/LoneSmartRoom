@@ -23,6 +23,9 @@ def tree(root):
     return result
 
 if __name__=='__main__':
+    if len(sys.argv)==3 and sys.argv[2]=='agent-consolidation':
+        OUT=ROOT/'.cache/validation/agent-consolidation'
+        sys.argv.pop()
     if sys.argv[1:] not in (['before'],['after']):raise ValueError('stage')
     stage=sys.argv[1];OUT.mkdir(parents=True,exist_ok=True)
     baseline=json.loads((ROOT/'.cache/telemetry-loopback-authorized-2026-10-27/preservation-before-private.json').read_text(encoding='utf-8-sig'))

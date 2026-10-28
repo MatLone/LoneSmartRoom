@@ -11,6 +11,9 @@ const {createController} = require('./desktop-window.cjs');
 // Isolated development profiles never touch the installed application's userData.
 const developmentReview = !app.isPackaged && process.argv.includes('--lone-development-review');
 const diagnosticsReview = developmentReview && process.argv.includes('--lone-diagnostics-preview');
+const agentEvidenceDevelopment=developmentReview&&!diagnosticsReview&&process.argv.includes('--lone-agent-evidence-development')&&
+  /^[a-f0-9]{32}$/.test(process.env.LONE_WORKBENCH_RUN_ID||'')&&process.argv.includes('--lone-workbench-development');
+const agentEvidence=agentEvidenceDevelopment?require('./agent-evidence-provider.cjs').createProvider({root:path.resolve(__dirname,'../..'),enabled:true}):null;
 const monitoringDevelopment = !diagnosticsReview && developmentReview && process.argv.includes('--lone-monitoring-development') &&
   /^[a-f0-9]{32}$/.test(process.env.LONE_MONITORING_RUN_ID || '');
 const gpuDevelopment=monitoringDevelopment&&process.argv.includes('--lone-gpu-development');
@@ -23,7 +26,7 @@ const monitoringEnabled=app.isPackaged||monitoringDevelopment;
 const {createDiagnosticsHost}=require('./diagnostics-host.cjs');
 const adapterReview=diagnosticsReview&&process.argv.includes('--lone-diagnostic-adapters-development');
 const diagnosticAdapters=adapterReview?require('./diagnostic-adapter-provider.cjs').createAdapterProvider({root:path.resolve(__dirname,'../..'),enabled:true}):null;
-const localDiagnostics=require('./local-diagnostics.cjs').createLocalDiagnostics({metrics:()=>monitoringHost?.view()||null});
+const localDiagnostics=require('./local-diagnostics.cjs').createLocalDiagnostics({metrics:()=>monitoringHost?.view()||null,agentEvidence:()=>agentEvidence?.peek()||null});
 const diagnosticsHost=createDiagnosticsHost({enabled:diagnosticsReview,provider:diagnosticAdapters?scenario=>diagnosticAdapters.get(scenario):null});
 app.on('will-quit',()=>diagnosticAdapters?.stop());
 app.on('will-quit',()=>diagnosticsHost.stop());
@@ -109,7 +112,10 @@ function registerIpc() {
   handle('window:tray', 0, () => ({hidden: controller.hideToTray(), state: state()}));
   handle('monitoring:snapshot', 0, () => monitoringHost?.view() ||
     ({v:1,connection:'disabled',simulated:false,error:null,snapshot:null,last_valid_at:{}}));
-  handle('diagnostics:snapshot', 1, query => diagnosticsReview?diagnosticsHost.snapshot(query):localDiagnostics.snapshot(query));
+  handle('diagnostics:snapshot', 1, async query => {
+    if(agentEvidence&&require('./diagnostics-model.js').request(query)&&query.scenario==='overview')await agentEvidence.get();
+    return diagnosticsReview?diagnosticsHost.snapshot(query):localDiagnostics.snapshot(query);
+  });
   handle('history:read',1,query=>{
     if(!query||query.v!==1||Object.keys(query).sort().join(',')!=='minutes,v'||![5,30,60,360,1440,10080].includes(query.minutes))throw Error('invalid_history_query');
     const now=performance.now();if(now-lastHistoryRead<500)throw Error('history_rate_limited');lastHistoryRead=now;
@@ -149,10 +155,11 @@ if (!app.requestSingleInstanceLock()) {
     app.on('before-quit',()=>mediaPermissions.clear());
     session.defaultSession.webRequest.onBeforeRequest((details, callback) => callback({cancel: !policy.allowedResource(details.url)}));
     const stopMonitoring=async()=>{
+      if(agentEvidence&&!await agentEvidence.stop())return false;
       if(!monitoringHost){monitoringQuitReady=true;return true;}
       try{const stopped=await monitoringHost.stop();monitoringQuitReady=stopped;return stopped;}catch{return false;}
     };
-    if(monitoringEnabled)app.on('before-quit',event=>{
+    if(monitoringEnabled||agentEvidenceDevelopment)app.on('before-quit',event=>{
       if(monitoringQuitReady)return;
       event.preventDefault();
       if(!monitoringQuitting){monitoringQuitting=true;stopMonitoring().then(stopped=>{
@@ -161,7 +168,7 @@ if (!app.requestSingleInstanceLock()) {
     });
     controller = createController({app, screen, Tray, Menu, policy,
       store: createStore(app.getPath('userData')), createWindow,
-      beforeExit:monitoringEnabled?stopMonitoring:null,
+      beforeExit:monitoringEnabled||agentEvidenceDevelopment?stopMonitoring:null,
       beforeRestore:()=>monitoringHost?.resume?.(),
       icon: path.join(__dirname, 'assets/brand/windows-icon.ico'), version: app.getVersion(),
       metadata: {development: !app.isPackaged, reviewProfile: developmentReview}});
