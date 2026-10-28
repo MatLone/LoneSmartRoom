@@ -48,6 +48,23 @@ def launcher_arguments(args,python_images,launcher):
     return valid,valid and len(rest)==2
 
 
+def candidate_arguments(args,python_images,root):
+    """Explicit development opt-in: fixed candidate supervisor/cooperative worker.
+
+    Exact interpreter flags and suffixes only; never infer approval from basename.
+    This does not itself probe or start a process.
+    """
+    if (not isinstance(args,list) or not args or not all(isinstance(v,str) for v in args)
+            or norm(args[0]) not in python_images or args[1:3]!=['-I','-B']):
+        return False,False
+    rest=args[3:]
+    if len(rest)==1 and norm(rest[0])==norm(root/'agent/development/reliable_bootstrap.py'):
+        return True,False
+    if len(rest)==2 and norm(rest[0])==norm(root/'agent/windows/graceful_launcher.py') and rest[1]=='_worker':
+        return True,True
+    return False,False
+
+
 def validate_chain(rows,listeners,own):
     """Only retained native identities and exact argument allowlists qualify."""
     if len(listeners)!=1 or not rows or len(rows)>4:return False
@@ -96,7 +113,9 @@ def authenticated_get(connection, device, secret, *, certificate_pin=PIN):
 
 
 class WindowsReaders:
-    def __init__(self):
+    def __init__(self,*,candidate=False):
+        if type(candidate) is not bool:raise ValueError('candidate_boolean_required')
+        self.candidate=candidate
         self.handles=[];self.scanners=[];self.api=None;self.started=None;self.start_resources=None
 
     def begin(self,deadline):
@@ -167,7 +186,7 @@ class WindowsReaders:
                 complete=False
                 continue
             low=command.lower()
-            agent=any(x in low for x in ('agent_launcher.py','secure_agent.py','graceful_launcher.py'))
+            agent=any(x in low for x in ('agent_launcher.py','secure_agent.py','graceful_launcher.py','reliable_bootstrap.py'))
             app=norm(image) in {norm(INSTALL/'Lone Smart Room.exe'),norm(ROOT/'apps/windows-ui/node_modules/electron/dist/electron.exe')}
             monitor=any(x in low for x in ('monitoring-pipe-client.py','monitoring-pipe-server.py','native/adlx/bridge.exe','native\\adlx\\bridge.exe'))
             if not (agent or app or monitor):continue
@@ -182,6 +201,8 @@ class WindowsReaders:
             if agent:
                 args=self.argv(command)
                 approved,worker=launcher_arguments(args,python_images,launcher)
+                if not approved and self.candidate:
+                    approved,worker=candidate_arguments(args,python_images,ROOT)
                 approved=approved and identity['image'] in python_images
                 agents.append({**identity,'parent':int(r['ParentProcessId']),
                     'worker':worker,'approved':approved,'alive':True})
@@ -198,6 +219,8 @@ class WindowsReaders:
             try:
                 args=self.argv(value)
                 approved,worker=launcher_arguments(args,python_images,launcher)
+                if not approved and self.candidate:
+                    approved,worker=candidate_arguments(args,python_images,ROOT)
                 run_target=approved and not worker
             except ValueError:pass
         return {'agent_verified':validate_chain(agents,listeners,self.api.own),
