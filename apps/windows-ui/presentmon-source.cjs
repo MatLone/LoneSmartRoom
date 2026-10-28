@@ -1,6 +1,7 @@
 'use strict';
 // Read an explicitly selected external CSV. No ETW session, process, DLL or hook.
 const fs=require('node:fs'),path=require('node:path'),model=require('./workbench-model.js');
+const {validateReport}=require('./game-archive.cjs');
 function createSource({io=fs,now=Date.now,interval=setInterval,clear=clearInterval,publish=()=>{}}={}){
  let file=null,timer=null,baseline=0,stamp=null,report=null,state='inactive',fingerprint=null,lastSize=0;
  function read(){
@@ -24,7 +25,7 @@ function createSource({io=fs,now=Date.now,interval=setInterval,clear=clearInterv
  function poll(){if(!file)return;
   try{const input=read();if(input.size<lastSize||input.rows.length-1<baseline){baseline=input.rows.length-1;stamp=null;report=null;fingerprint=null;state='awaiting_frames';}
    lastSize=input.size;const fresh=input.rows.slice(baseline+1);
-   if(fresh.length){const next=model.presentmon(csv([input.rows[0],...fresh]));
+   if(fresh.length){const next=validateReport(model.presentmon(csv([input.rows[0],...fresh])));
     const id=JSON.stringify(next.streams);if(next.streams.length&&id!==fingerprint){report=next;stamp=now();fingerprint=id;state='available';}}
   }catch{state='unavailable';report=null;}
   publish(view());

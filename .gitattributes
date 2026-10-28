@@ -13,6 +13,7 @@ apps/windows-ui/*.html -text
 apps/windows-ui/*.css -text
 agent/windows/*.py -text
 agent/development/*.py -text
+diagnostics/windows_readers.py -text
 apps/windows-ui/build/** -text
 docs/windows-dev9/evidence/** -text
 # Preserve review and archived-brand bytes so checksum receipts survive checkouts.

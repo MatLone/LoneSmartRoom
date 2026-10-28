@@ -25,6 +25,8 @@ try{
  fs.writeFileSync(file,'Application,MsBetweenPresents\n');source.poll();assert.equal(source.view().state,'awaiting_frames');checks++;
  source.stop();assert.equal(source.view().state,'inactive');assert.equal(cleared,1);checks+=2;
  fs.writeFileSync(file,'Application,WrongUnit\n');assert.throws(()=>source.attach(file));checks++;
+ fs.writeFileSync(file,'Application,MsBetweenPresents\n');source.attach(file);fs.appendFileSync(file,'fixture.exe,1e-308\n');source.poll();
+ assert.equal(source.view().state,'unavailable');assert.equal(source.view().report,null);checks+=2;source.stop();
  assert.throws(()=>source.attach('../arbitrary.exe'));checks++;
 }finally{const resolved=fs.realpathSync(dir);if(!resolved.startsWith(fs.realpathSync(cache)+path.sep))throw Error('cleanup_scope');fs.rmSync(resolved,{recursive:true});}
 const {fixture:windowFixture}=require('./electron-tray.cjs');
