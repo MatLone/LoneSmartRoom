@@ -41,3 +41,5 @@
     loneUpdateApproved:
   ${EndIf}
 !macroend
+
+!include "${BUILD_RESOURCES_DIR}\runtime-preservation.nsh"

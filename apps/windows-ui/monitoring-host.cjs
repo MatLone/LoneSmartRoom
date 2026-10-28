@@ -121,6 +121,11 @@ function createMonitoringHost({root,runId,simulated=false,packaged=false,gpu=fal
     if(timer!==null){clear(timer);timer=interval(poll,active?1000:10000);}
     if(active)poll();
   }
-  return {start,stop,view,setActive,diagnostics:()=>structuredClone(diagnostics)};
+  function resume(){
+    if(!gpu||closing)return;
+    resumeAt=now();refreshing=true;send();
+    if(active)poll();else setActive(true);
+  }
+  return {start,stop,view,setActive,resume,diagnostics:()=>structuredClone(diagnostics)};
 }
 module.exports={createMonitoringHost,MAX_LINE};

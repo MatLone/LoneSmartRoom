@@ -1,7 +1,7 @@
 'use strict';
 // Dependency-injected native window/Tray lifecycle. No agent or execution APIs.
 function createController({app, screen, Tray, Menu, policy, store, createWindow, icon, version,
-  metadata = {}, beforeExit=null, schedule = setTimeout, cancel = clearTimeout}) {
+  metadata = {}, beforeExit=null, beforeRestore=null, schedule = setTimeout, cancel = clearTimeout}) {
   let preferences = store.load(), mode = preferences.mode, win = null, tray = null;
   let timer = null, switching = false, exiting = false, hiddenToTray = false;
   let exitRequested=false;
@@ -53,6 +53,9 @@ function createController({app, screen, Tray, Menu, policy, store, createWindow,
   }
   function restoreCurrent() {
     if (exiting || !live()) return;
+    // Invalidate GPU before showing the old surface, even if another panel kept
+    // the shared collector active. Focus/visibility events alone are insufficient.
+    beforeRestore?.();
     hiddenToTray = false;
     if (win.isMinimized()) win.restore();
     ensureVisibleBounds();win.show();win.focus();publish();

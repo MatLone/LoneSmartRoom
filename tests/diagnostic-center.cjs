@@ -130,10 +130,11 @@ async function mainIpc(){
     require:name=>{
       if(name==='electron')return {app,BrowserWindow:function(){throw Error('Not used in mocked controller');},ipcMain:{handle:(k,v)=>handlers.set(k,v),on:(k,v)=>listeners.set(k,v)},screen:{},session:{defaultSession:{setPermissionRequestHandler(){},setPermissionCheckHandler(){},webRequest:{onBeforeRequest(){}}}},Tray:function(){},Menu:{}};
       if(name==='node:fs')return {mkdirSync(){}};
+      if(name==='./development-deadline.cjs')return {createDeadline:()=>({start(){},complete(){}})};
       if(name==='./desktop-preferences.cjs')return {createStore:()=>({})};
       if(name==='./desktop-window.cjs')return {createController:()=>{controller=fakeController;return controller;}};
       if(name==='./game-archive.cjs')return {createArchive:()=>({list:()=>({v:1,entries:[]})})};
-      if(name==='./auxiliary-windows.cjs')return {createAuxiliaryWindows:()=>({closeAll(){},views:()=>[]})};
+      if(name==='./auxiliary-windows.cjs')return {createAuxiliaryWindows:()=>({closeAll(){},publish(){},views:()=>[]})};
       if(name==='./workbench-service.cjs')return {createService:()=>({handle:async()=>({enabled:false}),close(){}})};
       if(name==='./monitoring-host.cjs')throw Error('Operational monitoring forbidden');
       return require(name.startsWith('./')?path.join(dir,name):name);

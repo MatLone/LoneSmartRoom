@@ -4,10 +4,11 @@ const path = require('node:path');
 const existing = require('./package.json').build;
 module.exports = {
   ...existing,
-  directories: {...existing.directories, output: '../../.cache/artifacts/windows/desktop-dev8-control-center-candidate'},
+  directories: {...existing.directories, output: '../../.cache/artifacts/windows/desktop-dev9-consolidated-candidate-r6'},
   electronDist: 'node_modules/electron/dist',
   npmRebuild: false,
-  extraResources: [{from: '../../.cache/windows-monitoring-runtime/dev8', to: 'monitoring', filter: ['**/*']}],
+  afterPack: require('./build/preservation.cjs').afterPack,
+  extraResources: [{from: '../../.cache/windows-monitoring-runtime/dev9-r1', to: 'monitoring', filter: ['**/*']}],
   publish: null,
   win: {...existing.win, target: [{target: 'nsis', arch: ['x64']}, {target: 'portable', arch: ['x64']}], requestedExecutionLevel: 'asInvoker'},
   nsis: {

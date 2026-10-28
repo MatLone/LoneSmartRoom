@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('loneTools',Object.freeze({
   saveDevice:device=>tool('device',device),saveScene:scene=>tool('scene',scene),scenePreview:id=>tool('scenePreview',{id}),
   saveGame:game=>tool('game',game),gameSessions:()=>ipcRenderer.invoke('tools:game-sessions'),
   saveGameProfile:profile=>tool('gameProfile',profile),askNex:message=>tool('nex',{message}),
+  attachFpsSource:()=>ipcRenderer.invoke('tools:fps-attach'),
+  fpsSnapshot:()=>ipcRenderer.invoke('tools:fps-snapshot'),stopFpsSource:()=>ipcRenderer.invoke('tools:fps-stop'),
   readAudit:()=>tool('audit'),networkTest:(kind,target)=>tool('network',{kind,target}),
   configureHistory:(enabled,retentionHours)=>tool('historyPolicy',{enabled,retentionHours}),
   openPanel:(role,displayId)=>ipcRenderer.invoke('tools:open-panel',{role,displayId}),

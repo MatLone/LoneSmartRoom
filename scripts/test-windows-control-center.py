@@ -21,4 +21,4 @@ result=unittest.TextTestRunner(verbosity=1).run(suite)
 from test_adlx_bridge import PROCESSES
 residual=[p.pid for p in PROCESSES if p.poll() is None]
 report={'ok':result.wasSuccessful() and not result.skipped and not residual,'native_mock_processes':len(PROCESSES),'residual_mock_processes':residual,'tests':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped),'wall_seconds':time.perf_counter()-start,'process_cpu_seconds':time.process_time()-cpu,'hardware_sessions':0,'native_calls':False}
-out=ROOT/'.cache/validation/windows-dev8/regressions';out.mkdir(parents=True,exist_ok=True);(out/'python-tests.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8');print(json.dumps(report));raise SystemExit(0 if report['ok'] else 1)
+out=ROOT/'.cache/validation/windows-dev9/regressions';out.mkdir(parents=True,exist_ok=True);(out/'python-tests.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8');print(json.dumps(report));raise SystemExit(0 if report['ok'] else 1)

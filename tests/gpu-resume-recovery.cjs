@@ -106,6 +106,9 @@ async function modesAndRenderer(){
   check(r.storage.querySelector('[data-volume="c"]').querySelector('[data-metric-id="storage.c.read_rate"]').querySelector('strong').textContent==='0 bytes/s','Storage valid zero unchanged');
   r.document.hidden=true;r.reset();f.advance(2000);f.send(sample());r.send(f.host.view());
   check(r.writes()===0,'No hidden DOM work');r.document.hidden=false;r.listeners.get('visibilitychange')();
+  check(r.gpu.querySelector('.gpu-caption').textContent.includes('Atualizando'),'Visibility clears the old surface before asynchronous main reply');
+  r.clock(10000);r.tick();check(r.gpu.querySelector('.gpu-caption').textContent.includes('GPU indisponível após retomada'),'Missing main reply cannot leave visibility updating beyond 10 seconds');
+  f.host.resume();f.advance(2000);f.send(sample());r.send(f.host.view());
   check(r.minis[1].querySelector('strong').textContent==='0%'&&r.gpu.querySelector('.gpu-caption').textContent.includes('Somente leitura'),'Visible dashboard/widget recover on valid sample');
   await f.host.stop();w.trays[0].menu[3].click();await new Promise(setImmediate);
   check(w.win.destroyed&&w.trays[0].destroyed,'Normal mock Sair still works');

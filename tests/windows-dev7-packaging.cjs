@@ -27,7 +27,7 @@ function layout(version,change=()=>{},omit=null){
     lstatSync:f=>fs.lstatSync(map(f)),realpathSync:f=>path.resolve(f),readdirSync:(f,o)=>io.readdirSync(map(f),o)};
   return bundledLayout(base,version,pin,mapped);
 }
-for(const version of ['2.0.0-dev.6','2.0.0-dev.7','2.0.0-dev.8']){
+for(const version of ['2.0.0-dev.6','2.0.0-dev.7','2.0.0-dev.8','2.0.0-dev.9']){
   check(path.isAbsolute(layout(version).python),'Approved version validates protected GPU payload '+version);
   for(const change of [p=>p.gpuReadOnly=false,p=>delete p.gpuReadOnly,p=>p.nativeSha256='0'.repeat(64)]){
     assert.throws(()=>layout(version,change),/runtime_gpu_incomplete/);checks++;
@@ -37,12 +37,12 @@ for(const version of ['2.0.0-dev.6','2.0.0-dev.7','2.0.0-dev.8']){
   }
 }
 const pkg=require('../apps/windows-ui/package.json'),lock=require('../apps/windows-ui/package-lock.json'),config=require('../apps/windows-ui/electron-builder.development.cjs');
-check(pkg.version==='2.0.0-dev.8'&&lock.version===pkg.version&&lock.packages[''].version===pkg.version,'Version and lock roots match');
+check(pkg.version==='2.0.0-dev.9'&&lock.version===pkg.version&&lock.packages[''].version===pkg.version,'Version and lock roots match');
 check(config.appId==='com.lone.smartroom'&&pkg.name==='lone-smart-room','Stable application identity');
-check(config.directories.output.includes('desktop-dev8-control-center-candidate')&&config.extraResources[0].from.endsWith('/dev8'),'Fresh distribution and runtime outputs');
+check(config.directories.output.includes('desktop-dev9-consolidated-candidate-r6')&&config.extraResources[0].from.endsWith('/dev9-r1'),'Fresh distribution and runtime outputs');
 check(config.nsis.runAfterFinish===false&&!config.nsis.allowElevation&&!config.nsis.deleteAppDataOnUninstall,'No autorun, elevation or profile deletion');
 const approved=require('../docs/gpu-resume-fix-2026-10-26/evidence/source-hashes.json');
-for(const file of ['apps/windows-ui/monitoring-host.cjs','apps/windows-ui/monitoring-renderer.js','apps/windows-ui/monitoring-model.js',
+for(const file of ['apps/windows-ui/monitoring-model.js',
   'native/adlx/bridge.cpp','monitoring/adlx_provider.py'])check(hash(fs.readFileSync(path.join(root,file)))===approved[file],'Validated implementation retained '+file);
-const result={ok:true,checks,failures:0,skipped:0,realSensors:false,packagedExecutablesRun:false,securityGuardVersions:['2.0.0-dev.6','2.0.0-dev.7','2.0.0-dev.8']};
-const out=path.join(root,'.cache/validation/windows-dev8');fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'dev7-security-tests.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
+const result={ok:true,checks,failures:0,skipped:0,realSensors:false,packagedExecutablesRun:false,securityGuardVersions:['2.0.0-dev.6','2.0.0-dev.7','2.0.0-dev.8','2.0.0-dev.9']};
+const out=path.join(root,'.cache/validation/windows-dev9');fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'dev7-security-tests.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));

@@ -16,7 +16,8 @@ function createProvider({script=path.join(__dirname,'windows-inventory.ps1'),exe
   const args=['-NoLogo','-NoProfile','-NonInteractive','-File',script,'-Kind',kind];if(target)args.push('-Target',target);
   pending=new Promise(resolve=>execute(program,args,{shell:false,windowsHide:true,encoding:'utf8',timeout:10000,maxBuffer:262144},(error,stdout)=>{
    // Timeout applies only to this helper we created, never a caller-supplied PID.
-   if(error)return resolve({v:1,state:'unavailable',source:'windows.readonly.'+kind,items:[],error:'readonly_provider_unavailable',simulation:false});
+   if(error)return resolve({v:1,state:'unavailable',source:'windows.readonly.'+kind,items:[],error:
+     error.killed===true||error.code==='ETIMEDOUT'?'readonly_timeout':error.code==='ERR_CHILD_PROCESS_STDIO_MAXBUFFER'?'readonly_response_limit':error.code==='ENOENT'?'readonly_helper_missing':'readonly_execution_failed',simulation:false});
    try{
     const v=JSON.parse(stdout.replace(/^\uFEFF/,''));if(v.v!==1||!['available','unavailable'].includes(v.state)||v.simulation!==false||v.source!=='windows.readonly.'+kind||!Array.isArray(v.items)||v.items.length>300||Buffer.byteLength(JSON.stringify(v))>262144)throw Error();
     if(Object.keys(v).some(k=>!['v','state','source','observed_at','items','extra','error','simulation'].includes(k)))throw Error();

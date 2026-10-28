@@ -16,6 +16,20 @@
   for(const [k,v]of Object.entries(value)){if(['items','entries','streams','actions','v','state','source','simulation','observed_at','settings'].includes(k))continue;target.append(note(k.replaceAll('_',' ')+': '+(typeof v==='object'?JSON.stringify(v):String(v))));}
  }
  function afterSave(result){message.textContent=result?.saved?'Configuração local salva. Nenhuma alteração aplicada ao Windows.':'Ação concluída.';return reload();}
+ function showFps(value,target){
+  target.replaceChildren();const states={inactive:'Fonte desativada',awaiting_frames:'Aguardando novos frames',available:'Leitura do arquivo atualizada',stale:'Dados desatualizados',unavailable:'Fonte indisponível'};
+  target.append(el('p',states[value?.state]||'Sem leitura'),note('Origem: CSV externo PresentMon · captura pelo LSR desativada'));
+  if(value?.observed_at)target.append(note('Última atualização do arquivo: '+new Date(value.observed_at).toLocaleTimeString('pt-BR')));
+  if(value?.archived)target.append(note('Resumo arquivado no histórico de sessões.'));
+  for(const stream of value?.report?.streams||[]){
+   const c=el('article',undefined,'history-chart');c.append(el('h3',stream.name));
+   const table=el('table'),heading=el('tr'),row=el('tr');
+   for(const [key,title,unit]of [['average_fps','FPS médio',' FPS'],['mean_frametime_ms','Frametime médio',' ms'],['one_percent_low_fps','1% Low',' FPS']]){heading.append(el('th',title));row.append(el('td',Number.isFinite(stream[key])?stream[key].toLocaleString('pt-BR',{maximumFractionDigits:2})+unit:'Indisponível'));}
+   table.append(heading,row);c.append(table,note(stream.samples+' frames apresentados · não equivale a FPS exibidos'));
+   if(stream.points?.length){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),line=document.createElementNS(svg.namespaceURI,'polyline'),max=Math.max(1,...stream.points);svg.setAttribute('viewBox','0 0 300 80');svg.setAttribute('role','img');svg.setAttribute('aria-label','Frametimes em milissegundos, amostragem limitada a 120 pontos');line.setAttribute('points',stream.points.map((ms,i)=>`${5+290*i/Math.max(1,stream.points.length-1)},${75-65*ms/max}`).join(' '));svg.append(line);c.append(svg);}
+   target.append(c);
+  }
+ }
  async function reload(){data=await api.snapshot(current);return data;}
  async function open(id){
   if(!api){message.textContent='Bridge de desenvolvimento indisponível';return;}
@@ -81,6 +95,10 @@
    const a=card('Tráfego e velocidade da interface','São necessárias duas leituras para calcular bytes/s. Velocidade do link não é throughput de internet.');const view=output(a);a.prepend(button('Atualizar adaptadores',async()=>show(await api.inventory('network'),view),true));
   }
   if(id==='games'){
+   const external=card('Acompanhar CSV externo PresentMon','Escolha um CSV que uma captura externa já autorizada esteja atualizando. O LSR não inicia PresentMon, ETW, Steam ou jogos. Somente linhas acrescentadas depois da seleção contam; sem linhas novas por 3 segundos os valores expiram.');const liveOut=output(external);
+   external.append(button('Selecionar CSV externo',async()=>showFps(await api.attachFpsSource(),liveOut)),button('Encerrar e arquivar leitura',async()=>showFps(await api.stopFpsSource(),liveOut),true),note('Limite de 2 MiB por arquivo acompanhado. FPS apresentados, não FPS exibidos. Nenhum jogo ao vivo homologado nesta etapa. Overlay compartilha a mesma fonte e o mesmo coletor CPU/GPU.'));
+   let fpsPending=false;const updateFps=async()=>{if(fpsPending||document.hidden)return;fpsPending=true;try{showFps(await api.fpsSnapshot(),liveOut);}catch{liveOut.textContent='Fonte FPS indisponível';}finally{fpsPending=false;}};
+   void updateFps();const fpsTimer=setInterval(()=>void updateFps(),2000);dispose=()=>clearInterval(fpsTimer);
    const library=card('Biblioteca local','Catálogo manual e manifestos Steam sob demanda. Não executa atalhos, jogos ou Steam.');const libraryOut=output(library),gameName=input('Nome do jogo'),appId=input('AppID Steam opcional');library.prepend(button('Detectar manifestos Steam',async()=>show(await api.inventory('games'),libraryOut)),label('Nome',gameName),label('AppID: apenas identificação',appId),button('Adicionar ao catálogo',async()=>{await afterSave(await api.saveGame({name:gameName.value,steamAppId:appId.value?Number(appId.value):null}));await open(id);},true));show({items:data.settings.games},libraryOut);
    const archive=card('Histórico de sessões importadas','Horário de importação não é o início da sessão. Não existe captura FPS ao vivo ativa.');archive.append(button('Consultar sessões locais',async()=>{const r=await api.gameSessions();show({items:r.entries.flatMap(e=>e.report.streams.map(s=>({...s,imported_at:e.imported_at,points:undefined})))},output(archive));},true));
    const c=card('Sessões FPS / PresentMon','Importação de CSV com frames apresentados. Não inicia captura ao vivo, jogos, hooks, injeção ou acesso ao VAC.');const out=output(c);c.prepend(button('Importar CSV PresentMon',async()=>show(await api.importPresentmon(),out)));c.append(note('FPS médio = frames / soma dos frametimes; 1% Low = inverso da média do 1% mais lento, mínimo 100 frames. Streams de processo/swapchain ficam separados.'));
@@ -103,6 +121,7 @@
   }
  }
  document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>void open(b.dataset.tool).catch(()=>message.textContent='Central indisponível neste contexto.')));
+ if(api){const link=button('Biblioteca, perfis e sessões FPS',()=>open('games'),true);link.dataset.openTool='games';document.getElementById('panel-gamer')?.prepend(link);}
  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{dispose();dispose=()=>{};panel.hidden=true;}));
  select.addEventListener('change',()=>void open(select.value));
  if(api)api.onNavigate(section=>void open(section));

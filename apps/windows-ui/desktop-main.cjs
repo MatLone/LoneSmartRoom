@@ -1,4 +1,5 @@
 'use strict';
+const launchedAt=performance.now();
 const {app, BrowserWindow, ipcMain, screen, session, Tray, Menu} = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -45,6 +46,8 @@ if (developmentReview) {
 app.commandLine.appendSwitch('disable-background-networking');
 let controller, auxiliary=null;
 let workbench=null,gameArchive=null;
+const fpsSource=require('./presentmon-source.cjs').createSource({publish:fps=>auxiliary?.publish({...monitoringHost?.view(),fps})});
+app.on('will-quit',()=>fpsSource.stop());
 let lastHistoryRead=-Infinity;
 function state() {return controller?.state() || null;}
 function configureHistory(history){
@@ -57,7 +60,7 @@ function updateActivity(){if(monitoringHost)monitoringHost.setActive(Boolean(con
 function registerIpc() {
   const trusted = (event, args, count) => policy.trustedSender(event, controller?.window?.webContents) && args.length === count;
   let budgetAt=performance.now(),budget=0;const dialogPending=new Set();
-  const limitedDialogs=new Set(['tools:export','tools:import','tools:presentmon','history:export']);
+  const limitedDialogs=new Set(['tools:export','tools:import','tools:presentmon','tools:fps-attach','history:export']);
   const handle = (channel, count, callback) => ipcMain.handle(channel, (event, ...args) => {
     if (!trusted(event, args, count)) throw new Error('Untrusted window request');
     const now=performance.now();if(now-budgetAt>=1000){budgetAt=now;budget=0;}if(++budget>64)throw Error('window_request_rate');
@@ -83,6 +86,12 @@ function registerIpc() {
   });
   handle('tools:inspect-temp',1,scope=>require('./maintenance-inspector.cjs').createInspector({ownCache:path.join(app.getPath('userData'),'workbench','tool-cache')}).inspect(scope));
   handle('tools:game-sessions',0,()=>gameArchive.list());
+  handle('tools:fps-snapshot',0,()=>fpsSource.view());
+  handle('tools:fps-stop',0,()=>{const report=fpsSource.finish();const archived=report?gameArchive.add(report):null;return {...fpsSource.view(),archived:!!archived};});
+  handle('tools:fps-attach',0,async()=>{
+    const {dialog}=require('electron');const selected=await dialog.showOpenDialog(controller.window,{properties:['openFile'],filters:[{name:'PresentMon CSV externo',extensions:['csv']}]});
+    return selected.canceled?{v:1,canceled:true}:fpsSource.attach(selected.filePaths[0]);
+  });
   handle('tools:presentmon',0,async()=>{
     const {dialog}=require('electron');const selected=await dialog.showOpenDialog(controller.window,{properties:['openFile'],filters:[{name:'PresentMon CSV',extensions:['csv']}]});
     if(selected.canceled)return {v:1,canceled:true};const file=selected.filePaths[0];if(fs.statSync(file).size>8388608)throw Error('presentmon_import_size');
@@ -153,6 +162,7 @@ if (!app.requestSingleInstanceLock()) {
     controller = createController({app, screen, Tray, Menu, policy,
       store: createStore(app.getPath('userData')), createWindow,
       beforeExit:monitoringEnabled?stopMonitoring:null,
+      beforeRestore:()=>monitoringHost?.resume?.(),
       icon: path.join(__dirname, 'assets/brand/windows-icon.ico'), version: app.getVersion(),
       metadata: {development: !app.isPackaged, reviewProfile: developmentReview}});
     const provider=require('./windows-read-provider.cjs').createProvider({script:app.isPackaged
@@ -167,10 +177,17 @@ if (!app.requestSingleInstanceLock()) {
     auxiliary=require('./auxiliary-windows.cjs').createAuxiliaryWindows({BrowserWindow,screen,policy,
       enabled:app.isPackaged||developmentReview&&process.argv.includes('--lone-workbench-development'),
       directory:path.join(app.getPath('userData'),'workbench'),activity:updateActivity,
-      metrics:()=>monitoringHost?.view()||{v:1,connection:'disabled',simulated:false,snapshot:null},
+      metrics:()=>({...monitoringHost?.view()||{v:1,connection:'disabled',simulated:false,snapshot:null},fps:fpsSource.view()}),
       restoreMain:()=>controller.restoreCurrent(),navigate:section=>controller.window.webContents.send('tools:navigate',section)});
     app.on('before-quit',()=>auxiliary.closeAll());
     registerIpc();controller.start();
+    if(developmentReview||app.isPackaged&&process.argv.includes('--lone-validation-session')){
+      fs.mkdirSync(app.getPath('logs'),{recursive:true});
+      const deadline=require('./development-deadline.cjs').createDeadline({enabled:true,startedAt:launchedAt,
+        quit:()=>controller.quit(),closed:()=>!controller.window||controller.window.isDestroyed(),
+        write:entry=>fs.appendFileSync(path.join(app.getPath('logs'),'review-deadline.jsonl'),JSON.stringify(entry)+'\n')});
+      deadline.start();app.once('will-quit',()=>deadline.complete());
+    }
     if(monitoringEnabled){
       const createMonitoringHost=monitoringDevelopment&&process.argv.includes('--lone-telemetry-development')
         ?require('./monitoring-telemetry-host.cjs').createTelemetryDevelopmentHost:require('./monitoring-host.cjs').createMonitoringHost;
@@ -179,7 +196,7 @@ if (!app.requestSingleInstanceLock()) {
         packaged:app.isPackaged,resourcesPath:process.resourcesPath,version:app.getVersion(),
         gpu:app.isPackaged||gpuDevelopment,
         simulated:!app.isPackaged&&process.argv.includes('--lone-monitoring-simulated'),publish:value=>{
-          performanceHistory.record(value);auxiliary?.publish(value);
+          performanceHistory.record(value);auxiliary?.publish({...value,fps:fpsSource.view()});
           const wc=controller?.window?.webContents;
           if(wc&&!wc.isDestroyed()&&wc.mainFrame.url===policy.entryUrl)wc.send('monitoring:state',value);
         }});

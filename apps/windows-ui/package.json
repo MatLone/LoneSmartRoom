@@ -1,7 +1,7 @@
 {
   "name": "lone-smart-room",
   "productName": "Lone Smart Room",
-  "version": "2.0.0-dev.8",
+  "version": "2.0.0-dev.9",
   "private": true,
   "description": "Lone Smart Room: central Windows, monitoramento local e ferramentas seguras",
   "main": "main.cjs",
@@ -71,7 +71,9 @@
       "game-archive.cjs",
       "maintenance-inspector.cjs",
       "audio-session.js",
-      "media-permissions.cjs"
+      "media-permissions.cjs",
+      "development-deadline.cjs",
+      "presentmon-source.cjs"
     ],
     "directories": {
       "output": "dist"

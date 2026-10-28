@@ -9,7 +9,7 @@ let checks = 0;
 const check = (value, message) => {assert(value, message);checks++;};
 const copy = value => JSON.parse(JSON.stringify(value));
 const primary = {x:0,y:0,width:1920,height:1040};
-function fixture({saved = preferences.defaults(), trayFailure = false, menuFailure = false, writeFailure = false,beforeExit=null} = {}) {
+function fixture({saved = preferences.defaults(), trayFailure = false, menuFailure = false, writeFailure = false,beforeExit=null,beforeRestore=null} = {}) {
   const app = new EventEmitter(), screen = new EventEmitter(), timers = new Map(), trays = [], saves = [];
   let win, windows = 0, quits = 0, nextTimer = 0;
   screen.displays = [{workArea:primary}];screen.getAllDisplays = () => screen.displays;
@@ -32,7 +32,7 @@ function fixture({saved = preferences.defaults(), trayFailure = false, menuFailu
     setToolTip(value){this.tooltip = value;} setContextMenu(menu){if(menuFailure)throw Error('Menu unavailable');this.menu = menu;}
   }
   app.quit = () => {if(quits)return;quits++;app.emit('before-quit');if(win&&!win.destroyed)win.close();};
-  const controller = createController({app,screen,Tray,Menu:{buildFromTemplate:v=>v},policy,store,beforeExit,
+  const controller = createController({app,screen,Tray,Menu:{buildFromTemplate:v=>v},policy,store,beforeExit,beforeRestore,
     createWindow:bounds=>{windows++;win = new Window(bounds);return win;},icon:'official.ico',version:'2.0.0-dev.4',
     schedule:fn=>{const id=++nextTimer;timers.set(id,fn);return id;},cancel:id=>timers.delete(id)});
   app.on('window-all-closed',controller.quit);
@@ -151,7 +151,7 @@ async function mainWiring(lock,monitorFailure=false) {
   }
   check(hides===1,'Rejected IPC requests do not hide window');
   assert.throws(()=>ipcHandlers.get('window:mode')(trusted,'cmd.exe'));checks++;
-  check([...ipcHandlers.keys()].sort().join(',')===['widget:version','window:state','window:mode','window:maximize','window:tray','monitoring:snapshot','diagnostics:snapshot','history:read','history:export','tools:request','tools:displays','tools:export','tools:import','tools:presentmon','tools:game-sessions','tools:inspect-temp','tools:open-panel','panel:context','panel:snapshot','panel:close','panel:fullscreen','panel:main'].sort().join(','),'Only explicitly allowed window/metric/diagnostic channels');
+  check([...ipcHandlers.keys()].sort().join(',')===['widget:version','window:state','window:mode','window:maximize','window:tray','monitoring:snapshot','diagnostics:snapshot','history:read','history:export','tools:request','tools:displays','tools:export','tools:import','tools:presentmon','tools:fps-attach','tools:fps-snapshot','tools:fps-stop','tools:game-sessions','tools:inspect-temp','tools:open-panel','panel:context','panel:snapshot','panel:close','panel:fullscreen','panel:main'].sort().join(','),'Only explicitly allowed window/metric/diagnostic channels');
   const diagnostic=await ipcHandlers.get('diagnostics:snapshot')(trusted,{v:1,scenario:'overview'});check(diagnostic.mode==='local'&&diagnostic.report.checks.find(c=>c.component==='agent_https').state==='unknown','Cache-only diagnostics do not probe or certify the operational HTTPS agent');
 }
 async function ownedShutdown(){

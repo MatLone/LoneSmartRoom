@@ -3,7 +3,7 @@
   const model=window.loneMetricModel,native=window.loneDesktop;
   const validStates={available:'Válida',warming_up:'Aquecendo',unsupported:'Não suportada',unavailable:'Indisponível',
     permission_denied:'Leitura não permitida',error:'Erro de leitura',stale:'Desatualizada'};
-  let lastView=null,lastReceipt=0;
+  let lastView=null,lastReceipt=0,resumedAt=null;
   // Update text only when it changes; no innerHTML or sensor-provided markup.
   const text=(node,value)=>{if(node&&node.textContent!==value)node.textContent=value;};
   const notice=document.getElementById('monitoringNotice');
@@ -81,7 +81,9 @@
   }
   function refresh(){
     if(document.hidden)return; // Receive state, but defer DOM work while hidden.
-    const view=lastView,connected=view?.connection==='connected';
+    let view=lastView;
+    if(resumedAt!==null&&view?.refreshing&&performance.now()-resumedAt>=10000)view={...view,refreshing:false,gpu_resume_state:'unavailable'};
+    const connected=view?.connection==='connected';
     const snapshot=connected&&view.snapshot?model.age(view.snapshot,(performance.now()-lastReceipt)/1000):null;
     const byId=new Map((snapshot?.metrics||[]).map(m=>[m.id,m]));
     const prefix=view?.simulated?'DEMONSTRAÇÃO · ':'';
@@ -139,8 +141,15 @@
     text(providerCaption,view?.simulated?'Provedor simulado · demonstração':connected?'Somente leitura · coleta local':'Monitoramento local · sem conexão');
     historyNotice(connected);
   }
-  function receive(value){if(!value||value.v!==1)return;lastView=value;lastReceipt=performance.now();refresh();}
+  function receive(value){if(!value||value.v!==1)return;if(value.gpu_resume_state==='ready')resumedAt=null;lastView=value;lastReceipt=performance.now();refresh();}
   native?.onMetrics(receive);native?.getMetrics().then(receive).catch(()=>receive({v:1,connection:'disconnected',error:'read_unavailable'}));
-  const timer=setInterval(refresh,1000);window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});refresh();
-  document.addEventListener('visibilitychange',refresh);
+  const timer=setInterval(()=>{if(performance.now()-lastReceipt>=1000)refresh();},1000);window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});refresh();
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden&&lastView?.gpu_enabled){
+      resumedAt=performance.now();
+      // Clear the old visible surface before the asynchronous main response.
+      lastView={...lastView,refreshing:true,gpu_resume_state:'updating',snapshot:lastView.snapshot?{...lastView.snapshot,metrics:lastView.snapshot.metrics.map(m=>m.id.startsWith('gpu.adlx.')&&!m.id.endsWith('total_mb')?{...m,value:null,valid:false,stale:false,state:'warming_up'}:m)}:null};
+      refresh();native?.getMetrics().then(receive).catch(()=>{});
+    }else refresh();
+  });
 })();

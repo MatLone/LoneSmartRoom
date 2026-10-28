@@ -79,7 +79,7 @@ function rendererIntegration(){
   f.reset();f.tick();check(f.writes()===0,'No duplicate text writes without new data');
   f.document.hidden=true;f.reset();send('connected',sample);f.tick();check(f.writes()===0,'Hidden interface defers DOM changes');
   f.clock(7000);f.document.hidden=false;f.listeners.get('visibilitychange')();
-  check(f.cards[3].querySelector('small').textContent==='Desatualizada'&&row('core_clock')==='Desatualizado','Foreground restoration ages readings');
+  check(f.cards[3].querySelector('.value').textContent==='—'&&row('core_clock')==='Desatualizado','Foreground restoration clears old GPU readings until main answers');
   send('disconnected',sample);check(f.cards[1].querySelector('.value').textContent==='—'&&row('power')==='Indisponível','Disconnect never shows old GPU numbers');
   send('connected',normalized(mutateGpu('power',m=>Object.assign(m,{value:null,valid:false,state:'unsupported'}))));
   check(row('power')==='Indisponível'&&f.cards[3].querySelector('.value').textContent==='55,5 °C','Partially unavailable sensors independent');
