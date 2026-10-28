@@ -1,0 +1,9 @@
+param([int]$MaxSeconds=720,[ValidatePattern('^[a-z0-9-]+\.jsonl$')][string]$OutputName='performance.jsonl')
+$ErrorActionPreference='Stop';$root=Split-Path $PSScriptRoot -Parent;$installation=(Join-Path $env:USERPROFILE 'AppData\Local\Programs\Lone Smart Room');$output=Join-Path (Join-Path $root '.cache/validation/windows-dev8-homologation') $OutputName;$start=[Diagnostics.Stopwatch]::StartNew();$last=@{};$seen=$false;$empty=0;$logical=[Environment]::ProcessorCount
+while($start.Elapsed.TotalSeconds -lt $MaxSeconds){
+ $at=[DateTime]::UtcNow.ToString('o');$now=$start.Elapsed.TotalSeconds;$items=@()
+ $processes=@(Get-CimInstance Win32_Process -Filter "Name='Lone Smart Room.exe' OR Name='python.exe' OR Name='bridge.exe'" -OperationTimeoutSec 3)
+ foreach($p in $processes){if(!$p.ExecutablePath -or !$p.ExecutablePath.StartsWith($installation+'\',[StringComparison]::OrdinalIgnoreCase)){continue};$role=if($p.Name -eq 'Lone Smart Room.exe'){'electron'}elseif($p.Name -eq 'bridge.exe'){'adlx'}elseif($p.CommandLine -match 'monitoring-pipe-client\.py'){'ipc'}elseif($p.CommandLine -match 'monitoring-pipe-server\.py'){'collector'}else{'unexpected_installed_python'};$cpu=([double]$p.KernelModeTime+[double]$p.UserModeTime)/10000000;$key=[string]$p.ProcessId;$percent=$null;if($last.ContainsKey($key)){$dt=$now-$last[$key].at;if($dt -gt 0){$percent=[Math]::Max([double]0,[double](100*($cpu-$last[$key].cpu)/$dt/$logical))}};$last[$key]=@{at=$now;cpu=$cpu};$items+=@{pid=$p.ProcessId;parent=$p.ParentProcessId;role=$role;cpu_percent_total=$percent;cpu_total_seconds=$cpu;rss_bytes=[long]$p.WorkingSetSize}}
+ $row=@{utc=$at;elapsed=$now;logical_processors=$logical;processes=$items};Add-Content -LiteralPath $output -Value ($row|ConvertTo-Json -Depth 5 -Compress) -Encoding UTF8
+ if($items.Count){$seen=$true;$empty=0}else{$empty++};if($seen -and $empty -ge 2){break};Start-Sleep -Seconds 2
+}
