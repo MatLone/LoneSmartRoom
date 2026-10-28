@@ -18,7 +18,10 @@ function createProvider({script=path.join(__dirname,'windows-inventory.ps1'),exe
    // Timeout applies only to this helper we created, never a caller-supplied PID.
    if(error)return resolve({v:1,state:'unavailable',source:'windows.readonly.'+kind,items:[],error:'readonly_provider_unavailable',simulation:false});
    try{
-    const v=JSON.parse(stdout.replace(/^\uFEFF/,''));if(v.v!==1||!['available','unavailable'].includes(v.state)||v.simulation!==false||!Array.isArray(v.items)||v.items.length>300||JSON.stringify(v).length>262144)throw Error();resolve(v);
+    const v=JSON.parse(stdout.replace(/^\uFEFF/,''));if(v.v!==1||!['available','unavailable'].includes(v.state)||v.simulation!==false||v.source!=='windows.readonly.'+kind||!Array.isArray(v.items)||v.items.length>300||Buffer.byteLength(JSON.stringify(v))>262144)throw Error();
+    if(Object.keys(v).some(k=>!['v','state','source','observed_at','items','extra','error','simulation'].includes(k)))throw Error();
+    const clean=(value,depth=0)=>{if(depth>4)throw Error();if(value===null||typeof value==='boolean')return;if(typeof value==='number'){if(!Number.isFinite(value)||Math.abs(value)>Number.MAX_SAFE_INTEGER)throw Error();return;}if(typeof value==='string'){if(value.length>300||/[\x00-\x08\x0b-\x1f]/.test(value))throw Error();return;}if(Array.isArray(value)){if(value.length>300)throw Error();value.forEach(v=>clean(v,depth+1));return;}if(!value||typeof value!=='object'||Object.keys(value).length>30||Object.keys(value).some(k=>/password|secret|token|credential|command|private_key|certificate|^path$|^user$/i.test(k)))throw Error();Object.values(value).forEach(v=>clean(v,depth+1));};
+    clean(v.items);if(v.extra)clean(v.extra);resolve(v);
    }catch{resolve({v:1,state:'unavailable',source:'invalid_readonly_response',items:[],simulation:false});}
   }));
   let value;try{value=await pending;}finally{pending=null;}

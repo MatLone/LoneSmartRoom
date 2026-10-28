@@ -19,15 +19,15 @@
   const utc=x=>typeof x==='string'&&x.length<=32&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(x)&&Number.isFinite(Date.parse(x))&&new Date(Date.parse(x)).toISOString().slice(0,19)===x.slice(0,19);
   function bytes(value){try{return new TextEncoder().encode(JSON.stringify(value)).length;}catch{return Infinity;}}
   function request(value){return exact(value,['v','scenario'])&&value.v===1&&typeof value.scenario==='string'&&scenarios.includes(value.scenario)&&bytes(value)<=96;}
-  function validate(report){
+  function validate(report,local=false){
     if(bytes(report)>16384||!exact(report,['schema_version','generated_at','mode','simulation','repair_capability','power_state','checks'])||
-       report.schema_version!==1||report.simulation!==true||report.repair_capability!==false||report.power_state!=='unknown'||
+       report.schema_version!==1||report.simulation!==(local?false:true)||report.repair_capability!==false||report.power_state!=='unknown'||
        !['active','inactive'].includes(report.mode)||!utc(report.generated_at)||!Array.isArray(report.checks)||report.checks.length!==8)return false;
     const seen=new Set();
     for(const row of report.checks){
       if(!exact(row,['component','state','code','detail_code','evidence_kind','observed_at','age_seconds','valid','freshness_seconds','last_communication'])||
          !contract.components.includes(row.component)||seen.has(row.component)||!contract.states.includes(row.state)||!contract.codes.includes(row.code)||
-         row.detail_code!==null&&!contract.details.includes(row.detail_code)||row.evidence_kind!=='simulated'||typeof row.valid!=='boolean'||row.valid!==(row.state==='healthy')||
+         row.detail_code!==null&&!contract.details.includes(row.detail_code)||row.evidence_kind!==(local?'local_cache':'simulated')||typeof row.valid!=='boolean'||row.valid!==(row.state==='healthy')||
          ![3,5,10,11,15,300].includes(row.freshness_seconds)||row.age_seconds!==null&&!finite(row.age_seconds)||
          row.observed_at!==null&&(!utc(row.observed_at)||Date.parse(row.observed_at)>Date.parse(report.generated_at))||
          row.last_communication!==null&&(!utc(row.last_communication)||row.component!=='agent_https'||Date.parse(row.last_communication)>Date.parse(report.generated_at)))return false;
@@ -84,12 +84,13 @@
   }
   function project(envelope){
     const hasEvidence=Boolean(envelope&&Object.hasOwn(envelope,'evidence'));
-    if(!exact(envelope,['v','mode','scenario','error','report',...(hasEvidence?['evidence']:[])])||envelope.v!==1||!['simulation','disabled'].includes(envelope.mode)||bytes(envelope)>18432)return empty('invalid_message');
+    if(!exact(envelope,['v','mode','scenario','error','report',...(hasEvidence?['evidence']:[])])||envelope.v!==1||!['simulation','local','disabled'].includes(envelope.mode)||bytes(envelope)>18432)return empty('invalid_message');
     if(envelope.error!==null){
       if(!['disabled','invalid_request','rate_limited','busy','provider_unavailable','provider_timeout','invalid_report'].includes(envelope.error))return empty('invalid_message');
       return empty(envelope.error);
     }
-    if(envelope.mode!=='simulation'||!scenarios.includes(envelope.scenario)||!validate(envelope.report))return empty('invalid_message');
+    const local=envelope.mode==='local';
+    if(!['simulation','local'].includes(envelope.mode)||!scenarios.includes(envelope.scenario)||!validate(envelope.report,local)||local&&hasEvidence)return empty('invalid_message');
     if(hasEvidence&&(!exact(envelope.evidence,['schema_version','simulation','security'])||envelope.evidence.schema_version!==1||envelope.evidence.simulation!==true||!securityEvidence(envelope.evidence.security,envelope.report.generated_at)))return empty('invalid_message');
     const report=envelope.report,byId=new Map(report.checks.map(r=>[r.component,r]));
     const cards=definitions.map(([id,title,icon,ids])=>{
@@ -109,7 +110,8 @@
       const details=rows.map(r=>({component:r.component,state:labels[r.state],code:r.detail_code||r.code,
         message:r.code==='provider_failure'?'Erro simulado do provedor. O estado do componente não foi confirmado.':contract.messages[r.detail_code]||contract.fallback[r.code]||'Evidência inconclusiva.',
         checkedAt:r.observed_at,age:r.age_seconds,ttl:r.freshness_seconds,lastCommunication:r.last_communication}));
-      return {id,title,icon,state,label:labels[state],checkedAt,summary,details,simulated:true};
+      if(local){summary=state==='healthy'?'Evidência atual do cache local validado. Não comprova a saúde do agente HTTPS.':state==='stale'?'Amostra local expirada. Uma consulta não renova sua idade.':state==='error'?'Erro registrado no componente local; nenhum reparo executado.':state==='unknown'?(id==='https'||id==='startup'||id==='security'?'Verificação não realizada. Sem identidade desktop autenticada, HTTPS e inicialização automática permanecem não verificados.':'Sem evidência suficiente no cache local. Isso não confirma falha.'):'Sem leitura local disponível. Nenhum sensor foi iniciado pelo diagnóstico.';}
+      return {id,title,icon,state,label:labels[state],checkedAt,summary,details,simulated:!local};
     });
     const security=hasEvidence?envelope.evidence.security:null;
     if(security){
@@ -122,7 +124,7 @@
         code:r.stale?'security_check_stale':r.result==='failed'?'security_check_failed':r.result==='verified'?'security_check_verified':'security_check_unverified',
         message:r.authorized?'Evidência de demonstração de uma verificação autorizada; não contém dados de credenciais.':'Verificação não autorizada ou não realizada neste cenário; não permite uma conclusão positiva.',checkedAt:r.checked_at,age:r.age_seconds,ttl:10,lastCommunication:null})));
     }
-    return {v:1,simulation:true,clock:report.generated_at,error:null,scenario:envelope.scenario,pending,cards};
+    return {v:1,simulation:!local,clock:report.generated_at,error:null,scenario:envelope.scenario,pending,cards};
   }
   const api=Object.freeze({scenarios,labels,pending,request,validate,project,empty,bytes,securityEvidence,adapterBundle});
   if(typeof module==='object'&&module.exports)module.exports=api;else root.loneDiagnosticModel=api;

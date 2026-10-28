@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),model=require('../apps/windows-ui/diagnostics-model.js'),{createLocalDiagnostics}=require('../apps/windows-ui/local-diagnostics.cjs'),{createArchive}=require('../apps/windows-ui/game-archive.cjs');
+let checks=0,t=Date.now(),view=null;const yes=x=>{assert(x);checks++;},eq=(a,b)=>{assert.deepEqual(a,b);checks++;};
+const diag=createLocalDiagnostics({metrics:()=>view,now:()=>t});const get=()=>{t+=1000;return model.project(diag.snapshot({v:1,scenario:'overview'}));};
+let r=get();eq(r.error,null);eq(r.simulation,false);yes(r.cards.every(c=>c.state==='unknown'));
+view={connection:'disconnected',simulated:false,snapshot:null};r=get();eq(r.cards.find(c=>c.id==='pipe').state,'unavailable');eq(r.cards.find(c=>c.id==='https').state,'unknown');
+const metrics=['cpu.utilization','ram.used','ram.total','ram.available','ram.utilization','gpu.adlx.utilization'].map(id=>({id,valid:true,stale:false,state:'available',value:1,data_kind:'real',age_seconds:0,collected_at:new Date(t+1000).toISOString(),interval_seconds:id.startsWith('gpu')?2:1}));
+view={connection:'connected',simulated:false,snapshot:{metrics}};r=get();eq(r.error,null);eq(r.cards.find(c=>c.id==='monitoring').state,'healthy');eq(r.cards.find(c=>c.id==='adlx').state,'healthy');eq(r.cards.find(c=>c.id==='startup').state,'unknown');eq(r.cards.find(c=>c.id==='https').state,'unknown');eq(r.cards.find(c=>c.id==='security').state,'unknown');
+for(const m of metrics){m.valid=false;m.stale=true;m.state='stale';}r=get();eq(r.cards.find(c=>c.id==='monitoring').state,'stale');
+view.simulated=true;r=get();yes(r.cards.every(c=>c.state==='unknown'));
+const directory=fs.mkdtempSync(path.resolve(__dirname,'../.cache/game-archive-test-'));const archive=createArchive(directory),csv='Application,MsBetweenPresents\n'+Array.from({length:100},()=> 'game.exe,10').join('\n'),report=require('../apps/windows-ui/workbench-model.js').presentmon(csv);
+archive.add(report);eq(createArchive(directory).list().entries.length,1);for(let i=0;i<25;i++)archive.add(report);eq(archive.list().entries.length,20);yes(fs.statSync(path.join(directory,'game-sessions-v1.json')).size<1048576);const bad=structuredClone(report);bad.streams[0].average_fps=NaN;assert.throws(()=>archive.add(bad));checks++;
+fs.writeFileSync(path.join(directory,'game-sessions-v1.json'),'broken');const corrupt=createArchive(directory);assert.throws(()=>corrupt.add(report));checks++;eq(fs.readFileSync(path.join(directory,'game-sessions-v1.json'),'utf8'),'broken');
+console.log(JSON.stringify({ok:true,checks,physicalProbes:false,gameCapture:false}));

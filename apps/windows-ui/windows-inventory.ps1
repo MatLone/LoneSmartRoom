@@ -1,4 +1,4 @@
-param([ValidateSet('hardware','memory','network','processes','applications','startup','services','drivers','events','disks','peripherals','ping','dns')][string]$Kind,[string]$Target='')
+param([ValidateSet('hardware','memory','network','processes','applications','startup','services','drivers','events','disks','peripherals','games','ping','dns')][string]$Kind,[string]$Target='')
 $ErrorActionPreference='Stop'
 [Console]::OutputEncoding=New-Object System.Text.UTF8Encoding($false)
 $ProgressPreference='SilentlyContinue'
@@ -6,6 +6,21 @@ function Short($value){if($null -eq $value){return $null};$s=[string]$value;if($
 try {
  $items=@();$extra=@{}
  switch($Kind){
+  'games' {
+   $steam=(Get-ItemProperty -LiteralPath 'HKCU:\Software\Valve\Steam' -ErrorAction SilentlyContinue).SteamPath
+   $libraries=@();if($steam -match '^[A-Za-z]:[\\/]'){$libraries+=([IO.Path]::GetFullPath($steam))}
+   if($libraries.Count){$vdf=Join-Path $libraries[0] 'steamapps/libraryfolders.vdf';if((Test-Path -LiteralPath $vdf -PathType Leaf) -and (Get-Item -LiteralPath $vdf).Length -lt 131072){$text=[IO.File]::ReadAllText($vdf);foreach($m in [regex]::Matches($text,'"path"\s+"([^"\r\n]+)"')){$p=$m.Groups[1].Value.Replace('\\','\');if($p -match '^[A-Za-z]:[\\/]'){$libraries+=[IO.Path]::GetFullPath($p)}}}}
+   foreach($library in ($libraries | Select-Object -Unique -First 16)){
+    $folder=Join-Path $library 'steamapps';if(!(Test-Path -LiteralPath $folder -PathType Container)){continue}
+    if((Get-Item -LiteralPath $folder).Attributes -band [IO.FileAttributes]::ReparsePoint){continue}
+    foreach($file in (Get-ChildItem -LiteralPath $folder -Filter 'appmanifest_*.acf' -File | Select-Object -First 128)){
+     if($file.Length -gt 65536 -or $file.Attributes -band [IO.FileAttributes]::ReparsePoint){continue}
+     $text=[IO.File]::ReadAllText($file.FullName);$id=[regex]::Match($text,'"appid"\s+"(\d{1,10})"').Groups[1].Value;$name=[regex]::Match($text,'"name"\s+"([^"\r\n]+)"').Groups[1].Value
+     if($id -and $name){$items+=@{name=(Short $name);steam_app_id=$id;source='steam_manifest';installation_state='manifest_present_not_game_integrity_verified';last_played=$null;launch_enabled=$false}}
+    }
+   }
+   $items=@($items | Select-Object -First 128)
+  }
   'hardware' {
    $items=@(Get-CimInstance Win32_Processor -OperationTimeoutSec 3 | ForEach-Object {@{name=(Short $_.Name);logical_cores=$_.NumberOfLogicalProcessors;physical_cores=$_.NumberOfCores;reported_clock_mhz=$_.CurrentClockSpeed;max_clock_mhz=$_.MaxClockSpeed;cpu_temperature_celsius=$null;cpu_power_watts=$null}})
    $cores=@(Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -OperationTimeoutSec 3 | Where-Object Name -ne '_Total' | Select-Object -First 128 | ForEach-Object {@{id=(Short $_.Name);utilization_percent=$_.PercentProcessorTime}})

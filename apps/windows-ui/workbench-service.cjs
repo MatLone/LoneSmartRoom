@@ -2,20 +2,24 @@
 // Main-process application state/planning only. No system mutations or generic executor.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const catalog=require('./workbench-catalog.cjs'),model=require('./workbench-model.js');
-const OPS=Object.freeze({snapshot:['section'],inventory:['kind'],repair:['id'],profile:['name','adjustments'],bundle:['name','packages'],device:['id','name','connector','entity'],scene:['name','deviceIds','color','brightness'],scenePreview:['id'],nex:['message'],cleanup:[],export:[],import:['data'],audit:[],network:['kind','target'],gameProfile:['name','monitoring','overlay']});
-const INVENTORIES=['hardware','memory','network','processes','applications','startup','services','drivers','events','disks','peripherals'];
+const OPS=Object.freeze({snapshot:['section'],inventory:['kind'],repair:['id'],profile:['name','adjustments'],bundle:['name','packages'],device:['id','name','connector','entity'],scene:['name','deviceIds','color','brightness'],scenePreview:['id'],nex:['message'],cleanup:[],export:[],import:['data'],audit:[],network:['kind','target'],gameProfile:['name','monitoring','overlay'],game:['name','steamAppId'],historyPolicy:['enabled','retentionHours']});
+const INVENTORIES=['hardware','memory','network','processes','applications','startup','services','drivers','events','disks','peripherals','games'];
 const text=(s,max=80)=>typeof s==='string'&&s.length>0&&s.length<=max&&!/[\x00-\x08\x0b-\x1f]/.test(s);
 const object=o=>o&&typeof o==='object'&&!Array.isArray(o);
 function exact(o,keys){if(!object(o)||Object.keys(o).sort().join(',')!==[...keys].sort().join(','))throw Error('invalid_tool_contract');}
-function defaults(){return {v:1,profile:{name:'Padrão',adjustments:[]},bundles:[],devices:[],scenes:[],gameProfiles:[],audit:[]};}
+function defaults(){return {v:1,profile:{name:'Padrão',adjustments:[]},bundles:[],devices:[],scenes:[],gameProfiles:[],games:[],audit:[],history:{enabled:false,retentionHours:1}};}
 function validateState(s){
- exact(s,['v','profile','bundles','devices','scenes','gameProfiles','audit']);if(s.v!==1)throw Error('state_version');
+ if(object(s)&&s.v===1&&!Object.hasOwn(s,'history'))s={...s,history:{enabled:false,retentionHours:1}};
+ if(object(s)&&s.v===1&&!Object.hasOwn(s,'games'))s={...s,games:[]};
+ exact(s,['v','profile','bundles','devices','scenes','gameProfiles','audit','history','games']);if(s.v!==1)throw Error('state_version');
+ exact(s.history,['enabled','retentionHours']);if(typeof s.history.enabled!=='boolean'||![1,6,24,168].includes(s.history.retentionHours))throw Error('history_policy');
  exact(s.profile,['name','adjustments']);if(!catalog.PROFILES.includes(s.profile.name)||!Array.isArray(s.profile.adjustments)||s.profile.adjustments.length>catalog.ADJUSTMENTS.length||s.profile.adjustments.some(id=>!catalog.ADJUSTMENTS.some(a=>a.id===id)))throw Error('profile');
- for(const [key,max]of [['bundles',20],['devices',32],['scenes',20],['gameProfiles',30],['audit',120]])if(!Array.isArray(s[key])||s[key].length>max)throw Error('state_limit');
+ for(const [key,max]of [['bundles',20],['devices',32],['scenes',20],['gameProfiles',30],['games',100],['audit',120]])if(!Array.isArray(s[key])||s[key].length>max)throw Error('state_limit');
  for(const b of s.bundles){exact(b,['name','packages']);if(!text(b.name)||!Array.isArray(b.packages)||b.packages.length>catalog.PACKAGES.length||b.packages.some(id=>!catalog.PACKAGES.some(p=>p.id===id)))throw Error('bundle');}
  for(const d of s.devices){exact(d,['id','name','connector','entity']);if(!text(d.id,32)||!/^[a-z0-9-]+$/.test(d.id)||!text(d.name)||!catalog.CONNECTORS.some(c=>c.id===d.connector)||typeof d.entity!=='string'||d.entity.length>100||d.entity&&!/^[a-z_]+\.[a-z0-9_]+$/.test(d.entity))throw Error('device');}
  if(new Set(s.devices.map(d=>d.id)).size!==s.devices.length)throw Error('device_duplicate');
  for(const scene of s.scenes){exact(scene,['id','name','deviceIds','color','brightness']);if(!/^[a-f0-9]{16}$/.test(scene.id)||!text(scene.name)||!Array.isArray(scene.deviceIds)||scene.deviceIds.length>32||scene.deviceIds.some(id=>!s.devices.some(d=>d.id===id))||!/^#[0-9a-fA-F]{6}$/.test(scene.color)||!Number.isInteger(scene.brightness)||scene.brightness<0||scene.brightness>100)throw Error('scene');}
+ for(const g of s.games){exact(g,['name','steamAppId']);if(!text(g.name)||g.steamAppId!==null&&(!Number.isSafeInteger(g.steamAppId)||g.steamAppId<1||g.steamAppId>2147483647))throw Error('game_metadata');}
  for(const g of s.gameProfiles){exact(g,['name','monitoring','overlay']);if(!text(g.name)||typeof g.monitoring!=='boolean'||typeof g.overlay!=='boolean')throw Error('game_profile');}
  for(const a of s.audit){exact(a,['at','operation','outcome']);if(!Number.isFinite(Date.parse(a.at))||!Object.hasOwn(OPS,a.operation)||!['saved','planned'].includes(a.outcome))throw Error('audit');}
  if(Buffer.byteLength(JSON.stringify(s))>131072)throw Error('state_bytes');return s;
@@ -72,9 +76,11 @@ function createService({directory,enabled=false,inventory=async()=>({v:1,state:'
   }
   let next=clone();
   if(q.op==='profile')next.profile={name:a.name,adjustments:a.adjustments};
+  if(q.op==='historyPolicy')next.history={enabled:a.enabled,retentionHours:a.retentionHours};
   if(q.op==='bundle'){if(!text(a.name))throw Error('bundle_name');next.bundles=next.bundles.filter(b=>b.name!==a.name);next.bundles.push({name:a.name,packages:a.packages});}
   if(q.op==='device'){next.devices=next.devices.filter(d=>d.id!==a.id);next.devices.push({...a});}
   if(q.op==='scene'){next.scenes=next.scenes.filter(s=>s.name!==a.name);next.scenes.push({id:crypto.randomBytes(8).toString('hex'),...a});}
+  if(q.op==='game'){next.games=next.games.filter(g=>g.name!==a.name);next.games.push({...a});}
   if(q.op==='gameProfile'){next.gameProfiles=next.gameProfiles.filter(p=>p.name!==a.name);next.gameProfiles.push({...a});}
   if(q.op==='import'){exact(a.data,['v','kind','settings']);if(a.data.v!==1||a.data.kind!=='lone_workbench_settings')throw Error('settings_import');next=validateState(JSON.parse(JSON.stringify(a.data.settings)));}
   save(next,q.op);return {v:1,saved:true,applied_to_windows:false,settings:clone()};

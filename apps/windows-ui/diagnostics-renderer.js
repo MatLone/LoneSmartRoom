@@ -18,13 +18,14 @@
   function pair(list,title,text){const row=node('div','diagnostic-detail-row');row.append(node('dt','',title),node('dd','',text));list.append(row);}
   function render(view){
     center.dataset.simulation=String(view.simulation);
+    if(select.parentElement)select.parentElement.hidden=!view.simulation;refresh.textContent=view.simulation?'Atualizar demonstração':'Atualizar cache local';
     document.getElementById('diagnosticDemo').hidden=!view.simulation;
-    document.getElementById('diagnosticClock').textContent=view.clock?'Relógio simulado fixo: '+date(view.clock):'Sem consulta operacional';
+    document.getElementById('diagnosticClock').textContent=view.clock?(view.simulation?'Relógio simulado fixo: ':'Cache local verificado: ')+date(view.clock):'Sem consulta operacional';
     const fragments=[];
     for(const card of view.cards){
       const article=node('article','diagnostic-card');article.dataset.card=card.id;article.dataset.state=card.state;
       const top=node('div','diagnostic-card-top'),tile=node('span','diagnostic-icon');tile.append(icon(card.icon));
-      top.append(tile,node('h3','',card.title),node('span','diagnostic-data-tag',card.simulated?'SIMULADO':'SEM EVIDÊNCIA'));
+      top.append(tile,node('h3','',card.title),node('span','diagnostic-data-tag',card.simulated?'SIMULADO':card.checkedAt?'CACHE LOCAL':'SEM EVIDÊNCIA'));
       const status=node('strong','diagnostic-status',card.label);status.dataset.state=card.state;
       const summary=node('p','diagnostic-summary',card.summary),last=node('div','diagnostic-last');
       last.append(node('span','',card.simulated?'Última verificação simulada':'Última verificação'),node('time','',date(card.checkedAt)));
@@ -34,11 +35,11 @@
       if(!card.details.length)details.append(node('p','','Nenhuma evidência disponível. Não há leitura real neste painel.'));
       for(const r of card.details){
         const block=node('section','diagnostic-evidence');block.append(node('h4','',r.component),node('p','',r.message));
-        const list=node('dl');pair(list,'Estado simulado',r.state);pair(list,'Regra',r.code);
+        const list=node('dl');pair(list,view.simulation?'Estado simulado':'Estado',r.state);pair(list,'Regra',r.code);
         pair(list,'Horário da evidência',date(r.checkedAt));
-        pair(list,'Idade da evidência simulada',r.age===null?'Indisponível':String(r.age)+' s');
+        pair(list,view.simulation?'Idade da evidência simulada':'Idade da evidência',r.age===null?'Indisponível':String(r.age)+' s');
         pair(list,'Validade do recibo',String(r.ttl)+' s');
-        if(r.lastCommunication)pair(list,'Última comunicação simulada',date(r.lastCommunication));
+        if(r.lastCommunication)pair(list,view.simulation?'Última comunicação simulada':'Última comunicação',date(r.lastCommunication));
         block.append(list);details.append(block);
       }
       article.append(details);fragments.push(article);
