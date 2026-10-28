@@ -39,7 +39,7 @@ function bundledLayout(resourcesPath,version,pin=require('./monitoring-package.j
   walk(base);if(expected.size)throw Error('runtime_incomplete');
   const policy=JSON.parse(io.readFileSync(checked('code/BUNDLED-MONITORING.json'),'utf8'));
   if(policy.schema!==1||policy.realOnly!==true||policy.version!==version)throw Error('runtime_policy_invalid');
-  if(['2.0.0-dev.6','2.0.0-dev.7'].includes(version)&&(policy.gpuReadOnly!==true||
+  if(['2.0.0-dev.6','2.0.0-dev.7','2.0.0-dev.8'].includes(version)&&(policy.gpuReadOnly!==true||
     policy.nativeSha256!==manifest.files['code/native/adlx/bridge.exe']||!manifest.files['code/native/adlx/bridge-build.json']||
     !manifest.files['licenses/AMD-ADLX-SDK-License.pdf']))throw Error('runtime_gpu_incomplete');
   return {python:checked('runtime/python.exe'),script:checked('code/scripts/monitoring-pipe-client.py'),cwd:path.join(base,'code')};

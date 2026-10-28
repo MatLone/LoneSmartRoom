@@ -126,7 +126,7 @@ async function mainWiring(lock,monitorFailure=false) {
   const frame={url:policy.entryUrl},wc={mainFrame:frame,isDestroyed:()=>false};
   const controller={window:{webContents:wc,on:()=>{}},state:()=>({mode:'dashboard'}),start:()=>{starts++;},restoreCurrent:()=>{restores++;},hideToTray:()=>{hides++;return true;},setMode:m=>{if(!policy.validMode(m))throw Error('Invalid');},toggleMaximize:()=>{},minimize:()=>{},close:()=>{},quit:()=>{quits++;}};
   const monitor={start:()=>{if(monitorFailure)throw Error('mock failure');},stop:()=>Promise.resolve(true),view:()=>({v:1,connection:'disconnected'}),diagnostics:()=>({})};
-  const context=vm.createContext({__dirname:directory,process:{argv:[],env:{},resourcesPath:'C:/mock-resources'},console,require:name=>{
+  const context=vm.createContext({__dirname:directory,process:{argv:[],env:{},resourcesPath:'C:/mock-resources'},console,performance:{now:()=>Date.now()},require:name=>{
     if(name==='electron')return {app,BrowserWindow:()=>{},ipcMain:{handle:(n,fn)=>ipcHandlers.set(n,fn),on:(n,fn)=>ipcEvents.set(n,fn)},screen:{},session:{defaultSession:{setPermissionRequestHandler:()=>{},setPermissionCheckHandler:()=>{},webRequest:{onBeforeRequest:()=>{}}}},Tray:()=>{},Menu:{}};
     if(name==='./desktop-window.cjs')return {createController:()=>{creations++;return controller;}};
     if(name==='./desktop-preferences.cjs')return {createStore:()=>({})};
@@ -134,9 +134,12 @@ async function mainWiring(lock,monitorFailure=false) {
     if(name==='./monitoring-host.cjs')return {createMonitoringHost:()=>monitor};
     if(name==='./performance-history.cjs')return require(path.join(directory,'performance-history.cjs'));
     if(name==='./diagnostics-host.cjs')return require(path.join(directory,'diagnostics-host.cjs'));
-    return require(name);
+    if(name==='./workbench-service.cjs')return {createService:()=>({handle:async()=>({enabled:false}),close(){}})};
+    if(name==='./game-archive.cjs')return {createArchive:()=>({list:()=>({v:1,entries:[]})})};
+    if(name==='./auxiliary-windows.cjs')return {createAuxiliaryWindows:()=>({views:()=>[],closeAll(){}})};
+    return require(name.startsWith('./')?path.join(directory,name):name);
   }});
-  vm.runInContext(fs.readFileSync(path.join(directory,'desktop-main.cjs'),'utf8'),context);await Promise.resolve();await Promise.resolve();
+  vm.runInContext(fs.readFileSync(path.join(directory,'desktop-main.cjs'),'utf8'),context);await new Promise(resolve=>setImmediate(resolve));
   if(!lock){check(quits===1&&creations===0&&ipcHandlers.size===0,'Duplicate process exits before window/Tray/IPC initialization');return;}
   check(creations===1&&starts===1,'Primary instance initializes one controller without agent dependency');
   check(quits===0,'Collector failure never closes the dashboard');
@@ -148,8 +151,8 @@ async function mainWiring(lock,monitorFailure=false) {
   }
   check(hides===1,'Rejected IPC requests do not hide window');
   assert.throws(()=>ipcHandlers.get('window:mode')(trusted,'cmd.exe'));checks++;
-  check([...ipcHandlers.keys()].sort().join(',')===['widget:version','window:state','window:mode','window:maximize','window:tray','monitoring:snapshot','diagnostics:snapshot','history:read'].sort().join(','),'Only explicitly allowed window/metric/diagnostic channels');
-  check((await ipcHandlers.get('diagnostics:snapshot')(trusted,{v:1,scenario:'overview'})).error==='disabled','Packaged application never activates diagnostic preview or live probes');
+  check([...ipcHandlers.keys()].sort().join(',')===['widget:version','window:state','window:mode','window:maximize','window:tray','monitoring:snapshot','diagnostics:snapshot','history:read','history:export','tools:request','tools:displays','tools:export','tools:import','tools:presentmon','tools:game-sessions','tools:inspect-temp','tools:open-panel','panel:context','panel:snapshot','panel:close','panel:fullscreen','panel:main'].sort().join(','),'Only explicitly allowed window/metric/diagnostic channels');
+  const diagnostic=await ipcHandlers.get('diagnostics:snapshot')(trusted,{v:1,scenario:'overview'});check(diagnostic.mode==='local'&&diagnostic.report.checks.find(c=>c.component==='agent_https').state==='unknown','Cache-only diagnostics do not probe or certify the operational HTTPS agent');
 }
 async function ownedShutdown(){
   let release,stops=0;const f=fixture({beforeExit:()=>{stops++;return new Promise(resolve=>release=resolve);}});

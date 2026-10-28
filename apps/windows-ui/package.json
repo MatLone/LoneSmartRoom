@@ -1,9 +1,9 @@
 {
   "name": "lone-smart-room",
   "productName": "Lone Smart Room",
-  "version": "2.0.0-dev.7",
+  "version": "2.0.0-dev.8",
   "private": true,
-  "description": "Lone Smart Room: dashboard, widget, bandeja e monitoramento local somente leitura",
+  "description": "Lone Smart Room: central Windows, monitoramento local e ferramentas seguras",
   "main": "main.cjs",
   "author": "Lone Smart Room",
   "license": "UNLICENSED",
@@ -60,7 +60,18 @@
       "workbench-renderer.js",
       "workbench.css",
       "windows-read-provider.cjs",
-      "windows-inventory.ps1"
+      "windows-inventory.ps1",
+      "auxiliary-windows.cjs",
+      "panel-preferences.cjs",
+      "panel-preload.cjs",
+      "panel.html",
+      "panel.css",
+      "panel.js",
+      "local-diagnostics.cjs",
+      "game-archive.cjs",
+      "maintenance-inspector.cjs",
+      "audio-session.js",
+      "media-permissions.cjs"
     ],
     "directories": {
       "output": "dist"

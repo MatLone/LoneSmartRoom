@@ -66,7 +66,7 @@ async function hosts(){
 async function bridge(){
   let api;const requests=[];
   vm.runInNewContext(fs.readFileSync(path.join(dir,'preload.cjs'),'utf8'),{require:name=>{
-    check(name==='electron','Preload imports no generic native modules');return {contextBridge:{exposeInMainWorld:(name,value)=>{check(name==='loneDesktop','Existing limited bridge');api=value;}},ipcRenderer:{invoke:(...args)=>{requests.push(args);return Promise.resolve(null);},on(){},removeListener(){},send(){}}};
+    check(name==='electron','Preload imports no generic native modules');return {contextBridge:{exposeInMainWorld:(name,value)=>{check(['loneDesktop','loneTools'].includes(name),'Only named finite bridges');if(name==='loneDesktop')api=value;else check(!['exec','shell','spawn','request','readFile'].some(k=>k in value),'Tools expose no generic execution');}},ipcRenderer:{invoke:(...args)=>{requests.push(args);return Promise.resolve(null);},on(){},removeListener(){},send(){}}};
   }});
   for(const scenario of model.scenarios)await api.getDiagnostics(scenario);
   check(requests.every(r=>r[0]==='diagnostics:snapshot'&&model.request(r[1])),'Fixed channel and bounded v1 request');
@@ -126,12 +126,15 @@ async function mainIpc(){
   const fakeController={window:{webContents:wc},start(){},state:()=>({mode:'dashboard'}),quit(){},restoreCurrent(){},setMode(){},toggleMaximize(){},hideToTray(){},minimize(){},close(){}};
   const mod={exports:{}};
   vm.runInNewContext(fs.readFileSync(path.join(dir,'desktop-main.cjs'),'utf8'),{__dirname:dir,module:mod,console:{error:(...x)=>errors.push(x)},
-    process:{argv:['electron','apps/windows-ui','--lone-development-review','--lone-diagnostics-preview','--lone-monitoring-development','--lone-gpu-development'],env:{LONE_DIAGNOSTICS_REVIEW_ID:'a'.repeat(32),LONE_MONITORING_RUN_ID:'b'.repeat(32)}},
+    performance:{now:()=>Date.now()},process:{argv:['electron','apps/windows-ui','--lone-development-review','--lone-diagnostics-preview','--lone-monitoring-development','--lone-gpu-development'],env:{LONE_DIAGNOSTICS_REVIEW_ID:'a'.repeat(32),LONE_MONITORING_RUN_ID:'b'.repeat(32)}},
     require:name=>{
       if(name==='electron')return {app,BrowserWindow:function(){throw Error('Not used in mocked controller');},ipcMain:{handle:(k,v)=>handlers.set(k,v),on:(k,v)=>listeners.set(k,v)},screen:{},session:{defaultSession:{setPermissionRequestHandler(){},setPermissionCheckHandler(){},webRequest:{onBeforeRequest(){}}}},Tray:function(){},Menu:{}};
       if(name==='node:fs')return {mkdirSync(){}};
       if(name==='./desktop-preferences.cjs')return {createStore:()=>({})};
       if(name==='./desktop-window.cjs')return {createController:()=>{controller=fakeController;return controller;}};
+      if(name==='./game-archive.cjs')return {createArchive:()=>({list:()=>({v:1,entries:[]})})};
+      if(name==='./auxiliary-windows.cjs')return {createAuxiliaryWindows:()=>({closeAll(){},views:()=>[]})};
+      if(name==='./workbench-service.cjs')return {createService:()=>({handle:async()=>({enabled:false}),close(){}})};
       if(name==='./monitoring-host.cjs')throw Error('Operational monitoring forbidden');
       return require(name.startsWith('./')?path.join(dir,name):name);
     }});

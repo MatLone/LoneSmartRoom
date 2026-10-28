@@ -80,5 +80,5 @@ async function ownedLifecycle(){
   const malformed=hostFixture();malformed.host.start();malformed.emit(null);check(malformed.host.view().error==='invalid_transport','Null transport frame cannot crash Electron');await malformed.host.stop();
 }
 (async()=>{precision();runtimeProof();await ownedLifecycle();const result={ok:true,checks,realSensors:false,realNativeProcesses:false,packagedExecutablesRun:false};
-  fs.mkdirSync(path.join(root,'.cache/validation/windows-dev5'),{recursive:true});fs.writeFileSync(path.join(root,'.cache/validation/windows-dev5/monitoring-node-tests.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
+  fs.mkdirSync(path.join(root,'.cache/validation/windows-dev5'),{recursive:true});fs.writeFileSync((process.env.LONE_TEST_REPORT_ROOT?path.join(process.env.LONE_TEST_REPORT_ROOT,'monitoring-node-tests.json'):path.join(root,'.cache/validation/windows-dev5/monitoring-node-tests.json')),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

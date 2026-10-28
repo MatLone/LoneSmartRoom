@@ -14,7 +14,7 @@ import sys
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
-PAYLOAD=ROOT/'.cache/windows-monitoring-runtime/dev7'
+PAYLOAD=ROOT/'.cache/windows-monitoring-runtime/dev8'
 
 
 def main():
@@ -26,7 +26,7 @@ def main():
     manifest=json.loads((PAYLOAD/'manifest.json').read_text())
     pin=json.loads((ROOT/'apps/windows-ui/monitoring-package.json').read_text())
     check(hashlib.sha256((PAYLOAD/'manifest.json').read_bytes()).hexdigest()==pin['manifestSha256'])
-    check(manifest['version']==pin['version']=='2.0.0-dev.7')
+    check(manifest['version']==pin['version']=='2.0.0-dev.8')
     check(manifest['pythonVersion']==pin['pythonVersion']=='3.13.3')
     check(set(manifest['files'])=={p.relative_to(PAYLOAD).as_posix() for p in PAYLOAD.rglob('*') if p.is_file() and p.name!='manifest.json'})
     native=[]
@@ -85,7 +85,8 @@ def main():
         'version':manifest['version'],'stdlibPythonFiles':members,'importedMonitoringModules':modules,
         'manifestSha256':pin['manifestSha256'],'packagedExecutablesRun':False,'realSensors':False,
         'dependenciesInstalled':False,'nativeCallsAllowed':False}
-    out=ROOT/'.cache/validation/windows-dev7/runtime-inspection.json'
+    out=ROOT/'.cache/validation/windows-dev8/runtime-inspection.json'
+    out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(result))
 

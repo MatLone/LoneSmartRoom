@@ -72,6 +72,6 @@ function renderer(){
   f.document.hidden=true;f.reset();f.tick();check(f.writes()===0,'No hidden DOM polling work');
 }
 (async()=>{freshness();await lifecycle();renderer();const report={ok:true,checks,realSensors:false,realElectron:false,generatedExecutablesRun:false};
-  const out=path.resolve(__dirname,'../.cache/validation/windows-dev6');fs.mkdirSync(out,{recursive:true});
+  const out=(process.env.LONE_TEST_REPORT_ROOT?process.env.LONE_TEST_REPORT_ROOT:path.resolve(__dirname,'../.cache/validation/windows-dev6'));fs.mkdirSync(out,{recursive:true});
   fs.writeFileSync(path.join(out,'dev6-node-tests.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

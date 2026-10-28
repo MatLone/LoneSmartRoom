@@ -89,6 +89,6 @@ function rendererIntegration(){
   const main=fs.readFileSync(path.resolve(__dirname,'../apps/windows-ui/desktop-main.cjs'),'utf8');
   check(main.includes("const gpuDevelopment=monitoringDevelopment&&process.argv.includes('--lone-gpu-development')"),'GPU gated behind existing isolated development profile');
   const result={ok:true,checks,realSensors:false,realProcesses:false,electronRun:false};
-  const out=path.resolve(__dirname,'../.cache/validation/gpu-dashboard-integration-2026-10-26');fs.mkdirSync(out,{recursive:true});
+  const out=(process.env.LONE_TEST_REPORT_ROOT?process.env.LONE_TEST_REPORT_ROOT:path.resolve(__dirname,'../.cache/validation/gpu-dashboard-integration-2026-10-26'));fs.mkdirSync(out,{recursive:true});
   fs.writeFileSync(path.join(out,'gpu-node-tests.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

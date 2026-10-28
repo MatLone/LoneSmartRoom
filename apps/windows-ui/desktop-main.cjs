@@ -16,12 +16,13 @@ const gpuDevelopment=monitoringDevelopment&&process.argv.includes('--lone-gpu-de
 let monitoringHost=null, monitoringQuitReady=false, monitoringQuitting=false;
 const {createHistory}=require('./performance-history.cjs');
 const historyEnabled=developmentReview&&process.argv.includes('--lone-history-development')&&/^[a-f0-9]{32}$/.test(process.env.LONE_MONITORING_RUN_ID||'');
-const performanceHistory=createHistory({enabled:historyEnabled,directory:historyEnabled?path.resolve(__dirname,'../../.cache/performance-history',process.env.LONE_MONITORING_RUN_ID):null});
+let performanceHistory=createHistory({enabled:historyEnabled,extended:true,directory:historyEnabled?path.resolve(__dirname,'../../.cache/performance-history',process.env.LONE_MONITORING_RUN_ID):null});
 app.on('will-quit',()=>performanceHistory.close());
 const monitoringEnabled=app.isPackaged||monitoringDevelopment;
 const {createDiagnosticsHost}=require('./diagnostics-host.cjs');
 const adapterReview=diagnosticsReview&&process.argv.includes('--lone-diagnostic-adapters-development');
 const diagnosticAdapters=adapterReview?require('./diagnostic-adapter-provider.cjs').createAdapterProvider({root:path.resolve(__dirname,'../..'),enabled:true}):null;
+const localDiagnostics=require('./local-diagnostics.cjs').createLocalDiagnostics({metrics:()=>monitoringHost?.view()||null});
 const diagnosticsHost=createDiagnosticsHost({enabled:diagnosticsReview,provider:diagnosticAdapters?scenario=>diagnosticAdapters.get(scenario):null});
 app.on('will-quit',()=>diagnosticAdapters?.stop());
 app.on('will-quit',()=>diagnosticsHost.stop());
@@ -42,18 +43,31 @@ if (developmentReview) {
   }
 }
 app.commandLine.appendSwitch('disable-background-networking');
-let controller;
-let workbench=null;
+let controller, auxiliary=null;
+let workbench=null,gameArchive=null;
 let lastHistoryRead=-Infinity;
 function state() {return controller?.state() || null;}
+function configureHistory(history){
+  performanceHistory.close();
+  performanceHistory=createHistory({enabled:history.enabled,extended:true,
+    directory:path.join(app.getPath('userData'),'workbench','history'),storageRoot:app.getPath('userData'),
+    retentionSeconds:history.retentionHours*3600,maxPoints:Math.min(20000,history.retentionHours*1800),maxBytes:4194304});
+}
+function updateActivity(){if(monitoringHost)monitoringHost.setActive(Boolean(controller?.window&&!controller.window.isDestroyed()&&controller.window.isVisible()&&!controller.window.isMinimized()&&controller.window.isFocused()||auxiliary?.views().some(w=>!w.window.isDestroyed()&&w.window.isVisible())));}
 function registerIpc() {
   const trusted = (event, args, count) => policy.trustedSender(event, controller?.window?.webContents) && args.length === count;
+  let budgetAt=performance.now(),budget=0;const dialogPending=new Set();
+  const limitedDialogs=new Set(['tools:export','tools:import','tools:presentmon','history:export']);
   const handle = (channel, count, callback) => ipcMain.handle(channel, (event, ...args) => {
     if (!trusted(event, args, count)) throw new Error('Untrusted window request');
+    const now=performance.now();if(now-budgetAt>=1000){budgetAt=now;budget=0;}if(++budget>64)throw Error('window_request_rate');
+    if(limitedDialogs.has(channel)){if(dialogPending.has(channel))throw Error('dialog_pending');dialogPending.add(channel);return Promise.resolve().then(()=>callback(...args)).finally(()=>dialogPending.delete(channel));}
     return callback(...args);
   });
   handle('widget:version', 0, () => app.getVersion());
-  handle('tools:request',1,query=>workbench.handle(query));
+  handle('tools:request',1,async query=>{const result=await workbench.handle(query);if(query.op==='historyPolicy')configureHistory(result.settings.history);return result;});
+  handle('tools:open-panel',1,query=>{if(!query||Object.keys(query).sort().join(',')!=='displayId,role')throw Error('panel_request');return auxiliary.open(query.role,query.displayId);});
+  for(const [channel,count,action]of [['context',0,e=>auxiliary.context(e)],['snapshot',0,e=>auxiliary.snapshot(e)],['close',0,e=>auxiliary.close(e)],['fullscreen',1,(e,v)=>auxiliary.fullscreen(e,v)],['main',1,(e,v)=>auxiliary.showMain(e,v)]])ipcMain.handle('panel:'+channel,(event,...args)=>{if(args.length!==count)throw Error('panel_arguments');return action(event,...args);});
   handle('tools:displays',0,()=>screen.getAllDisplays().map(d=>({id:d.id,label:d.label,
     width:d.size.width,height:d.size.height,scale_factor:d.scaleFactor,refresh_hz:d.displayFrequency,
     color_depth:d.colorDepth,touch_support:d.touchSupport,primary:d.id===screen.getPrimaryDisplay().id})));
@@ -65,20 +79,20 @@ function registerIpc() {
   handle('tools:import',0,async()=>{
     const {dialog}=require('electron');const selected=await dialog.showOpenDialog(controller.window,{properties:['openFile'],filters:[{name:'Configurações LSR',extensions:['json']}]});
     if(selected.canceled)return {v:1,canceled:true};const file=selected.filePaths[0];if(fs.statSync(file).size>131072)throw Error('settings_import_size');
-    return workbench.handle({v:1,op:'import',args:{data:JSON.parse(fs.readFileSync(file,'utf8'))}});
+    const result=await workbench.handle({v:1,op:'import',args:{data:JSON.parse(fs.readFileSync(file,'utf8'))}});configureHistory(result.settings.history);return result;
   });
+  handle('tools:inspect-temp',1,scope=>require('./maintenance-inspector.cjs').createInspector({ownCache:path.join(app.getPath('userData'),'workbench','tool-cache')}).inspect(scope));
+  handle('tools:game-sessions',0,()=>gameArchive.list());
   handle('tools:presentmon',0,async()=>{
     const {dialog}=require('electron');const selected=await dialog.showOpenDialog(controller.window,{properties:['openFile'],filters:[{name:'PresentMon CSV',extensions:['csv']}]});
     if(selected.canceled)return {v:1,canceled:true};const file=selected.filePaths[0];if(fs.statSync(file).size>8388608)throw Error('presentmon_import_size');
-    return require('./workbench-model.js').presentmon(fs.readFileSync(file,'utf8'));
+    return gameArchive.add(require('./workbench-model.js').presentmon(fs.readFileSync(file,'utf8')));
   });
   handle('history:export',1,async minutes=>{
-    const report=performanceHistory.query(minutes),{dialog}=require('electron'),cell=require('./workbench-model.js').csvCell;
+    const csv=performanceHistory.exportCsv(minutes),{dialog}=require('electron');
     const selected=await dialog.showSaveDialog(controller.window,{defaultPath:'Lone-Smart-Room-historico.csv',filters:[{name:'CSV',extensions:['csv']}]});
     if(selected.canceled)return {v:1,canceled:true};
-    const header=['timestamp_utc','simulation',...report.fields.flatMap(f=>[f[0],f[0]+'.state',f[0]+'.collected_at'])];
-    const rows=report.rows.map(r=>[new Date(r[0]).toISOString(),report.simulation,...r.slice(2).flatMap(m=>[m[0],m[1],m[2]===null?'':new Date(m[2]).toISOString()])]);
-    fs.writeFileSync(selected.filePath,[header,...rows].map(r=>r.map(cell).join(',')).join('\r\n'),{flag:'wx'});return {v:1,saved:true,points:rows.length};
+    fs.writeFileSync(selected.filePath,csv,{flag:'wx'});return {v:1,saved:true};
   });
   handle('window:state', 0, state);
   handle('window:mode', 1, next => {controller.setMode(next);return state();});
@@ -86,9 +100,9 @@ function registerIpc() {
   handle('window:tray', 0, () => ({hidden: controller.hideToTray(), state: state()}));
   handle('monitoring:snapshot', 0, () => monitoringHost?.view() ||
     ({v:1,connection:'disabled',simulated:false,error:null,snapshot:null,last_valid_at:{}}));
-  handle('diagnostics:snapshot', 1, query => diagnosticsHost.snapshot(query));
+  handle('diagnostics:snapshot', 1, query => diagnosticsReview?diagnosticsHost.snapshot(query):localDiagnostics.snapshot(query));
   handle('history:read',1,query=>{
-    if(!query||query.v!==1||Object.keys(query).sort().join(',')!=='minutes,v'||![5,30,60].includes(query.minutes))throw Error('invalid_history_query');
+    if(!query||query.v!==1||Object.keys(query).sort().join(',')!=='minutes,v'||![5,30,60,360,1440,10080].includes(query.minutes))throw Error('invalid_history_query');
     const now=performance.now();if(now-lastHistoryRead<500)throw Error('history_rate_limited');lastHistoryRead=now;
     return performanceHistory.query(query.minutes);
   });
@@ -108,6 +122,7 @@ function createWindow(bounds) {
   win.webContents.on('will-navigate', (event, url) => {if (url !== policy.entryUrl) event.preventDefault();});
   win.webContents.on('will-attach-webview', event => event.preventDefault());
   win.webContents.on('will-frame-navigate', (event, url) => {if (url !== policy.entryUrl) event.preventDefault();});
+  win.on('closed',()=>auxiliary?.closeAll());
   win.loadFile(path.join(__dirname, 'index.html'));
   return win;
 }
@@ -118,9 +133,11 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   // Ignore forwarded paths/arguments: a second launch only restores the same window.
   app.on('second-instance', () => controller?.restoreCurrent());
-  app.whenReady().then(() => {
-    session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-    session.defaultSession.setPermissionCheckHandler(() => false);
+  app.whenReady().then(async() => {
+    const mediaPermissions=require('./media-permissions.cjs').createMediaPermissions({trusted:wc=>Boolean(controller?.window?.webContents===wc&&wc.mainFrame.url===policy.entryUrl),ask:async()=>{const r=await require('electron').dialog.showMessageBox(controller.window,{type:'question',title:'Teste local de microfone',message:'Permitir até 10 segundos de leitura do nível de áudio? Não há gravação ou transmissão.',buttons:['Cancelar','Permitir teste'],defaultId:0,cancelId:0});return r.response===1;}});
+    session.defaultSession.setPermissionRequestHandler(mediaPermissions.request);
+    session.defaultSession.setPermissionCheckHandler(mediaPermissions.check);
+    app.on('before-quit',()=>mediaPermissions.clear());
     session.defaultSession.webRequest.onBeforeRequest((details, callback) => callback({cancel: !policy.allowedResource(details.url)}));
     const stopMonitoring=async()=>{
       if(!monitoringHost){monitoringQuitReady=true;return true;}
@@ -143,7 +160,16 @@ if (!app.requestSingleInstanceLock()) {
     workbench=require('./workbench-service.cjs').createService({directory:path.join(app.getPath('userData'),'workbench'),
       enabled:app.isPackaged||developmentReview&&process.argv.includes('--lone-workbench-development'),
       inventory:provider.inventory,network:provider.network,metrics:()=>monitoringHost?.view()||null});
+    gameArchive=require('./game-archive.cjs').createArchive(path.join(app.getPath('userData'),'workbench'));
+    const localSettings=await workbench.handle({v:1,op:'snapshot',args:{section:'overview'}});
+    if(localSettings.enabled&&localSettings.settings.history.enabled)configureHistory(localSettings.settings.history);
     app.on('will-quit',()=>workbench.close());
+    auxiliary=require('./auxiliary-windows.cjs').createAuxiliaryWindows({BrowserWindow,screen,policy,
+      enabled:app.isPackaged||developmentReview&&process.argv.includes('--lone-workbench-development'),
+      directory:path.join(app.getPath('userData'),'workbench'),activity:updateActivity,
+      metrics:()=>monitoringHost?.view()||{v:1,connection:'disabled',simulated:false,snapshot:null},
+      restoreMain:()=>controller.restoreCurrent(),navigate:section=>controller.window.webContents.send('tools:navigate',section)});
+    app.on('before-quit',()=>auxiliary.closeAll());
     registerIpc();controller.start();
     if(monitoringEnabled){
       const createMonitoringHost=monitoringDevelopment&&process.argv.includes('--lone-telemetry-development')
@@ -153,7 +179,7 @@ if (!app.requestSingleInstanceLock()) {
         packaged:app.isPackaged,resourcesPath:process.resourcesPath,version:app.getVersion(),
         gpu:app.isPackaged||gpuDevelopment,
         simulated:!app.isPackaged&&process.argv.includes('--lone-monitoring-simulated'),publish:value=>{
-          performanceHistory.record(value);
+          performanceHistory.record(value);auxiliary?.publish(value);
           const wc=controller?.window?.webContents;
           if(wc&&!wc.isDestroyed()&&wc.mainFrame.url===policy.entryUrl)wc.send('monitoring:state',value);
         }});
@@ -162,8 +188,7 @@ if (!app.requestSingleInstanceLock()) {
       }
       if(app.isPackaged||gpuDevelopment){
         const win=controller.window;
-        for(const event of ['hide','minimize','blur'])win.on(event,()=>monitoringHost.setActive(false));
-        for(const event of ['show','restore','focus'])win.on(event,()=>monitoringHost.setActive(true));
+        for(const event of ['hide','minimize','blur','show','restore','focus'])win.on(event,updateActivity);
       }
     }
     app.on('activate', () => controller.restoreCurrent());

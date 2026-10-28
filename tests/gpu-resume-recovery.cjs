@@ -113,6 +113,6 @@ async function modesAndRenderer(){
 (async()=>{await restore();await unavailable();await invalidAndPartial();await ipc();await modesAndRenderer();
   const report={ok:true,checks,failures:0,skipped:0,realSensors:false,realElectron:false,realProcesses:false,
     recoveryBudgetMs:10000,adlxIngressSeconds:1.5,displayActiveSeconds:3,displayInactiveSeconds:11};
-  const out=path.resolve(__dirname,'../.cache/validation/gpu-resume-fix-2026-10-26');fs.mkdirSync(out,{recursive:true});
+  const out=(process.env.LONE_TEST_REPORT_ROOT?process.env.LONE_TEST_REPORT_ROOT:path.resolve(__dirname,'../.cache/validation/gpu-resume-fix-2026-10-26'));fs.mkdirSync(out,{recursive:true});
   fs.writeFileSync(path.join(out,'resume-tests.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

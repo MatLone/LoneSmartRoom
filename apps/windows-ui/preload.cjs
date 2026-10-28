@@ -3,21 +3,26 @@ const {contextBridge, ipcRenderer} = require('electron');
 const tool=(op,args={})=>ipcRenderer.invoke('tools:request',{v:1,op,args});
 contextBridge.exposeInMainWorld('loneTools',Object.freeze({
   snapshot:section=>tool('snapshot',{section}),inventory:kind=>tool('inventory',{kind}),
+  inspectTemp:scope=>{if(!['own','user_temp','windows_temp'].includes(scope))return Promise.reject(Error('scope'));return ipcRenderer.invoke('tools:inspect-temp',scope);},
   cleanupPreview:()=>tool('cleanup'),repairPlan:id=>tool('repair',{id}),
   saveProfile:(name,adjustments)=>tool('profile',{name,adjustments}),
   saveBundle:(name,packages)=>tool('bundle',{name,packages}),
   saveDevice:device=>tool('device',device),saveScene:scene=>tool('scene',scene),scenePreview:id=>tool('scenePreview',{id}),
+  saveGame:game=>tool('game',game),gameSessions:()=>ipcRenderer.invoke('tools:game-sessions'),
   saveGameProfile:profile=>tool('gameProfile',profile),askNex:message=>tool('nex',{message}),
   readAudit:()=>tool('audit'),networkTest:(kind,target)=>tool('network',{kind,target}),
+  configureHistory:(enabled,retentionHours)=>tool('historyPolicy',{enabled,retentionHours}),
+  openPanel:(role,displayId)=>ipcRenderer.invoke('tools:open-panel',{role,displayId}),
+  onNavigate:callback=>{if(typeof callback!=='function')throw TypeError('callback');const handler=(_event,section)=>callback(section);ipcRenderer.on('tools:navigate',handler);return()=>ipcRenderer.removeListener('tools:navigate',handler);},
   displays:()=>ipcRenderer.invoke('tools:displays'),exportSettings:()=>ipcRenderer.invoke('tools:export'),
   importSettings:()=>ipcRenderer.invoke('tools:import'),importPresentmon:()=>ipcRenderer.invoke('tools:presentmon'),
-  exportHistory:minutes=>{if(![5,30,60].includes(minutes))return Promise.reject(Error('history_window'));return ipcRenderer.invoke('history:export',minutes);}
+  exportHistory:minutes=>{if(![5,30,60,360,1440,10080].includes(minutes))return Promise.reject(Error('history_window'));return ipcRenderer.invoke('history:export',minutes);}
 }));
 contextBridge.exposeInMainWorld('loneDesktop', Object.freeze({
   getVersion: () => ipcRenderer.invoke('widget:version'),
   getMetrics: () => ipcRenderer.invoke('monitoring:snapshot'),
   getPerformanceHistory: minutes => {
-    if(![5,30,60].includes(minutes))return Promise.reject(new Error('Invalid history window'));
+    if(![5,30,60,360,1440,10080].includes(minutes))return Promise.reject(new Error('Invalid history window'));
     return ipcRenderer.invoke('history:read',{v:1,minutes});
   },
   getDiagnostics: (scenario='overview') => {

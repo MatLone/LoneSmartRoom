@@ -4,10 +4,10 @@ const path = require('node:path');
 const existing = require('./package.json').build;
 module.exports = {
   ...existing,
-  directories: {...existing.directories, output: '../../.cache/artifacts/windows/desktop-dev7-distribution'},
+  directories: {...existing.directories, output: '../../.cache/artifacts/windows/desktop-dev8-control-center-candidate'},
   electronDist: 'node_modules/electron/dist',
   npmRebuild: false,
-  extraResources: [{from: '../../.cache/windows-monitoring-runtime/dev7', to: 'monitoring', filter: ['**/*']}],
+  extraResources: [{from: '../../.cache/windows-monitoring-runtime/dev8', to: 'monitoring', filter: ['**/*']}],
   publish: null,
   win: {...existing.win, target: [{target: 'nsis', arch: ['x64']}, {target: 'portable', arch: ['x64']}], requestedExecutionLevel: 'asInvoker'},
   nsis: {
