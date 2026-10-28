@@ -3,13 +3,20 @@ param([ValidateSet('prepare','restore')][string]$Mode,[string]$Source,[string]$J
 $ErrorActionPreference='Stop'
 $stage='scope'
 try {
+ if(![Environment]::Is64BitProcess){throw 'native_x64_host_required'}
  $sourceRoot=[IO.Path]::GetFullPath($Source).TrimEnd('\')
  $journalRoot=[IO.Path]::GetFullPath($Journal).TrimEnd('\')
  if($sourceRoot -eq [IO.Path]::GetPathRoot($sourceRoot).TrimEnd('\') -or !$journalRoot.StartsWith(([IO.Path]::GetFullPath($env:LOCALAPPDATA)+'\LoneSmartRoom-RuntimePreservation\'),[StringComparison]::OrdinalIgnoreCase)){throw 'scope'}
  function NoLink([string]$p){if(Test-Path -LiteralPath $p){if((Get-Item -LiteralPath $p -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'reparse'}}}
  foreach($p in @($sourceRoot,$journalRoot)){for($cursor=$p;$cursor;$cursor=[IO.Path]::GetDirectoryName($cursor)){NoLink $cursor}}
  $manifest=Join-Path $journalRoot 'manifest.json'
- function Hash([string]$p){(Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash.ToLowerInvariant()}
+ function Hash([string]$p){
+  # NSIS does not inherit a PowerShell session's module imports. Use the
+  # framework's streaming SHA-256 rather than depending on Get-FileHash autoload.
+  $stream=[IO.File]::OpenRead($p);$algorithm=[Security.Cryptography.SHA256]::Create()
+  try{return [BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-','').ToLowerInvariant()}
+  finally{$algorithm.Dispose();$stream.Dispose()}
+ }
  if($Mode -eq 'prepare'){
   $stage='known_manifest'
   if(Test-Path -LiteralPath $journalRoot){throw 'preserve_existing_journal'}
@@ -33,9 +40,9 @@ try {
   $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'FullControl','ContainerInherit,ObjectInherit','None','Allow')
   $acl.AddAccessRule($rule)
   [void][IO.Directory]::CreateDirectory($journalRoot)
-  Set-Acl -LiteralPath $journalRoot -AclObject $acl
+  [IO.Directory]::SetAccessControl($journalRoot,$acl)
   $stage='stable_copy';foreach($f in $files){$from=Join-Path $sourceRoot $f.relative;$to=Join-Path $journalRoot ('data\'+$f.relative);[void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($to));[IO.File]::Copy($from,$to,$false);if((Hash $to) -ne $f.sha256 -or (Hash $from) -ne $f.sha256){throw 'unstable_copy'}}
-  @{v=1;source=$sourceRoot;files=@($files.ToArray());complete=$true}|ConvertTo-Json -Depth 5|Set-Content -LiteralPath $manifest -Encoding UTF8
+  @{v=1;source=$sourceRoot;files=@($files.ToArray());complete=$true;helper_architecture_bits=([IntPtr]::Size*8)}|ConvertTo-Json -Depth 5|Set-Content -LiteralPath $manifest -Encoding UTF8
  } else {
   $stage='restore_verify'
   $v=Get-Content -LiteralPath $manifest -Raw|ConvertFrom-Json
@@ -49,4 +56,4 @@ try {
   }
  }
  exit 0
-}catch{[Console]::Error.WriteLine('runtime_preservation_failed:'+ $stage);exit 2}
+}catch{$rule=($_.FullyQualifiedErrorId -split ',')[0];if($rule -notin @('scope','reparse','preserve_existing_journal','manifest_path','manifest_limit','file_limit','size_limit','not_application','restore_path','backup_hash','conflict_preserved','restore_hash','CommandNotFoundException','CouldNotAutoloadMatchingModule','UnauthorizedAccessException','InvokeMethodOnNull')){$rule='other'};[Console]::Error.WriteLine(('runtime_preservation_failed:{0}:line={1}:code={2}:rule={3}' -f $stage,$_.InvocationInfo.ScriptLineNumber,$_.Exception.HResult,$rule));exit 2}

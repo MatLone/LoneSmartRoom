@@ -36,3 +36,4 @@ try {
  if($LASTEXITCODE -eq 0 -or (Test-Path -LiteralPath $largeJournal)){throw 'file_budget_ignored'}
  @{ok=$true;checks=8;realInstallerExecuted=$false;productionFilesTouched=$false;fixtureRetained=$true}|ConvertTo-Json
 }finally{$env:LOCALAPPDATA=$saved}
+exit 0 # Expected rejection cases above return 2; the completed suite succeeded.
