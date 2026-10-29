@@ -9,7 +9,7 @@ try {
  switch($Kind){
   'gameprocesses' {$processes=@(Get-Process -Name cs2 -ErrorAction SilentlyContinue | Select-Object -First 8);$unverified=0;foreach($process in $processes){try{$image=$process.Path;if($image -notmatch '\\steamapps\\common\\[^\\]+\\game\\bin\\win64\\cs2\.exe$'){$unverified++;continue};$items+=@{game='cs2';pid=$process.Id}}catch{$unverified++}};if($unverified){$resultState='unavailable';$extra=@{unverified_processes=$unverified}}}
   'localstatus' {$listeners=@(Get-NetTCPConnection -State Listen -LocalPort 8776 -ErrorAction SilentlyContinue);$items=@(@{listener_count=$listeners.Count;identity_verified=$false;authentication='not_verified';source='Windows TCP table; presence is not authentication'})}
-  'deviceproviders' {$known=@('OpenRGB','SignalRgb');$items=@(foreach($name in $known){$running=@(Get-Process -Name $name -ErrorAction SilentlyContinue);@{name=$name;process_present=($running.Count -gt 0);protocol_verified=$false;configured=$false}})}
+  'deviceproviders' {$known=@('OpenRGB','SignalRgb');$items=@(foreach($name in $known){$running=@(Get-Process -Name $name -ErrorAction SilentlyContinue);$sdk=@();if($name -eq 'OpenRGB' -and $running.Count){$sdk=@(Get-NetTCPConnection -State Listen -LocalPort 6742 -ErrorAction SilentlyContinue | Where-Object {$_.LocalAddress -eq '127.0.0.1' -and $_.OwningProcess -in $running.Id})};@{name=$name;process_present=($running.Count -gt 0);sdk_loopback_owner_verified=($sdk.Count -eq 1);protocol_verified=$false;configured=$false}})}
   'games' {
    $steam=(Get-ItemProperty -LiteralPath 'HKCU:\Software\Valve\Steam' -ErrorAction SilentlyContinue).SteamPath
    $libraries=@();if($steam -match '^[A-Za-z]:[\\/]'){$libraries+=([IO.Path]::GetFullPath($steam))}

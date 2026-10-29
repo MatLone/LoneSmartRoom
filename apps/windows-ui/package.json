@@ -62,6 +62,7 @@
       "workbench-service.cjs",
       "nex-local.cjs",
       "game-mode.cjs",
+      "openrgb-readonly.cjs",
       "local-game-launcher.cjs",
       "focused-renderer.js",
       "nex-conversation.cjs",

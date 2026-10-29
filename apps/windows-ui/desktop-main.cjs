@@ -48,7 +48,7 @@ if (developmentReview) {
 }
 app.commandLine.appendSwitch('disable-background-networking');
 let controller, auxiliary=null;
-let workbench=null,gameArchive=null,gameMode=null,localLauncher=null;
+let workbench=null,gameArchive=null,gameMode=null,localLauncher=null,rgbReader=null;
 let gamerPolicy={active:false,reduceHistory:false,quietUi:false,overlay:false},historyRecordedAt=-Infinity,gameOverlayOwned=false;
 const fpsSource=require('./presentmon-source.cjs').createSource({publish:fps=>auxiliary?.publish({...monitoringHost?.view(),fps})});
 app.on('will-quit',()=>fpsSource.stop());
@@ -92,6 +92,7 @@ function registerIpc() {
     const result=await workbench.handle({v:1,op:'import',args:{data:JSON.parse(fs.readFileSync(file,'utf8'))}});configureHistory(result.settings.history);return result;
   });
   handle('tools:inspect-temp',1,()=>{throw Error('generic_tools_archived');});
+  handle('devices:inspect-rgb',0,()=>rgbReader.read());
   handle('gamer:launch',1,app=>{if(!['steam','cs2'].includes(app))throw Error('local_launch_app');return getLocalLauncher().launch(app);});
   handle('gamer:launch-check',1,app=>{if(!['steam','cs2'].includes(app))throw Error('local_launch_app');return getLocalLauncher().inspect(app);});
   handle('gamer:request',1,async q=>{if(!q||q.v!==1||Object.keys(q).sort().join(',')!=='op,policy,v'||!['view','poll','configure'].includes(q.op))throw Error('gamer_request');if(q.op!=='configure'&&q.policy!==null)throw Error('gamer_arguments');return q.op==='configure'?gameMode.configure(q.policy):q.op==='poll'?gameMode.poll():gameMode.view();});
@@ -184,8 +185,9 @@ if (!app.requestSingleInstanceLock()) {
       ?path.join(process.resourcesPath,'app.asar.unpacked','windows-inventory.ps1'):path.join(__dirname,'windows-inventory.ps1')});
     workbench=require('./workbench-service.cjs').createService({directory:path.join(app.getPath('userData'),'workbench'),
       enabled:app.isPackaged||developmentReview&&process.argv.includes('--lone-workbench-development'),focused:true,
-      inventory:provider.inventory,network:provider.network,metrics:()=>monitoringHost?.view()||null});
+      inventory:provider.inventory,network:provider.network,metrics:()=>monitoringHost?.view()||null,deviceEvidence:()=>rgbReader?.peek()||null});
 
+    rgbReader=require('./openrgb-readonly.cjs').createReader({trusted:async()=>{const r=await provider.inventory('deviceproviders');return r.state==='available'&&r.simulation===false&&r.items.some(i=>i.name==='OpenRGB'&&i.sdk_loopback_owner_verified===true);}});
     gameArchive=require('./game-archive.cjs').createArchive(path.join(app.getPath('userData'),'workbench'));
     const localSettings=await workbench.handle({v:1,op:'snapshot',args:{section:'overview'}});
     if(localSettings.enabled&&localSettings.settings.history.enabled)configureHistory(localSettings.settings.history);

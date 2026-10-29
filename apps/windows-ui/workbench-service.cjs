@@ -24,7 +24,7 @@ function validateState(s){
  for(const a of s.audit){exact(a,['at','operation','outcome']);if(!Number.isFinite(Date.parse(a.at))||!Object.hasOwn(OPS,a.operation)||!['saved','planned'].includes(a.outcome))throw Error('audit');}
  if(Buffer.byteLength(JSON.stringify(s))>131072)throw Error('state_bytes');return s;
 }
-function createService({directory,enabled=false,inventory=async()=>({v:1,state:'unavailable',source:'unconfigured',items:[]}),network=async()=>({v:1,state:'unavailable'}),metrics=()=>null,focused=false,now=()=>new Date().toISOString()}={}){
+function createService({directory,enabled=false,inventory=async()=>({v:1,state:'unavailable',source:'unconfigured',items:[]}),network=async()=>({v:1,state:'unavailable'}),metrics=()=>null,deviceEvidence=()=>null,focused=false,now=()=>new Date().toISOString()}={}){
  if(!path.isAbsolute(directory)||typeof enabled!=='boolean')throw Error('private_app_directory');
  const file=path.join(directory,'workbench-v1.json');let state=defaults(),readOnly=false,error=null,conversation=[];
  function safeDirectory(){let current=path.parse(directory).root;for(const part of path.relative(current,directory).split(path.sep)){current=path.join(current,part);if(fs.existsSync(current)){const s=fs.lstatSync(current);if(!s.isDirectory()||s.isSymbolicLink())throw Error('unsafe_app_directory');}else fs.mkdirSync(current);}if(fs.existsSync(file)){const s=fs.lstatSync(file);if(!s.isFile()||s.isSymbolicLink()||s.nlink!==1)throw Error('unsafe_state_file');}}
@@ -74,7 +74,7 @@ function createService({directory,enabled=false,inventory=async()=>({v:1,state:'
     if(!/estado|diagn[oó]stico|resumo/.test(message))topic=/cpu/.test(message)?'cpu':/gpu|hotspot|vram/.test(message)?'gpu':/ram|mem[oó]ria/.test(message)?'ram':/disco|armazenamento/.test(message)?'storage':'all';
     reply=require('./nex-local.cjs').summarize(metrics(),{now:Date.parse(now()),topic});
    }
-   if(focused&&/cena|dispositivo|luz|quarto|rgb/.test(message)&&intent!=='summarize_evidence'){intent='device_evidence';section='environment';reply='Dispositivos salvos: '+(state.devices.map(d=>d.name).join(', ')||'nenhum')+'. Cenas locais: '+(state.scenes.map(d=>d.name).join(', ')||'nenhuma')+'. Estados físicos não verificados; nenhum comando enviado.';}
+   if(focused&&/cena|dispositivo|luz|quarto|rgb/.test(message)&&intent!=='summarize_evidence'){intent='device_evidence';section='environment';reply='Dispositivos salvos: '+(state.devices.map(d=>d.name).join(', ')||'nenhum')+'. Cenas locais: '+(state.scenes.map(d=>d.name).join(', ')||'nenhuma')+'. Estados físicos não verificados; nenhum comando enviado.';const rgb=deviceEvidence();if(rgb?.state==='available'&&rgb.source==='openrgb.sdk.loopback.readonly'&&Number.isFinite(Date.parse(rgb.observed_at))&&Date.parse(now())-Date.parse(rgb.observed_at)>=0&&Date.parse(now())-Date.parse(rgb.observed_at)<=15000)reply+=' Inventário OpenRGB recente: '+(rgb.items.map(i=>i.name).join(', ')||'nenhum controlador')+'. Leitura do SDK; cores e alimentação não inferidas.';}
    const at=now(),persisted=conversationStore?.append(a.message,reply,at)===true;
    conversation.push({at,role:'user',text:a.message},{at,role:'nex',text:reply});conversation=conversation.slice(-40);
    return {v:1,provider:'local_rules',ai:false,intent,section,reply,execution:false,history_persisted:persisted,history_error:conversationStore?.view().error||null};

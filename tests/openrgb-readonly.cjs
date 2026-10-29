@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict'),{EventEmitter}=require('node:events'),{createReader,packet,parseDevice}=require('../apps/windows-ui/openrgb-readonly.cjs');let checks=0;const eq=(a,b)=>{assert.deepEqual(a,b);checks++;};
+const response=(id,dev,payload)=>{const b=Buffer.alloc(16+payload.length);b.write('ORGB');b.writeUInt32LE(dev,4);b.writeUInt32LE(id,8);b.writeUInt32LE(payload.length,12);payload.copy(b,16);return b;};
+const descriptor=()=>{const name=Buffer.from('Fixture GPU\0'),b=Buffer.alloc(10+name.length);b.writeUInt32LE(b.length);b.writeUInt32LE(1,4);b.writeUInt16LE(name.length,8);name.copy(b,10);return b;};
+(async()=>{let sent=[],closed=0;
+ const connect=options=>{eq(options,{host:'127.0.0.1',port:6742});const s=new EventEmitter();s.setTimeout=()=>{};s.end=()=>closed++;s.destroy=()=>{};s.write=b=>{sent.push(b.readUInt32LE(8));const id=b.readUInt32LE(8),data=id===0?Buffer.from([1,0,0,0]):descriptor(),r=response(id,b.readUInt32LE(4),data);queueMicrotask(()=>{s.emit('data',r.subarray(0,5));s.emit('data',r.subarray(5));});};queueMicrotask(()=>s.emit('connect'));return s;};
+ const reader=createReader({trusted:async()=>true,connect});const r=await reader.read();eq(r.state,'available');eq(r.items[0].name,'Fixture GPU');eq(r.physical_actions,0);eq(r.items[0].write_enabled,false);eq(sent,[0,1]);eq(closed,1);await reader.read();eq(sent.length,2);
+ eq((await createReader({trusted:async()=>false,connect:()=>{throw Error('must not connect');}}).read()).state,'unavailable');
+ for(const id of [50,1050,-1,'0']){assert.throws(()=>packet(id));checks++;}assert.throws(()=>parseDevice(Buffer.alloc(11)));checks++;
+ const invalid=createReader({trusted:async()=>true,connect:()=>{const s=new EventEmitter();s.setTimeout=()=>{};s.end=()=>{};s.destroy=()=>{};s.write=()=>queueMicrotask(()=>s.emit('data',response(0,0,Buffer.from([255,255,0,0]))));queueMicrotask(()=>s.emit('connect'));return s;}});eq((await invalid.read()).error,'rgb_invalid_response');
+ console.log(`PASS: ${checks} fixed OpenRGB read-only queries, fragmentation, limits, owner gate and no-write checks; physical hardware not touched`);
+})().catch(e=>{console.error(e.stack);process.exitCode=1;});
