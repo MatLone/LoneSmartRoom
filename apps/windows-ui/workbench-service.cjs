@@ -3,7 +3,7 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const catalog=require('./workbench-catalog.cjs'),model=require('./workbench-model.js');
 const OPS=Object.freeze({snapshot:['section'],inventory:['kind'],repair:['id'],profile:['name','adjustments'],bundle:['name','packages'],device:['id','name','connector','entity'],scene:['name','deviceIds','color','brightness'],scenePreview:['id'],nex:['message'],cleanup:[],export:[],import:['data'],audit:[],network:['kind','target'],gameProfile:['name','monitoring','overlay'],game:['name','steamAppId'],historyPolicy:['enabled','retentionHours']});
-const INVENTORIES=['hardware','memory','network','processes','applications','startup','services','drivers','events','disks','peripherals','games'];
+const INVENTORIES=['hardware','memory','network','processes','applications','startup','services','drivers','events','disks','peripherals','games','gameprocesses','localstatus','deviceproviders'];
 const text=(s,max=80)=>typeof s==='string'&&s.length>0&&s.length<=max&&!/[\x00-\x08\x0b-\x1f]/.test(s);
 const object=o=>o&&typeof o==='object'&&!Array.isArray(o);
 function exact(o,keys){if(!object(o)||Object.keys(o).sort().join(',')!==[...keys].sort().join(','))throw Error('invalid_tool_contract');}
@@ -24,7 +24,7 @@ function validateState(s){
  for(const a of s.audit){exact(a,['at','operation','outcome']);if(!Number.isFinite(Date.parse(a.at))||!Object.hasOwn(OPS,a.operation)||!['saved','planned'].includes(a.outcome))throw Error('audit');}
  if(Buffer.byteLength(JSON.stringify(s))>131072)throw Error('state_bytes');return s;
 }
-function createService({directory,enabled=false,inventory=async()=>({v:1,state:'unavailable',source:'unconfigured',items:[]}),network=async()=>({v:1,state:'unavailable'}),metrics=()=>null,now=()=>new Date().toISOString()}={}){
+function createService({directory,enabled=false,inventory=async()=>({v:1,state:'unavailable',source:'unconfigured',items:[]}),network=async()=>({v:1,state:'unavailable'}),metrics=()=>null,focused=false,now=()=>new Date().toISOString()}={}){
  if(!path.isAbsolute(directory)||typeof enabled!=='boolean')throw Error('private_app_directory');
  const file=path.join(directory,'workbench-v1.json');let state=defaults(),readOnly=false,error=null,conversation=[];
  function safeDirectory(){let current=path.parse(directory).root;for(const part of path.relative(current,directory).split(path.sep)){current=path.join(current,part);if(fs.existsSync(current)){const s=fs.lstatSync(current);if(!s.isDirectory()||s.isSymbolicLink())throw Error('unsafe_app_directory');}else fs.mkdirSync(current);}if(fs.existsSync(file)){const s=fs.lstatSync(file);if(!s.isFile()||s.isSymbolicLink()||s.nlink!==1)throw Error('unsafe_state_file');}}
@@ -53,9 +53,10 @@ function createService({directory,enabled=false,inventory=async()=>({v:1,state:'
  }
  async function handle(q){
   exact(q,['v','op','args']);if(q.v!==1||typeof q.op!=='string'||!Object.hasOwn(OPS,q.op)||JSON.stringify(q).length>131072)throw Error('tool_request_rejected');exact(q.args,OPS[q.op]);
-  const a=q.args;if(q.op==='snapshot'){
+  const a=q.args;if(focused){const allowed=['snapshot','inventory','device','scene','scenePreview','nex','game','gameProfile','historyPolicy','audit','export'];if(!allowed.includes(q.op)||q.op==='inventory'&&!['hardware','memory','disks','games','localstatus','deviceproviders'].includes(a.kind))throw Error('focused_scope');}
+  if(q.op==='snapshot'){
    if(!catalog.SECTIONS.some(s=>s.id===a.section))throw Error('unknown_section');
-   return {v:1,enabled,read_only:readOnly,error,catalog,settings:clone(),conversation:conversation.slice(-20),system_actions_enabled:false};
+   return {v:1,enabled,read_only:readOnly,error,catalog:focused?{SECTIONS:[{id:'controls',title:'Controles'},{id:'monitor',title:'Monitoramento PC'},{id:'gamer',title:'Gamer Launcher'}],CONNECTORS:catalog.CONNECTORS,PROFILES:catalog.PROFILES}:catalog,focused,settings:clone(),conversation:conversation.slice(-20),system_actions_enabled:false};
   }
   if(!enabled)throw Error('development_tools_disabled');
   if(q.op==='inventory'){if(!INVENTORIES.includes(a.kind))throw Error('inventory_kind');return inventory(a.kind);}
@@ -67,12 +68,13 @@ function createService({directory,enabled=false,inventory=async()=>({v:1,state:'
   if(q.op==='nex'){
    if(!text(a.message,1000))throw Error('nex_message');
    const message=a.message.toLocaleLowerCase('pt-BR');let intent='explain',reply='Sou o NEX em modo local. Posso organizar as ferramentas e resumir evidências disponíveis. Nenhum provedor de IA ou voz está configurado.',section=null;
-   for(const [pattern,id]of [[/temperatura|cpu|gpu|memória|memoria|monitor/,'hardware'],[/limp|repar|sfc|dism/,'maintenance'],[/jogo|fps|gamer/,'games'],[/rede|internet|ping|dns/,'network'],[/rgb|quarto|luz|cena/,'environment']])if(pattern.test(message)){intent='navigate';section=id;reply='Abra '+catalog.SECTIONS.find(s=>s.id===id).title+'. Ações no Windows e em equipamentos exigem autorização específica.';break;}
+   for(const [pattern,id]of [[/temperatura|cpu|gpu|memória|memoria|monitor/,'hardware'],[/limp|repar|sfc|dism/,'maintenance'],[/jogo|fps|gamer/,'games'],[/rede|internet|ping|dns/,'network'],[/rgb|quarto|luz|cena/,'environment']])if(pattern.test(message)){intent='navigate';section=focused?({hardware:'hardware',games:'games',environment:'environment'}[id]||null):id;reply='Abra '+catalog.SECTIONS.find(s=>s.id===id).title+'. Ações no Windows e em equipamentos exigem autorização específica.';break;}
    if(/estado|diagn[oó]stico|resumo|cpu|gpu|ram|mem[oó]ria|temperatura|hotspot|vram|disco|armazenamento/.test(message)){
     intent='summarize_evidence';let topic='all';
     if(!/estado|diagn[oó]stico|resumo/.test(message))topic=/cpu/.test(message)?'cpu':/gpu|hotspot|vram/.test(message)?'gpu':/ram|mem[oó]ria/.test(message)?'ram':/disco|armazenamento/.test(message)?'storage':'all';
     reply=require('./nex-local.cjs').summarize(metrics(),{now:Date.parse(now()),topic});
    }
+   if(focused&&/cena|dispositivo|luz|quarto|rgb/.test(message)&&intent!=='summarize_evidence'){intent='device_evidence';section='environment';reply='Dispositivos salvos: '+(state.devices.map(d=>d.name).join(', ')||'nenhum')+'. Cenas locais: '+(state.scenes.map(d=>d.name).join(', ')||'nenhuma')+'. Estados físicos não verificados; nenhum comando enviado.';}
    const at=now(),persisted=conversationStore?.append(a.message,reply,at)===true;
    conversation.push({at,role:'user',text:a.message},{at,role:'nex',text:reply});conversation=conversation.slice(-40);
    return {v:1,provider:'local_rules',ai:false,intent,section,reply,execution:false,history_persisted:persisted,history_error:conversationStore?.view().error||null};

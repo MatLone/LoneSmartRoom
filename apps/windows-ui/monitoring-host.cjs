@@ -12,7 +12,7 @@ function createMonitoringHost({root,runId,simulated=false,packaged=false,gpu=fal
   if(!/^[a-f0-9]{32}$/.test(runId))throw Error('invalid_development_session');
   if(packaged&&simulated)throw Error('simulated_packaged_monitoring_forbidden');
   if(typeof gpu!=='boolean'||(gpu&&simulated))throw Error('gpu_real_owned_only');
-  let active=true;
+  let active=true,quiet=false;
   let resumeAt=null,refreshing=false;
   let child=null,buffer=Buffer.alloc(0),timer=null,deadline=null,pending=false,closing=false,last=null,lastAt=0,requestAt=0;
   let status='connecting',error=null,stopPromise=null,stopResolve=null,startedAt=0,attempted=false,stopTimedOut=false;
@@ -118,14 +118,15 @@ function createMonitoringHost({root,runId,simulated=false,packaged=false,gpu=fal
     if(!gpu||active===value||closing)return;
     active=value;
     if(active){resumeAt=now();refreshing=true;send();}
-    if(timer!==null){clear(timer);timer=interval(poll,active?1000:10000);}
+    if(timer!==null){clear(timer);timer=interval(poll,active?(quiet?2000:1000):10000);}
     if(active)poll();
   }
+  function setQuiet(value){if(typeof value!=='boolean')throw Error('boolean_required');quiet=value;if(timer!==null){clear(timer);timer=interval(poll,active?(quiet?2000:1000):10000);}}
   function resume(){
     if(!gpu||closing)return;
     resumeAt=now();refreshing=true;send();
     if(active)poll();else setActive(true);
   }
-  return {start,stop,view,setActive,resume,diagnostics:()=>structuredClone(diagnostics)};
+  return {start,stop,view,setActive,setQuiet,resume,diagnostics:()=>structuredClone(diagnostics)};
 }
 module.exports={createMonitoringHost,MAX_LINE};

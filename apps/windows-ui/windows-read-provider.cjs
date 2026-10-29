@@ -9,7 +9,7 @@ function createProvider({script=path.join(__dirname,'windows-inventory.ps1'),exe
   if(kind==='ping'||kind==='dns'){if(typeof target!=='string'||target.length>253||!/^[a-zA-Z0-9][a-zA-Z0-9.:-]*$/.test(target)||target.includes('..'))throw Error('invalid_target');}
   if(platform!=='win32')return {v:1,state:'unavailable',source:'unsupported_platform',items:[],simulation:false};
   const t=now(),key=kind+'|'+target;
-  if(cache.has(key)&&t>=cache.get(key).at&&t-cache.get(key).at<(cache.get(key).value.state==='available'?(['network'].includes(kind)?3000:15000):2000))return structuredClone(cache.get(key).value);
+  if(cache.has(key)&&t>=cache.get(key).at&&t-cache.get(key).at<(cache.get(key).value.state==='available'?(kind==='network'?3000:kind==='gameprocesses'?1000:kind==='localstatus'?2000:15000):2000))return structuredClone(cache.get(key).value);
   if(pending)return {v:1,state:'unavailable',source:'busy_readonly_provider',items:[],simulation:false};
   if(!path.isAbsolute(script)||!fs.existsSync(script)||fs.lstatSync(script).isSymbolicLink())throw Error('trusted_inventory_script_required');
   const system=process.env.SystemRoot||'C:\\Windows',program=path.join(system,'System32','WindowsPowerShell','v1.0','powershell.exe');

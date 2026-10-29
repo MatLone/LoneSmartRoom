@@ -68,6 +68,9 @@ resources.pak
 resources/app.asar
 resources/app.asar.unpacked/windows-inventory.ps1
 resources/default_app.asar
+resources/desktop-local/cs2_launcher.py
+resources/desktop-local/local_game_entry.py
+resources/desktop-local/steam_launcher.py
 resources/monitoring/code/BUNDLED-MONITORING.json
 resources/monitoring/code/monitoring/__init__.py
 resources/monitoring/code/monitoring/adlx_bridge.py

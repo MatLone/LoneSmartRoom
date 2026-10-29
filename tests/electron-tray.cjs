@@ -127,6 +127,7 @@ async function mainWiring(lock,monitorFailure=false) {
   const controller={window:{webContents:wc,on:()=>{}},state:()=>({mode:'dashboard'}),start:()=>{starts++;},restoreCurrent:()=>{restores++;},hideToTray:()=>{hides++;return true;},setMode:m=>{if(!policy.validMode(m))throw Error('Invalid');},toggleMaximize:()=>{},minimize:()=>{},close:()=>{},quit:()=>{quits++;}};
   const monitor={start:()=>{if(monitorFailure)throw Error('mock failure');},stop:()=>Promise.resolve(true),view:()=>({v:1,connection:'disconnected'}),diagnostics:()=>({})};
   const context=vm.createContext({__dirname:directory,process:{argv:[],env:{},resourcesPath:'C:/mock-resources'},console,performance:{now:()=>Date.now()},require:name=>{
+    if(name==='./game-mode.cjs')return {createGameMode:()=>({start:()=>{},close:()=>{},view:()=>({})})};
     if(name==='electron')return {app,BrowserWindow:()=>{},ipcMain:{handle:(n,fn)=>ipcHandlers.set(n,fn),on:(n,fn)=>ipcEvents.set(n,fn)},screen:{},session:{defaultSession:{setPermissionRequestHandler:()=>{},setPermissionCheckHandler:()=>{},webRequest:{onBeforeRequest:()=>{}}}},Tray:()=>{},Menu:{}};
     if(name==='./desktop-window.cjs')return {createController:()=>{creations++;return controller;}};
     if(name==='./desktop-preferences.cjs')return {createStore:()=>({})};
@@ -151,7 +152,7 @@ async function mainWiring(lock,monitorFailure=false) {
   }
   check(hides===1,'Rejected IPC requests do not hide window');
   assert.throws(()=>ipcHandlers.get('window:mode')(trusted,'cmd.exe'));checks++;
-  check([...ipcHandlers.keys()].sort().join(',')===['widget:version','window:state','window:mode','window:maximize','window:tray','monitoring:snapshot','diagnostics:snapshot','history:read','history:export','tools:request','tools:displays','tools:export','tools:import','tools:presentmon','tools:fps-attach','tools:fps-snapshot','tools:fps-stop','tools:game-sessions','tools:inspect-temp','tools:open-panel','panel:context','panel:snapshot','panel:close','panel:fullscreen','panel:main'].sort().join(','),'Only explicitly allowed window/metric/diagnostic channels');
+  check([...ipcHandlers.keys()].sort().join(',')===['gamer:request','gamer:launch','gamer:launch-check','widget:version','window:state','window:mode','window:maximize','window:tray','monitoring:snapshot','diagnostics:snapshot','history:read','history:export','tools:request','tools:displays','tools:export','tools:import','tools:presentmon','tools:fps-attach','tools:fps-snapshot','tools:fps-stop','tools:game-sessions','tools:inspect-temp','tools:open-panel','panel:context','panel:snapshot','panel:close','panel:fullscreen','panel:main'].sort().join(','),'Only explicitly allowed window/metric/diagnostic channels');
   const diagnostic=await ipcHandlers.get('diagnostics:snapshot')(trusted,{v:1,scenario:'overview'});check(diagnostic.mode==='local'&&diagnostic.report.checks.find(c=>c.component==='agent_https').state==='unknown','Cache-only diagnostics do not probe or certify the operational HTTPS agent');
 }
 async function ownedShutdown(){

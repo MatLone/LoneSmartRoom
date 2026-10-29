@@ -6,7 +6,7 @@
  const names={'cpu.utilization':'CPU · utilização','gpu.adlx.utilization':'GPU · utilização','gpu.adlx.temperature':'GPU · temperatura','ram.used':'RAM · utilizada','ram.utilization':'RAM · utilização'};
  function draw(report){
   if(!report||report.v!==1||!Array.isArray(report.fields)||!Array.isArray(report.rows)||report.rows.length>120||JSON.stringify(report).length>131072)throw Error();
-  label.textContent=report.state==='disabled'?'Histórico desativado · habilite na Central Windows / Hardware':report.rows.length?(report.simulation?'DEMONSTRAÇÃO · dados simulados':'Histórico de medições locais'):'Sem amostras registradas';
+  label.textContent=report.state==='disabled'?'Histórico desativado · habilite em Monitoramento PC / Configurar histórico':report.rows.length?(report.simulation?'DEMONSTRAÇÃO · dados simulados':'Histórico de medições locais'):'Sem amostras registradas';
   const legacy=document.querySelector('.chart-card');if(legacy)legacy.hidden=report.state!=='disabled';
   grid.replaceChildren();
   if(!report.rows.length)return;

@@ -12,7 +12,7 @@ const resources = new Set([
   'audio-session.js',
   'panel.html','panel.css','panel.js',
   'workbench-model.js','workbench-renderer.js','workbench.css',
-  'inventory-presentation.js',
+  'inventory-presentation.js','focused-renderer.js',
   'assets/brand/logo-horizontal.svg', 'assets/brand/logo-header-small.svg',
   'assets/brand/windows-icon.svg', 'assets/brand/windows-icon.png'
 ].map(name => pathToFileURL(path.join(__dirname, name)).href));

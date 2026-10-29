@@ -4,11 +4,11 @@ const path = require('node:path');
 const existing = require('./package.json').build;
 module.exports = {
   ...existing,
-  directories: {...existing.directories, output: '../../.cache/artifacts/windows/desktop-dev9-consolidated-candidate-r10'},
+  directories: {...existing.directories, output: '../../.cache/artifacts/windows/desktop-dev9-consolidated-candidate-r11'},
   electronDist: 'node_modules/electron/dist',
   npmRebuild: false,
   afterPack: require('./build/preservation.cjs').afterPack,
-  extraResources: [{from: '../../.cache/windows-monitoring-runtime/dev9-r1', to: 'monitoring', filter: ['**/*']}],
+  extraResources: [{from: '../../.cache/windows-monitoring-runtime/dev9-r1', to: 'monitoring', filter: ['**/*']},...['steam_launcher.py','cs2_launcher.py'].map(name=>({from:'../../agent/windows/'+name,to:'desktop-local/'+name})),{from:'../../agent/development/local_game_entry.py',to:'desktop-local/local_game_entry.py'}],
   publish: null,
   win: {...existing.win, target: [{target: 'nsis', arch: ['x64']}, {target: 'portable', arch: ['x64']}], requestedExecutionLevel: 'asInvoker'},
   nsis: {

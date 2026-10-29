@@ -48,10 +48,14 @@ if (developmentReview) {
 }
 app.commandLine.appendSwitch('disable-background-networking');
 let controller, auxiliary=null;
-let workbench=null,gameArchive=null;
+let workbench=null,gameArchive=null,gameMode=null,localLauncher=null;
+let gamerPolicy={active:false,reduceHistory:false,quietUi:false,overlay:false},historyRecordedAt=-Infinity,gameOverlayOwned=false;
 const fpsSource=require('./presentmon-source.cjs').createSource({publish:fps=>auxiliary?.publish({...monitoringHost?.view(),fps})});
 app.on('will-quit',()=>fpsSource.stop());
 let lastHistoryRead=-Infinity;
+function getLocalLauncher(){if(localLauncher)return localLauncher;
+return localLauncher=require('./local-game-launcher.cjs').createLauncher({python:(app.isPackaged?require('./monitoring-runtime.cjs').bundledLayout(process.resourcesPath,app.getVersion()):require('./monitoring-runtime.cjs').sourceLayout(path.resolve(__dirname,'../..'))).python,script:app.isPackaged?path.join(process.resourcesPath,'desktop-local','local_game_entry.py'):path.resolve(__dirname,'../../agent/development/local_game_entry.py'),directory:path.join(app.getPath('userData'),'workbench'),confirm:async target=>{const r=await require('electron').dialog.showMessageBox(controller.window,{type:'question',title:'Autorizar abertura local',message:target==='cs2'?'Abrir Counter-Strike 2 agora via Steam?':'Abrir Steam agora?',detail:'Ação local única, sem criar grants remotos. Nenhum argumento livre é aceito. Uma nova abertura não será repetida automaticamente.',buttons:['Cancelar','Autorizar esta abertura'],defaultId:0,cancelId:0});return r.response===1;}});
+}
 function state() {return controller?.state() || null;}
 function configureHistory(history){
   performanceHistory.close();
@@ -63,7 +67,7 @@ function updateActivity(){if(monitoringHost)monitoringHost.setActive(Boolean(con
 function registerIpc() {
   const trusted = (event, args, count) => policy.trustedSender(event, controller?.window?.webContents) && args.length === count;
   let budgetAt=performance.now(),budget=0;const dialogPending=new Set();
-  const limitedDialogs=new Set(['tools:export','tools:import','tools:presentmon','tools:fps-attach','history:export']);
+  const limitedDialogs=new Set(['tools:export','tools:import','tools:presentmon','tools:fps-attach','history:export','gamer:launch']);
   const handle = (channel, count, callback) => ipcMain.handle(channel, (event, ...args) => {
     if (!trusted(event, args, count)) throw new Error('Untrusted window request');
     const now=performance.now();if(now-budgetAt>=1000){budgetAt=now;budget=0;}if(++budget>64)throw Error('window_request_rate');
@@ -87,7 +91,10 @@ function registerIpc() {
     if(selected.canceled)return {v:1,canceled:true};const file=selected.filePaths[0];if(fs.statSync(file).size>131072)throw Error('settings_import_size');
     const result=await workbench.handle({v:1,op:'import',args:{data:JSON.parse(fs.readFileSync(file,'utf8'))}});configureHistory(result.settings.history);return result;
   });
-  handle('tools:inspect-temp',1,scope=>require('./maintenance-inspector.cjs').createInspector({ownCache:path.join(app.getPath('userData'),'workbench','tool-cache')}).inspect(scope));
+  handle('tools:inspect-temp',1,()=>{throw Error('generic_tools_archived');});
+  handle('gamer:launch',1,app=>{if(!['steam','cs2'].includes(app))throw Error('local_launch_app');return getLocalLauncher().launch(app);});
+  handle('gamer:launch-check',1,app=>{if(!['steam','cs2'].includes(app))throw Error('local_launch_app');return getLocalLauncher().inspect(app);});
+  handle('gamer:request',1,async q=>{if(!q||q.v!==1||Object.keys(q).sort().join(',')!=='op,policy,v'||!['view','poll','configure'].includes(q.op))throw Error('gamer_request');if(q.op!=='configure'&&q.policy!==null)throw Error('gamer_arguments');return q.op==='configure'?gameMode.configure(q.policy):q.op==='poll'?gameMode.poll():gameMode.view();});
   handle('tools:game-sessions',0,()=>gameArchive.list());
   handle('tools:fps-snapshot',0,()=>fpsSource.view());
   handle('tools:fps-stop',0,()=>{const report=fpsSource.finish();const archived=report?gameArchive.add(report):null;return {...fpsSource.view(),archived:!!archived};});
@@ -155,6 +162,7 @@ if (!app.requestSingleInstanceLock()) {
     app.on('before-quit',()=>mediaPermissions.clear());
     session.defaultSession.webRequest.onBeforeRequest((details, callback) => callback({cancel: !policy.allowedResource(details.url)}));
     const stopMonitoring=async()=>{
+      gameMode?.close();
       if(agentEvidence&&!await agentEvidence.stop())return false;
       if(!monitoringHost){monitoringQuitReady=true;return true;}
       try{const stopped=await monitoringHost.stop();monitoringQuitReady=stopped;return stopped;}catch{return false;}
@@ -175,8 +183,9 @@ if (!app.requestSingleInstanceLock()) {
     const provider=require('./windows-read-provider.cjs').createProvider({script:app.isPackaged
       ?path.join(process.resourcesPath,'app.asar.unpacked','windows-inventory.ps1'):path.join(__dirname,'windows-inventory.ps1')});
     workbench=require('./workbench-service.cjs').createService({directory:path.join(app.getPath('userData'),'workbench'),
-      enabled:app.isPackaged||developmentReview&&process.argv.includes('--lone-workbench-development'),
+      enabled:app.isPackaged||developmentReview&&process.argv.includes('--lone-workbench-development'),focused:true,
       inventory:provider.inventory,network:provider.network,metrics:()=>monitoringHost?.view()||null});
+
     gameArchive=require('./game-archive.cjs').createArchive(path.join(app.getPath('userData'),'workbench'));
     const localSettings=await workbench.handle({v:1,op:'snapshot',args:{section:'overview'}});
     if(localSettings.enabled&&localSettings.settings.history.enabled)configureHistory(localSettings.settings.history);
@@ -187,7 +196,11 @@ if (!app.requestSingleInstanceLock()) {
       metrics:()=>({...monitoringHost?.view()||{v:1,connection:'disabled',simulated:false,snapshot:null},fps:fpsSource.view()}),
       restoreMain:()=>controller.restoreCurrent(),navigate:section=>controller.window.webContents.send('tools:navigate',section)});
     app.on('before-quit',()=>auxiliary.closeAll());
-    registerIpc();controller.start();
+    gameMode=require('./game-mode.cjs').createGameMode({directory:path.join(app.getPath('userData'),'workbench'),inspect:()=>provider.inventory('gameprocesses'),
+      apply:value=>{gamerPolicy=value;monitoringHost?.setQuiet?.(value.active&&value.reduceHistory);if(value.active&&value.overlay&&!auxiliary.views().some(w=>w.role==='overlay')){auxiliary.open('overlay',screen.getPrimaryDisplay().id);gameOverlayOwned=true;}if((!value.active||!value.overlay)&&gameOverlayOwned){auxiliary.closeRole('overlay');gameOverlayOwned=false;}},
+      publish:value=>{const wc=controller?.window?.webContents;if(wc&&!wc.isDestroyed())wc.send('gamer:state',value);}});
+    app.on('before-quit',()=>gameMode.close());
+    registerIpc();controller.start();gameMode.start();
     if(developmentReview||app.isPackaged&&process.argv.includes('--lone-validation-session')){
       fs.mkdirSync(app.getPath('logs'),{recursive:true});
       const deadline=require('./development-deadline.cjs').createDeadline({enabled:true,startedAt:launchedAt,
@@ -203,7 +216,7 @@ if (!app.requestSingleInstanceLock()) {
         packaged:app.isPackaged,resourcesPath:process.resourcesPath,version:app.getVersion(),
         gpu:app.isPackaged||gpuDevelopment,
         simulated:!app.isPackaged&&process.argv.includes('--lone-monitoring-simulated'),publish:value=>{
-          performanceHistory.record(value);auxiliary?.publish({...value,fps:fpsSource.view()});
+          if(!gamerPolicy.active||!gamerPolicy.reduceHistory||performance.now()-historyRecordedAt>=5000){performanceHistory.record(value);historyRecordedAt=performance.now();}auxiliary?.publish({...value,fps:fpsSource.view()});
           const wc=controller?.window?.webContents;
           if(wc&&!wc.isDestroyed()&&wc.mainFrame.url===policy.entryUrl)wc.send('monitoring:state',value);
         }});

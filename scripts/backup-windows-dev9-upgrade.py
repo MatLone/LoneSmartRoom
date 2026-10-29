@@ -55,7 +55,7 @@ def main():
     assert all(sha(destination/r['destinationRelative'])==r['sha256'] for r in records)
     win.verify_private(manifest);win.verify_private(destination)
     report=dict(ok=True,backup=str(destination),files=len(records),bytes=sum(r['bytes'] for r in records),manifest_sha256=sha(manifest),owner_only_acl_verified=True,originals_modified=False,agent_database_copied=False,credentials_decrypted=False,counts={k:len(v) for k,v in inventories.items()})
-    out=ROOT/'.cache/validation/windows-dev9-installation';out.mkdir(parents=True,exist_ok=True)
+    out=ROOT/'.cache/validation/windows-dev9-focused-installation';out.mkdir(parents=True,exist_ok=True)
     with (out/'backup-receipt.json').open('x',encoding='utf-8') as f:json.dump(report,f,indent=2)
     print(json.dumps(report))
 if __name__=='__main__':main()

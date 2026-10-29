@@ -28,10 +28,10 @@ function createAuxiliaryWindows({BrowserWindow,screen,policy,metrics,restoreMain
  function snapshot(event){context(event);return metrics();}
  function close(event){const w=find(event);if(!w)throw Error('untrusted_panel');w.win.close();}
  function fullscreen(event,value){const w=find(event);if(!w||w.role!=='touch'||typeof value!=='boolean')throw Error('panel_fullscreen_scope');w.win.setFullScreen(value);}
- function showMain(event,section){const w=find(event);if(!w||w.role!=='touch'||!['overview','hardware','maintenance','games','environment','nex'].includes(section))throw Error('panel_navigation_scope');restoreMain();navigate(section);}
+ function showMain(event,section){const w=find(event);if(!w||w.role!=='touch'||!['overview','hardware','games','environment','nex'].includes(section))throw Error('panel_navigation_scope');restoreMain();navigate(section);}
  function publish(value){for(const {win}of windows.values())if(!win.isDestroyed()&&win.webContents.mainFrame.url===ENTRY)win.webContents.send('monitoring:state',value);}
  function recover(){for(const item of windows.values()){if(item.win.isDestroyed())continue;const display=screen.getAllDisplays().find(d=>d.id===item.displayId);if(!display){item.win.setFullScreen(false);item.displayId=screen.getPrimaryDisplay().id;item.win.setBounds(policy.restoreBounds(item.win.getBounds(),screen.getAllDisplays().map(d=>d.workArea),screen.getPrimaryDisplay().workArea));}}}
  screen.on('display-removed',recover);
- return Object.freeze({open,context,snapshot,close,fullscreen,showMain,publish,closeAll(){for(const {win}of windows.values())if(!win.isDestroyed())win.close();windows.clear();screen.removeListener('display-removed',recover);},views:()=>[...windows.values()].map(w=>({role:w.role,window:w.win}))});
+ return Object.freeze({open,context,snapshot,close,fullscreen,showMain,publish,closeRole(role){if(!['touch','overlay'].includes(role))throw Error('panel_role');const w=windows.get(role)?.win;if(w&&!w.isDestroyed())w.close();},closeAll(){for(const {win}of windows.values())if(!win.isDestroyed())win.close();windows.clear();screen.removeListener('display-removed',recover);},views:()=>[...windows.values()].map(w=>({role:w.role,window:w.win}))});
 }
 module.exports={createAuxiliaryWindows,ENTRY};

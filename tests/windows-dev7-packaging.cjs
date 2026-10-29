@@ -39,7 +39,7 @@ for(const version of ['2.0.0-dev.6','2.0.0-dev.7','2.0.0-dev.8','2.0.0-dev.9']){
 const pkg=require('../apps/windows-ui/package.json'),lock=require('../apps/windows-ui/package-lock.json'),config=require('../apps/windows-ui/electron-builder.development.cjs');
 check(pkg.version==='2.0.0-dev.9'&&lock.version===pkg.version&&lock.packages[''].version===pkg.version,'Version and lock roots match');
 check(config.appId==='com.lone.smartroom'&&pkg.name==='lone-smart-room','Stable application identity');
-check(config.directories.output.includes('desktop-dev9-consolidated-candidate-r10')&&config.extraResources[0].from.endsWith('/dev9-r1'),'Fresh distribution and runtime outputs');
+check(config.directories.output.includes('desktop-dev9-consolidated-candidate-r11')&&config.extraResources[0].from.endsWith('/dev9-r1'),'Fresh distribution and runtime outputs');
 check(config.nsis.runAfterFinish===false&&!config.nsis.allowElevation&&!config.nsis.deleteAppDataOnUninstall,'No autorun, elevation or profile deletion');
 const approved=require('../docs/gpu-resume-fix-2026-10-26/evidence/source-hashes.json');
 for(const file of ['apps/windows-ui/monitoring-model.js',

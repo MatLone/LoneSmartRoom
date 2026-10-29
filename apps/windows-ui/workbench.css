@@ -10,3 +10,5 @@
 .core-track span{display:block;width:0;height:100%;background:#ff153f}
 
 .nex-messages p{white-space:pre-wrap}
+
+.focus-dialog{background:#101014;color:#f4f2f5;border:1px solid #50303b;border-radius:16px;padding:22px;width:min(900px,94vw);max-height:90vh;overflow:auto}.focus-dialog::backdrop{background:#000b}.focus-dialog .tool-card{margin-top:14px}.focus-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 20px}.game-active *{animation-duration:0s!important;transition-duration:0s!important}.focus-dialog .nex-messages{max-height:40vh}.top-actions>#nexOpen{min-height:38px}.window[data-mode=widget] .top-actions>#nexOpen{padding:5px}

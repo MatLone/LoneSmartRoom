@@ -19,6 +19,7 @@ assert.equal(sourcePackage.build.appId,'com.lone.smartroom');
 require('../apps/windows-ui/monitoring-runtime.cjs').bundledLayout(path.join(bundle,'resources'),pkg.version);
 const payload=path.join(root,'.cache/windows-monitoring-runtime/dev9-r1'),manifest=JSON.parse(fs.readFileSync(path.join(payload,'manifest.json')));
 for(const name of ['manifest.json',...Object.keys(manifest.files)])assert(fs.readFileSync(path.join(bundle,'resources/monitoring',name)).equals(fs.readFileSync(path.join(payload,name))),'Sidecar differs from reviewed payload: '+name);
+for(const [name,source]of [['steam_launcher.py','agent/windows/steam_launcher.py'],['cs2_launcher.py','agent/windows/cs2_launcher.py'],['local_game_entry.py','agent/development/local_game_entry.py']])assert(fs.readFileSync(path.join(bundle,'resources/desktop-local',name)).equals(fs.readFileSync(path.join(root,source))),'Existing allowlisted launcher source differs: '+name);
 const raw=fs.readFileSync(exe),u16=p=>raw.readUInt16LE(p),u32=p=>raw.readUInt32LE(p);
 const pe=u32(0x3c);assert.equal(raw.subarray(pe,pe+4).toString('hex'),'50450000');
 const sectionCount=u16(pe+6),optional=pe+24,dirs=optional+(u16(optional)===0x20b?112:96),resRva=u32(dirs+16),table=optional+u16(pe+20);

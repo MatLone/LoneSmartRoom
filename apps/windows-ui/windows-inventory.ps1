@@ -1,4 +1,4 @@
-param([ValidateSet('hardware','memory','network','processes','applications','startup','services','drivers','events','disks','peripherals','games','ping','dns')][string]$Kind,[string]$Target='')
+param([ValidateSet('hardware','memory','network','processes','applications','startup','services','drivers','events','disks','peripherals','games','gameprocesses','localstatus','deviceproviders','ping','dns')][string]$Kind,[string]$Target='')
 $ErrorActionPreference='Stop'
 [Console]::OutputEncoding=New-Object System.Text.UTF8Encoding($false)
 $ProgressPreference='SilentlyContinue'
@@ -7,6 +7,9 @@ function FailureCode($record,[string]$stage){$rule=($record.FullyQualifiedErrorI
 try {
  $items=@();$extra=@{};$resultState='available'
  switch($Kind){
+  'gameprocesses' {$processes=@(Get-Process -Name cs2 -ErrorAction SilentlyContinue | Select-Object -First 8);$unverified=0;foreach($process in $processes){try{$image=$process.Path;if($image -notmatch '\\steamapps\\common\\[^\\]+\\game\\bin\\win64\\cs2\.exe$'){$unverified++;continue};$items+=@{game='cs2';pid=$process.Id}}catch{$unverified++}};if($unverified){$resultState='unavailable';$extra=@{unverified_processes=$unverified}}}
+  'localstatus' {$listeners=@(Get-NetTCPConnection -State Listen -LocalPort 8776 -ErrorAction SilentlyContinue);$items=@(@{listener_count=$listeners.Count;identity_verified=$false;authentication='not_verified';source='Windows TCP table; presence is not authentication'})}
+  'deviceproviders' {$known=@('OpenRGB','SignalRgb');$items=@(foreach($name in $known){$running=@(Get-Process -Name $name -ErrorAction SilentlyContinue);@{name=$name;process_present=($running.Count -gt 0);protocol_verified=$false;configured=$false}})}
   'games' {
    $steam=(Get-ItemProperty -LiteralPath 'HKCU:\Software\Valve\Steam' -ErrorAction SilentlyContinue).SteamPath
    $libraries=@();if($steam -match '^[A-Za-z]:[\\/]'){$libraries+=([IO.Path]::GetFullPath($steam))}
