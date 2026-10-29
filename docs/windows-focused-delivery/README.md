@@ -77,3 +77,35 @@ configuração/credencial própria e permanece não configurado.
 
 A interface final passou em 150% com leitura real OpenRGB e inspeção CS2 sem
 execução. [Capturas](captures/) e [recibo](focused-electron.json).
+
+## Preparação da manutenção do agente (não executada)
+
+O agente permaneceu offline. Backup protegido independente:
+Agent-before-reliable-20261029T022318Z, 31 arquivos, manifesto
+1cce3e7b5a7b83a20e524db5f4fb3c44659695ca727aaef8e7854d2bc3b3a860.
+Contém estado criptografado, fontes e a entrada Run anterior para reversão;
+nenhuma credencial foi decriptada e nenhum conteúdo privado foi versionado.
+Preparação: scripts/prepare-agent-maintenance.py; somente leitura nos originais.
+
+Manutenção proposta, mediante UMA autorização consolidada própria:
+1. Renovar identidade/ausência de processos, listener livre e zero grants.
+2. Validar o supervisor candidato contra o checkpoint e backup protegido.
+3. Uma inicialização manual da candidata, status autenticado e observação de 60 s.
+4. Encerrar somente pelo canal cooperativo local. Se houver timeout, parar sem
+   forçar processos ou alterar Run. Verificar porta e mutex liberados.
+5. Uma segunda inicialização controlada, somente após sucesso do passo anterior,
+   para deixar o agente ativo; validar novamente TLS/certificado/pin/status/grants.
+6. Substituir apenas a entrada Run específica pelo comando absoluto preparado,
+   com comparação prévia do hash do valor original. Não tocar StartupApproved,
+   firewall, serviços ou tarefas. Guardar valor anterior no backup protegido.
+7. Validar despacho real no próximo login autorizado; sucesso manual não comprova
+   inicialização automática. Nenhum reboot/logoff está incluído nesta proposta.
+
+Reversão do agente: com sessão candidata encerrada cooperativamente, restaurar
+apenas o valor Run anterior a partir do backup privado. Não sobrescrever banco
+ou certificados automaticamente. Recuperar launcher legado apenas sob autorização
+separada quando necessário. Relay permanece desativado sem publisher registrado
+e permissão de leitura específica; não conceder grants de execução.
+
+Essa manutenção não foi executada nesta entrega; o recibo de preparação registra
+registry_written=false, agent_started=false e credentials_decrypted=false.
