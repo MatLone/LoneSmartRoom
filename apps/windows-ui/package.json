@@ -83,7 +83,11 @@
       "audio-session.js",
       "media-permissions.cjs",
       "development-deadline.cjs",
-      "presentmon-source.cjs"
+      "presentmon-source.cjs",
+      "openrgb-sdk.cjs",
+      "rgb-control.cjs",
+      "rgb-renderer.js",
+      "nex-rgb.cjs"
     ],
     "directories": {
       "output": "dist"

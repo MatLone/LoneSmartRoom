@@ -75,9 +75,10 @@ function createService({directory,enabled=false,inventory=async()=>({v:1,state:'
     reply=require('./nex-local.cjs').summarize(metrics(),{now:Date.parse(now()),topic});
    }
    if(focused&&/cena|dispositivo|luz|quarto|rgb/.test(message)&&intent!=='summarize_evidence'){intent='device_evidence';section='environment';reply='Dispositivos salvos: '+(state.devices.map(d=>d.name).join(', ')||'nenhum')+'. Cenas locais: '+(state.scenes.map(d=>d.name).join(', ')||'nenhuma')+'. Estados físicos não verificados; nenhum comando enviado.';const rgb=deviceEvidence();if(rgb?.state==='available'&&rgb.source==='openrgb.sdk.loopback.readonly'&&Number.isFinite(Date.parse(rgb.observed_at))&&Date.parse(now())-Date.parse(rgb.observed_at)>=0&&Date.parse(now())-Date.parse(rgb.observed_at)<=15000)reply+=' Inventário OpenRGB recente: '+(rgb.items.map(i=>i.name).join(', ')||'nenhum controlador')+'. Leitura do SDK; cores e alimentação não inferidas.';}
+   const rgbRequest=focused?require('./nex-rgb.cjs').proposal(a.message):null;if(rgbRequest){intent='rgb_proposal';section='environment';reply='Solicitação RGB preparada. Use Confirmar solicitação RGB; alterações exigem autorização nativa antes da escrita. Nenhum comando foi enviado.';}
    const at=now(),persisted=conversationStore?.append(a.message,reply,at)===true;
    conversation.push({at,role:'user',text:a.message},{at,role:'nex',text:reply});conversation=conversation.slice(-40);
-   return {v:1,provider:'local_rules',ai:false,intent,section,reply,execution:false,history_persisted:persisted,history_error:conversationStore?.view().error||null};
+   return {v:1,provider:'local_rules',ai:false,intent,section,reply,rgbRequest,execution:false,history_persisted:persisted,history_error:conversationStore?.view().error||null};
   }
   if(q.op==='scenePreview'){
    const s=state.scenes.find(s=>s.id===a.id);if(!s)throw Error('scene_id');

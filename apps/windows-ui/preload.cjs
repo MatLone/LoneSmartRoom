@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('loneTools',Object.freeze({
   saveBundle:(name,packages)=>tool('bundle',{name,packages}),
   saveDevice:device=>tool('device',device),saveScene:scene=>tool('scene',scene),scenePreview:id=>tool('scenePreview',{id}),
   inspectRgb:()=>ipcRenderer.invoke('devices:inspect-rgb'),
+  rgb:(op,args={})=>{if(!['state','refresh','save','apply','off','on','restore','sceneSave','sceneApply','automation'].includes(op))return Promise.reject(Error('rgb_operation'));return ipcRenderer.invoke('rgb:request',{v:1,op,args});},
   requestLocalLaunch:app=>{if(!['steam','cs2'].includes(app))return Promise.reject(Error('launch_app'));return ipcRenderer.invoke('gamer:launch',app);},
   checkLocalLaunch:app=>{if(!['steam','cs2'].includes(app))return Promise.reject(Error('launch_app'));return ipcRenderer.invoke('gamer:launch-check',app);},
   gamer:(op='view',policy=null)=>{if(!['view','poll','configure'].includes(op))return Promise.reject(Error('gamer_operation'));return ipcRenderer.invoke('gamer:request',{v:1,op,policy});},

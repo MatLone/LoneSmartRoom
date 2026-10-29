@@ -32,5 +32,5 @@ const ico=fs.readFileSync(path.join(app,'assets/brand/windows-icon.ico')),count=
 for(let i=0;i<count;i++){const p=6+16*i,size=ico.readUInt32LE(p+8),start=ico.readUInt32LE(p+12),image=ico.subarray(start,start+size);assert(icons.some(icon=>icon.equals(image)),'Official ICO image missing from PE');}
 assert(groups.length>0);
 const result={ok:true,version:pkg.version,appIdFromBuildConfiguration:sourcePackage.build.appId,packagedName:pkg.name,resourcesVerified:files,sidecarFilesVerified:Object.keys(manifest.files).length+1,exeSha256:hash(raw),asarSha256:hash(fs.readFileSync(archive)),peIconGroups:groups.length,peIconImages:icons.length,officialIconImagesMatched:count,generatedExecutableRun:false,installerExecuted:false};
-const output=path.join(root,'.cache/validation/windows-dev9/package-inspection.json');fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(result,null,2)+'\n');
+const output=path.join(root,process.argv[3]==='--openrgb'?'.cache/validation/openrgb-control-r2/package-inspection.json':'.cache/validation/windows-dev9/package-inspection.json');fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(result,null,2)+'\n');
 console.log(`PASS: ${files.length} ASAR files, package identity and ${count} official PE icon images; executable not run.`);

@@ -48,7 +48,7 @@ if (developmentReview) {
 }
 app.commandLine.appendSwitch('disable-background-networking');
 let controller, auxiliary=null;
-let workbench=null,gameArchive=null,gameMode=null,localLauncher=null,rgbReader=null;
+let workbench=null,gameArchive=null,gameMode=null,localLauncher=null,rgbReader=null,rgbControl=null;
 let gamerPolicy={active:false,reduceHistory:false,quietUi:false,overlay:false},historyRecordedAt=-Infinity,gameOverlayOwned=false;
 const fpsSource=require('./presentmon-source.cjs').createSource({publish:fps=>auxiliary?.publish({...monitoringHost?.view(),fps})});
 app.on('will-quit',()=>fpsSource.stop());
@@ -67,7 +67,7 @@ function updateActivity(){if(monitoringHost)monitoringHost.setActive(Boolean(con
 function registerIpc() {
   const trusted = (event, args, count) => policy.trustedSender(event, controller?.window?.webContents) && args.length === count;
   let budgetAt=performance.now(),budget=0;const dialogPending=new Set();
-  const limitedDialogs=new Set(['tools:export','tools:import','tools:presentmon','tools:fps-attach','history:export','gamer:launch']);
+  const limitedDialogs=new Set(['tools:export','tools:import','tools:presentmon','tools:fps-attach','history:export','gamer:launch','rgb:request']);
   const handle = (channel, count, callback) => ipcMain.handle(channel, (event, ...args) => {
     if (!trusted(event, args, count)) throw new Error('Untrusted window request');
     const now=performance.now();if(now-budgetAt>=1000){budgetAt=now;budget=0;}if(++budget>64)throw Error('window_request_rate');
@@ -93,6 +93,7 @@ function registerIpc() {
   });
   handle('tools:inspect-temp',1,()=>{throw Error('generic_tools_archived');});
   handle('devices:inspect-rgb',0,()=>rgbReader.read());
+  handle('rgb:request',1,q=>rgbControl.request(q));
   handle('gamer:launch',1,app=>{if(!['steam','cs2'].includes(app))throw Error('local_launch_app');return getLocalLauncher().launch(app);});
   handle('gamer:launch-check',1,app=>{if(!['steam','cs2'].includes(app))throw Error('local_launch_app');return getLocalLauncher().inspect(app);});
   handle('gamer:request',1,async q=>{if(!q||q.v!==1||Object.keys(q).sort().join(',')!=='op,policy,v'||!['view','poll','configure'].includes(q.op))throw Error('gamer_request');if(q.op!=='configure'&&q.policy!==null)throw Error('gamer_arguments');return q.op==='configure'?gameMode.configure(q.policy):q.op==='poll'?gameMode.poll():gameMode.view();});
@@ -164,11 +165,12 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.webRequest.onBeforeRequest((details, callback) => callback({cancel: !policy.allowedResource(details.url)}));
     const stopMonitoring=async()=>{
       gameMode?.close();
+      if(rgbControl&&!await rgbControl.close())return false;
       if(agentEvidence&&!await agentEvidence.stop())return false;
       if(!monitoringHost){monitoringQuitReady=true;return true;}
       try{const stopped=await monitoringHost.stop();monitoringQuitReady=stopped;return stopped;}catch{return false;}
     };
-    if(monitoringEnabled||agentEvidenceDevelopment)app.on('before-quit',event=>{
+    app.on('before-quit',event=>{
       if(monitoringQuitReady)return;
       event.preventDefault();
       if(!monitoringQuitting){monitoringQuitting=true;stopMonitoring().then(stopped=>{
@@ -177,7 +179,7 @@ if (!app.requestSingleInstanceLock()) {
     });
     controller = createController({app, screen, Tray, Menu, policy,
       store: createStore(app.getPath('userData')), createWindow,
-      beforeExit:monitoringEnabled||agentEvidenceDevelopment?stopMonitoring:null,
+      beforeExit:stopMonitoring,
       beforeRestore:()=>monitoringHost?.resume?.(),
       icon: path.join(__dirname, 'assets/brand/windows-icon.ico'), version: app.getVersion(),
       metadata: {development: !app.isPackaged, reviewProfile: developmentReview}});
@@ -188,6 +190,10 @@ if (!app.requestSingleInstanceLock()) {
       inventory:provider.inventory,network:provider.network,metrics:()=>monitoringHost?.view()||null,deviceEvidence:()=>rgbReader?.peek()||null});
 
     rgbReader=require('./openrgb-readonly.cjs').createReader({trusted:async()=>{const r=await provider.inventory('deviceproviders');return r.state==='available'&&r.simulation===false&&r.items.some(i=>i.name==='OpenRGB'&&i.sdk_loopback_owner_verified===true);}});
+    rgbControl=require('./rgb-control.cjs').createRgbControl({directory:path.join(app.getPath('userData'),'workbench','rgb'),
+      enabled:app.isPackaged||developmentReview&&process.argv.includes('--lone-rgb-control-development'),
+      trusted:async()=>{const r=await provider.inventory('deviceproviders');return r.state==='available'&&r.simulation===false&&r.items.some(i=>i.name==='OpenRGB'&&i.sdk_loopback_owner_verified===true&&i.sdk_restricted_to_loopback===true);},
+      confirm:async action=>{const r=await require('electron').dialog.showMessageBox(controller.window,{type:'question',title:'Autorizar RGB local',message:action.kind==='restore'?'Restaurar o estado RGB salvo?':action.kind==='automation'?'Autorizar cena Gamer automática e restauração ao sair do CS2?':'Aplicar alteração RGB agora?',detail:JSON.stringify(action.targets,null,2)+(action.externalChange?'\nO estado mudou fora do LSR; esta restauração substituirá essas mudanças.':'')+'\nLeitura de retorno confirma o estado do servidor, não a observação física. Sem gravar perfis ou firmware.',buttons:['Cancelar','Autorizar RGB'],defaultId:0,cancelId:0});return r.response===1;}});
     gameArchive=require('./game-archive.cjs').createArchive(path.join(app.getPath('userData'),'workbench'));
     const localSettings=await workbench.handle({v:1,op:'snapshot',args:{section:'overview'}});
     if(localSettings.enabled&&localSettings.settings.history.enabled)configureHistory(localSettings.settings.history);
@@ -200,7 +206,7 @@ if (!app.requestSingleInstanceLock()) {
     app.on('before-quit',()=>auxiliary.closeAll());
     gameMode=require('./game-mode.cjs').createGameMode({directory:path.join(app.getPath('userData'),'workbench'),inspect:()=>provider.inventory('gameprocesses'),
       apply:value=>{gamerPolicy=value;monitoringHost?.setQuiet?.(value.active&&value.reduceHistory);if(value.active&&value.overlay&&!auxiliary.views().some(w=>w.role==='overlay')){auxiliary.open('overlay',screen.getPrimaryDisplay().id);gameOverlayOwned=true;}if((!value.active||!value.overlay)&&gameOverlayOwned){auxiliary.closeRole('overlay');gameOverlayOwned=false;}},
-      publish:value=>{const wc=controller?.window?.webContents;if(wc&&!wc.isDestroyed())wc.send('gamer:state',value);}});
+      publish:value=>{void rgbControl?.gameState(value.state==='active');const wc=controller?.window?.webContents;if(wc&&!wc.isDestroyed())wc.send('gamer:state',value);}});
     app.on('before-quit',()=>gameMode.close());
     registerIpc();controller.start();gameMode.start();
     if(developmentReview||app.isPackaged&&process.argv.includes('--lone-validation-session')){

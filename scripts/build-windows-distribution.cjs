@@ -4,9 +4,11 @@ const fs = require('node:fs'), path = require('node:path'), cp = require('node:c
 const {staticUninstaller} = require('./nsis-static-uninstaller.cjs');
 const root = path.resolve(__dirname, '..'), project = path.join(root, 'apps/windows-ui');
 const modules = path.join(project, 'node_modules');
-const config = require(path.join(project, 'electron-builder.development.cjs'));
+if(process.argv.slice(2).some(v=>v!=='--openrgb')||process.argv.length>3)throw Error('reviewed_build_target_required');
+const rgbBuild=process.argv.includes('--openrgb');
+const config = require(path.join(project, rgbBuild?'electron-builder.rgb-development.cjs':'electron-builder.development.cjs'));
 const output = path.resolve(project, config.directories.output);
-const evidence = path.join(root, '.cache/validation/windows-dev9');
+const evidence = path.join(root,rgbBuild?'.cache/validation/openrgb-control-r2':'.cache/validation/windows-dev9');
 const inside = (file, directory) => {const relative = path.relative(directory, file);return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));};
 async function main() {
   if (!inside(output, path.join(root, '.cache/artifacts/windows'))) throw Error('Output outside artifact workspace');

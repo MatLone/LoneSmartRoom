@@ -2,8 +2,10 @@
 // Offline NSIS/7z/ASAR/PE inspection. Does not launch any generated executable.
 const fs = require('node:fs'), path = require('node:path'), cp = require('node:child_process'), crypto = require('node:crypto'), zlib = require('node:zlib'), assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..'), app = path.join(root, 'apps/windows-ui');
-const output = path.resolve(app,require(path.join(app,'electron-builder.development.cjs')).directories.output);
-const evidence = path.join(root, '.cache/validation/windows-dev9');
+if(process.argv.slice(2).some(v=>v!=='--openrgb')||process.argv.length>3)throw Error('reviewed_inspection_target_required');
+const rgbBuild=process.argv.includes('--openrgb');
+const output = path.resolve(app,require(path.join(app,rgbBuild?'electron-builder.rgb-development.cjs':'electron-builder.development.cjs')).directories.output);
+const evidence = path.join(root, rgbBuild?'.cache/validation/openrgb-control-r2':'.cache/validation/windows-dev9');
 const asar = require(path.join(app, 'node_modules/@electron/asar'));
 const seven = path.join(root, '.cache/electron-builder/7zip@1.0.0/7zip-win-x64-a34pt/bin/7za.exe');
 const sha = b => crypto.createHash('sha256').update(b).digest('hex');
@@ -72,7 +74,7 @@ const application = peInfo(sharedExe);check(application.machine === '8664', 'App
 const appFileCount = inspectAsar(path.join(output, 'win-unpacked/resources/app.asar'));
 const packages = [];
 for (const kind of ['Setup', 'Portable']) {
-  const name = `Lone-Smart-Room-2.0.0-dev.9-x64-${kind}-DEV.exe`, raw = fs.readFileSync(path.join(output, name));
+  const name = rgbBuild?`Lone-Smart-Room-2.0.0-dev.9-x64-OpenRGB-Candidate-${kind}.exe`:`Lone-Smart-Room-2.0.0-dev.9-x64-${kind}-DEV.exe`, raw = fs.readFileSync(path.join(output, name));
   const pe = peInfo(raw), blocks = nsisBlocks(raw);
   const archives = blocks.filter(data => data.subarray(0, 6).equals(Buffer.from('377abcaf271c', 'hex')));
   check(archives.length === 1, 'Exactly one embedded 7z application archive');

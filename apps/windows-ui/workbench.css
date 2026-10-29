@@ -12,3 +12,6 @@
 .nex-messages p{white-space:pre-wrap}
 
 .focus-dialog{background:#101014;color:#f4f2f5;border:1px solid #50303b;border-radius:16px;padding:22px;width:min(900px,94vw);max-height:90vh;overflow:auto}.focus-dialog::backdrop{background:#000b}.focus-dialog .tool-card{margin-top:14px}.focus-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 20px}.game-active *{animation-duration:0s!important;transition-duration:0s!important}.focus-dialog .nex-messages{max-height:40vh}.top-actions>#nexOpen{min-height:38px}.window[data-mode=widget] .top-actions>#nexOpen{padding:5px}
+
+/* RGB controls reuse the existing palette and components. */
+.rgb-control .button{margin:6px 8px 6px 0}.rgb-controls,.rgb-scene-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.rgb-controls .tool-note{grid-column:1/-1}.rgb-scene-row{border:1px solid #343238;border-radius:12px;padding:16px;margin:12px 0}.rgb-scenes{border-top:1px solid #343238;margin-top:20px;padding-top:18px}.rgb-feedback{color:#eee;min-height:1.5em}.rgb-control input[type=color]{height:44px;width:100%;padding:4px}.rgb-control select,.rgb-control input{max-width:100%;min-height:40px}.rgb-control .field{min-width:0}.rgb-control button:disabled{opacity:.45;cursor:not-allowed}@media(max-width:600px){.rgb-controls,.rgb-scene-row{grid-template-columns:1fr}}
