@@ -109,3 +109,28 @@ e permissão de leitura específica; não conceder grants de execução.
 
 Essa manutenção não foi executada nesta entrega; o recibo de preparação registra
 registry_written=false, agent_started=false e credentials_decrypted=false.
+
+## Estado de entrega antes da confirmação do instalador
+
+Checkpoint funcional 9ecf48d; integração RGB b832c67; preparação do agente
+14a63ee. Árvore limpa antes deste recibo documental. Gates renovados: instalação
+e perfil iguais ao baseline, zero grants, zero comandos pendentes, zero listener
+8776 e nenhum Electron/Python/ADLX do LSR. Nenhuma nova instalação executada.
+A confirmação em tempo de ação foi solicitada para o hash r12 e ainda não foi
+respondida neste ponto. Não considerar a instalação/homologação concluídas.
+
+| Funcionalidade | Funciona instalada? | Testada com dados reais? | O que falta? |
+|---|---|---|---|
+| Organização nas três áreas e NEX | Candidata ainda não instalada | Electron isolado real | Instalar/homologar r12 |
+| CPU/GPU/RAM/discos, widget/histórico | Não revalidados nesta fase instalada | Validado anteriormente; regressões nesta fase | Sessão instalada e retomada GPU |
+| Biblioteca Steam e inspeção CS2 | Novo fluxo ainda não instalado | Manifestos, assinatura e instalação reais | Teste da interface instalada; abertura requer autorização específica |
+| Modo Gamer e restauração do perfil | Ainda não instalado | Substitutos, não jogo real | Homologação com jogo autorizado |
+| Inventário OpenRGB | Ainda não instalado | SDK real, 2 controladores, zero escritas | Homologar UI; ações físicas continuam bloqueadas |
+| Cenas/lâmpadas/ventilador | Apenas cadastro local | Sem provedor físico validado | Configurar hardware/credenciais e autorizar ações |
+| FPS/overlay | CSV implementado; não FPS real homologado | CSV sintético; inspeção de software instalada | RTSS 7.3.7 e Afterburner 4.6.6 encontrados; memória compartilhada/captura não ativada. PresentMon não está no PATH |
+| Touch Panel | Novo fluxo ainda não instalado | Janela real em resolução simulada | Homologação de uso por toque |
+| Agente HTTPS | Offline, preservado | Leitura de estado; sem nova autenticação | Manutenção própria aprovada e validação cooperativa |
+
+Não há alegação de aplicativo 100% concluído ou de FPS real funcional. Android
+permanece intocado, sem ADB ou mudanças no APK. Nenhuma ação de energia, jogo,
+LED, firewall ou inicialização automática foi executada nesta fase.
