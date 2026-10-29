@@ -87,7 +87,12 @@
       "openrgb-sdk.cjs",
       "rgb-control.cjs",
       "rgb-renderer.js",
-      "nex-rgb.cjs"
+      "nex-rgb.cjs",
+      "signalrgb-sdk.cjs",
+      "signalrgb-environment.cjs",
+      "signalrgb-environment.ps1",
+      "rgb-provider.cjs",
+      "rgb-provider-renderer.js"
     ],
     "directories": {
       "output": "dist"
@@ -114,7 +119,8 @@
       "allowToChangeInstallationDirectory": true
     },
     "asarUnpack": [
-      "windows-inventory.ps1"
+      "windows-inventory.ps1",
+      "signalrgb-environment.ps1"
     ]
   },
   "engines": {

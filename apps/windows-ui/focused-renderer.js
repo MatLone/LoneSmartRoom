@@ -19,7 +19,7 @@
   if(id==='nex'){
    const c=card(content,'NEX · assistente local','Respostas por regras e cache validado. Sem IA externa, transmissão de conversas ou microfone permanente.');const history=el('div',undefined,'nex-messages'),field=input('Pergunte sobre CPU, GPU, RAM, discos, cenas ou seções');field.maxLength=1000;
    const draw=items=>{history.replaceChildren();for(const r of items){const p=el('p',r.text,r.role==='user'?'nex-user':'nex-reply');history.append(p);}history.scrollTop=history.scrollHeight;};
-   draw((await state()).conversation);const send=async()=>{if(!field.value.trim())return;const value=field.value.trim(),r=await api.askNex(value);field.value='';draw((await state()).conversation);status.textContent=r.history_error?'Histórico local indisponível; arquivo anterior preservado.':'';if(r.rgbRequest)window.loneRGBView.offer(c,r.rgbRequest,api);if(r.section){const b=button('Abrir seção indicada',()=>{dialog.close();navigate(r.section);},true);c.append(b);}};
+   draw((await state()).conversation);const send=async()=>{if(!field.value.trim())return;const value=field.value.trim(),r=await api.askNex(value);field.value='';draw((await state()).conversation);status.textContent=r.history_error?'Histórico local indisponível; arquivo anterior preservado.':'';if(r.rgbRequest)window.loneRGBProviders.offer(c,r.rgbRequest,api);if(r.section){const b=button('Abrir seção indicada',()=>{dialog.close();navigate(r.section);},true);c.append(b);}};
    c.append(history,label('Mensagem ao NEX',field),button('Enviar ao NEX local',send));field.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();void send();}});
    c.append(note('Voz por toque depende de um provedor configurado. Nenhuma credencial de IA é solicitada ou incluída nesta versão.'));
   }else if(id==='hardware'){
@@ -30,7 +30,7 @@
   }else if(id==='panels'){
    const c=card(content,'Touch Panel e overlay','Modos do mesmo aplicativo, com os mesmos sensores. Não há hooks, injeção ou alteração da resolução dos monitores.');const screens=await api.displays(),target=select(screens.map(d=>[String(d.id),(d.label||'Monitor')+' · '+d.width+' × '+d.height]));c.append(label('Tela de destino',target),button('Abrir Touch Panel',()=>api.openPanel('touch',Number(target.value))),button('Abrir overlay',()=>api.openPanel('overlay',Number(target.value)),true),note('Overlay convencional pode não aparecer em tela cheia exclusiva. FPS exige CSV externo válido.'));
   }else if(id==='environment'){
-   await window.loneRGBView.mount(content,api);
+   await window.loneRGBProviders.mount(content,api);
   }
   if(!dialog.open)dialog.showModal();
  }
