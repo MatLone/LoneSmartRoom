@@ -1,136 +1,175 @@
-# Windows focado — candidata dev.9 r12
+# Windows dev.9 r12 — entrega instalada e manutenção do agente
 
-Base preservada: eb53a82; branch feature/windows-control-center; Android congelado.
-O worktree C1 não foi alterado. A interface padrão tem somente Controles,
-Monitoramento PC e Gamer Launcher. NEX é um diálogo integrado e Touch Panel
-permanece uma janela alternativa do mesmo processo principal. Código das antigas
-12 áreas preservado; operações genéricas recusadas no serviço em modo focado.
+Consolidação de 29/10/2026. Branch `feature/windows-control-center`.
+Implementação: `9ecf48d` e `b832c67`; preparação e gates: `14a63ee` e
+`3682823`. Checkpoints anteriores e worktree C1 preservados, sem merge global.
+Android congelado: nenhum ADB, APK ou aplicativo Samsung acessado nesta entrega.
 
-Implementados: modo gamer CS2 desligado por padrão, detecção de processo com
-caminho esperado, polling 5 s mediante consentimento, leitura do cache a 2 s e
-histórico a 5 s durante jogo, redução de animações, overlay opcional e restauração
-das políticas do próprio LSR. Sessões interrompidas são identificadas ao reabrir.
-Não altera Windows, arquivos/configurações de jogos ou segurança; não promete FPS.
+## Resultado atual
 
-Abertura local de Steam/CS2 reutiliza os executores originais byte a byte e seu
-WinVerifyTrust com cache local, organização Valve Corp., caminhos e manifestos.
-Renderer recebe apenas duas ações enumeradas. Main exige confirmação nativa
-individual, recibo durável e cooldown de 60 s; não cria grants remotos.
-Inspeção real de prontidão CS2 passou, sem executar Steam ou jogo. A abertura real
-continua não homologada e exige confirmação operacional específica.
+A atualização NSIS foi executada uma vez, com confirmação assistida, sem abertura
+automática ao concluir. Windows **2.0.0-dev.9** instalado em
+`<USERPROFILE>\AppData\Local\Programs\Lone Smart Room`.
+Identificador `com.lone.smartroom`. Conferência final: **118 arquivos** iguais
+à candidata; aplicativo fechado e zero processos Electron/coletor/IPC/ADLX do LSR.
+Enumeração complementar do namespace de pipes: zero nomes LoneSmartRoom.
+O leitor padrão não conseguiu enumerar o namespace; a confirmação veio da
+consulta complementar, registrada separadamente. Não confundir ausência de
+resultado no primeiro leitor com prova de ausência de pipe.
 
-Testes: 29 suítes Node / 3557 verificações; 24 testes Python dos executores;
-regressões temporais de ingresso 1,5 s e frescor 3/11/10 s preservadas. Electron
-isolado em 100% e 125% passou 17 verificações por sessão, sem coletor físico.
-Modo gamer ativo/restauração foram testados com substitutos identificados; não
-representam jogo real. Pacotes passaram 542 inspeções estáticas e comparação dos
-três fontes do executor local. NotSigned; nenhum bloqueio do Windows foi contornado.
+O agente está ativo: supervisor efetivo **18256**, worker HTTPS **6500**,
+com redirecionadores da venv **6040 / 19612**. São duas cadeias legítimas de
+redirecionador/runtime, verificadas por imagem, argumentos, identidade e parentesco;
+não duas instâncias operacionais. Listener único 8776 pertencente ao worker.
+Última consulta em **03:27:31 UTC**: HTTP 200, TLS 1.3, hostname e pin válidos,
+banco íntegro, **zero grants e zero comandos pendentes**.
 
-NSIS r12: 105807090 bytes, SHA-256
-7979f17fcfdb42b5d326d194b97e3ae3448ddcc29dc0d574abc63ce7bad9e543.
-Portátil: 105516140 bytes, SHA-256
-9a4a4e65e19349a60c3ab14584140d33c1b73730bb7837a9141e2271562a60df.
-Pasta: .cache/artifacts/windows/desktop-dev9-consolidated-candidate-r12/.
-
-Novo backup fora do Git: Windows-before-dev9-20261029T021121Z (UTC; 28/10 no
-horário do usuário), 201 arquivos / 403361107 bytes, ACL exclusiva verificada;
-manifesto f6131c8f01068abde895404fb87d16f5b1904a990c6ba8c01c9e80420034c02a.
-A instalação original dev.8 e seus 83 arquivos de perfil continuam iguais ao
-baseline antes da implantação; backup anterior não substituído. Banco íntegro,
-zero grants; nenhum processo de agente ou listener 8776 observado.
-
-A entrada Run ainda referencia o agente direto, não o supervisor validado. Logs
-do launcher não têm tentativa correspondente ao boot mais recente. Isso é uma
-evidência de configuração antiga, não prova de falha no despacho do Windows.
-Migração do agente e alteração de Run não serão feitas junto do instalador.
-Requerem confirmação consolidada separada, backup protegido de estado e Run,
-validação de um início/encerramento cooperativo, autenticação e decisão explícita
-sobre o estado final. Não reiniciar, não forçar processos ou alterar TLS 10054.
-
-Instalação autorizada pelo usuário condicionada aos gates, aguardando a
-confirmação em tempo de ação exigida pelo skill de Computer Use. Uma tentativa
-NSIS, sem execução automática final; conferir estática e perfil antes da sessão
-física. Não executar o portátil. Se bloqueado por segurança, parar.
-
-Rollback: manter backup e journal de preservação. Com app encerrado normalmente,
-verificar manifesto e restaurar a instalação dev.8 correspondente, preservando
-arquivos externos e qualquer perfil novo para revisão. Não usar reset/pm clear,
-não remover backups e não restaurar dados do agente como parte de rollback UI.
-
-Resultados físicos serão registrados após execução; não estão presumidos aqui.
-
-## Integração RGB disponível
-
-O SDK OpenRGB já estava em 127.0.0.1:6742, pertencendo ao processo OpenRGB.
-Implementado cliente próprio de inventário usando somente as consultas 0 e 1
-do [protocolo oficial](https://gitlab.com/CalcProgrammer1/OpenRGB/-/raw/master/NetworkProtocol.h).
-Limites de mensagem, timeout, resposta e número de controladores; nenhum comando
-de cores, modos ou redetecção. O endpoint não aceita host/porta do renderer.
-A verificação de proprietário é metadado local, sem alegar autenticação forte
-ou isolamento contra o mesmo usuário. Leitura real identificou Nollie 16_OS2_1
-e B660M AORUS PRO DDR4; zero ações físicas. SignalRGB está presente, mas suas
-portas não são usadas como API presumida. Nenhum serviço foi alterado.
-
-As cenas continuam preferências locais sem aplicação física; lâmpada, fita e
-ventilador não ganham compatibilidade por inferência. Home Assistant requer
-configuração/credencial própria e permanece não configurado.
-
-A interface final passou em 150% com leitura real OpenRGB e inspeção CS2 sem
-execução. [Capturas](captures/) e [recibo](focused-electron.json).
-
-## Preparação da manutenção do agente (não executada)
-
-O agente permaneceu offline. Backup protegido independente:
-Agent-before-reliable-20261029T022318Z, 31 arquivos, manifesto
-1cce3e7b5a7b83a20e524db5f4fb3c44659695ca727aaef8e7854d2bc3b3a860.
-Contém estado criptografado, fontes e a entrada Run anterior para reversão;
-nenhuma credencial foi decriptada e nenhum conteúdo privado foi versionado.
-Preparação: scripts/prepare-agent-maintenance.py; somente leitura nos originais.
-
-Manutenção proposta, mediante UMA autorização consolidada própria:
-1. Renovar identidade/ausência de processos, listener livre e zero grants.
-2. Validar o supervisor candidato contra o checkpoint e backup protegido.
-3. Uma inicialização manual da candidata, status autenticado e observação de 60 s.
-4. Encerrar somente pelo canal cooperativo local. Se houver timeout, parar sem
-   forçar processos ou alterar Run. Verificar porta e mutex liberados.
-5. Uma segunda inicialização controlada, somente após sucesso do passo anterior,
-   para deixar o agente ativo; validar novamente TLS/certificado/pin/status/grants.
-6. Substituir apenas a entrada Run específica pelo comando absoluto preparado,
-   com comparação prévia do hash do valor original. Não tocar StartupApproved,
-   firewall, serviços ou tarefas. Guardar valor anterior no backup protegido.
-7. Validar despacho real no próximo login autorizado; sucesso manual não comprova
-   inicialização automática. Nenhum reboot/logoff está incluído nesta proposta.
-
-Reversão do agente: com sessão candidata encerrada cooperativamente, restaurar
-apenas o valor Run anterior a partir do backup privado. Não sobrescrever banco
-ou certificados automaticamente. Recuperar launcher legado apenas sob autorização
-separada quando necessário. Relay permanece desativado sem publisher registrado
-e permissão de leitura específica; não conceder grants de execução.
-
-Essa manutenção não foi executada nesta entrega; o recibo de preparação registra
-registry_written=false, agent_started=false e credentials_decrypted=false.
-
-## Estado de entrega antes da confirmação do instalador
-
-Checkpoint funcional 9ecf48d; integração RGB b832c67; preparação do agente
-14a63ee. Árvore limpa antes deste recibo documental. Gates renovados: instalação
-e perfil iguais ao baseline, zero grants, zero comandos pendentes, zero listener
-8776 e nenhum Electron/Python/ADLX do LSR. Nenhuma nova instalação executada.
-A confirmação em tempo de ação foi solicitada para o hash r12 e ainda não foi
-respondida neste ponto. Não considerar a instalação/homologação concluídas.
+## Matriz objetiva
 
 | Funcionalidade | Funciona instalada? | Testada com dados reais? | O que falta? |
 |---|---|---|---|
-| Organização nas três áreas e NEX | Candidata ainda não instalada | Electron isolado real | Instalar/homologar r12 |
-| CPU/GPU/RAM/discos, widget/histórico | Não revalidados nesta fase instalada | Validado anteriormente; regressões nesta fase | Sessão instalada e retomada GPU |
-| Biblioteca Steam e inspeção CS2 | Novo fluxo ainda não instalado | Manifestos, assinatura e instalação reais | Teste da interface instalada; abertura requer autorização específica |
-| Modo Gamer e restauração do perfil | Ainda não instalado | Substitutos, não jogo real | Homologação com jogo autorizado |
-| Inventário OpenRGB | Ainda não instalado | SDK real, 2 controladores, zero escritas | Homologar UI; ações físicas continuam bloqueadas |
-| Cenas/lâmpadas/ventilador | Apenas cadastro local | Sem provedor físico validado | Configurar hardware/credenciais e autorizar ações |
-| FPS/overlay | CSV implementado; não FPS real homologado | CSV sintético; inspeção de software instalada | RTSS 7.3.7 e Afterburner 4.6.6 encontrados; memória compartilhada/captura não ativada. PresentMon não está no PATH |
-| Touch Panel | Novo fluxo ainda não instalado | Janela real em resolução simulada | Homologação de uso por toque |
-| Agente HTTPS | Offline, preservado | Leitura de estado; sem nova autenticação | Manutenção própria aprovada e validação cooperativa |
+| Controles, Monitoramento PC e Gamer Launcher | Sim | Interface instalada | Revisão continuada de uso; antigas 12 áreas arquivadas, fora da navegação padrão |
+| CPU, GPU, RAM e discos | Sim | CPU/RAM/PDH/AMD ADLX reais | Temperatura CPU indisponível; nenhuma estimativa fictícia |
+| Widget e navegação compacta | Sim | Leituras reais e mesma janela | Homologação completa do instante de retomada GPU pela bandeja |
+| Bandeja, restauração e Sair | Sim | Usuário restaurou e selecionou Sair; processos encerrados | Captura confiável do estado GPU imediatamente após restaurar |
+| Histórico e gráficos | Sim, dados locais limitados | Pontos reais observados | Exportação CSV preservada e testada automaticamente; não repetida fisicamente nesta fase |
+| NEX | Sim, regras locais e cache | Resumo com sensores reais | Não é IA externa nem cliente HTTPS autenticado |
+| Biblioteca e inspeção Steam/CS2 | Sim, leitura | Manifestos e executável verificado; nenhum jogo em execução | Abertura real exige autorização operacional específica |
+| Modo Gamer | Código e interface instalados, desligado por padrão | Detecção sem jogo; ativação/restauração com mocks | Sessão real de jogo autorizada; não altera configurações do Windows |
+| Touch Panel | Sim, janela alternativa | Janela instalada com dados reais | Entrada por toque/hardware específico não homologada |
+| OpenRGB | Inventário somente leitura | Nollie 16_OS2_1 e B660M AORUS PRO DDR4 | Escrita física não habilitada nem testada |
+| Cenas, lâmpadas e ventilador | Preferências/cadastro local | Sem atuação física | Provedor, hardware, credenciais próprias e autorização |
+| FPS e overlay | Importação/tail CSV e overlay preparados | Fixtures; sem captura FPS ao vivo nesta fase | RTSS 7.3.7/Afterburner 4.6.6 encontrados; leitor ao vivo não ativado. PresentMon ausente do PATH |
+| Central de Diagnóstico | Contratos/interface preparados | Mocks e leitores anteriormente validados | Integração operacional do dashboard ainda protegida; não chama novas sondas |
+| HTTPS do agente | Sim | TLS 1.3, pinagem e status autenticado reais | TLS 10054 continua aberto |
+| Supervisor e parada cooperativa | Sim | Início, estabilidade, parada normal, liberação de mutex/porta e novo início | Despacho real após login ainda não testado |
+| Relay para Android | Código preparado, desativado sem publisher/escopo de leitura | Não ativado nesta entrega | Migração coordenada futura; nenhuma identidade Samsung copiada para Electron |
 
-Não há alegação de aplicativo 100% concluído ou de FPS real funcional. Android
-permanece intocado, sem ADB ou mudanças no APK. Nenhuma ação de energia, jogo,
-LED, firewall ou inicialização automática foi executada nesta fase.
+## Evidências físicas da instalação
+
+[Capturas reais](installed-captures/) separadas das prévias de desenvolvimento em
+`captures/`. Dashboard, monitoramento, Gamer, widget, NEX, biblioteca, Touch Panel
+e OpenRGB são do executável instalado, não HTML isolado.
+
+Amostras observadas: CPU 7–24%; RAM aproximadamente 7,7–8,1 GiB / 15,8 GiB;
+GPU 0–5%, 53–54 °C, hotspot 55–60 °C; VRAM aproximadamente 662–732 MB / 12272 MB;
+clock 270–302 MHz, potência 38 W e ventoinha 482–488 RPM. São exemplos das
+capturas, não uma série estatística completa de sensores. C: 475,6 GiB com
+216,7 GiB livres (54,4% ocupado); D: 447,1 GiB com 242,1 GiB livres (45,9%).
+I/O zero válido e atividade positiva inferior a 0,1% permaneceram distintos de null.
+Origem/timestamp/idade foram exibidos; exemplo GPU: coleta 02:53:42.413 UTC,
+intervalo 2 s, ingresso 0,4 s e idade da informação 2 s, dentro do limite ativo 3 s.
+
+A primeira observação de recursos teve **180,53 s**. O aplicativo ainda estava
+ativo ao terminar essa medição; encerramento por Sair confirmado **258,61 s após
+a abertura**, após interação manual e espera das ferramentas. Não declarar
+encerramento dentro de 180 s. Duas sessões complementares distintas verificaram
+NEX/biblioteca e Touch/OpenRGB, com pedidos de fechamento normal aos 105,58 s e
+131,09 s, respectivamente. Nenhum processo foi encerrado à força.
+
+A captura solicitada após restaurar pela bandeja atingiu a janela do chat e os
+metadados UIA disponíveis estavam antigos. Esse arquivo foi preservado apenas no
+cache privado e **não é evidência de GPU atualizada**. O comportamento permanece
+parcialmente homologado, apesar das regressões temporais passarem. Nenhum limite
+1,5 / 3 / 11 / 10 s foi relaxado.
+
+### Desempenho observado
+
+91 observações, aproximadamente 2,006 s entre amostras; primeira sessão somente.
+
+| Componente | CPU média total | RSS médio | RSS pico |
+|---|---:|---:|---:|
+| Electron | 0,787% | 368,81 MiB | 397,96 MiB |
+| Python coletor + IPC | 0,062% | 54,53 MiB | 55,42 MiB |
+| Ponte ADLX | 0,018% | 23,54 MiB | 24,09 MiB |
+| Conjunto | **0,867%** | **446,88 MiB** | **477,32 MiB** |
+
+CPU por delta GetProcessTimes / tempo real / 12 processadores lógicos. O primeiro
+delta de cada processo é indisponível e omitido; início de processos pode reduzir
+ligeiramente a média calculada. RSS somado pode contar páginas compartilhadas
+mais de uma vez. Pico conjunto calculado por instante, não soma de picos.
+Coletor e intermediário Python foram agrupados; não atribuir consumo separado sem
+medição. Referências anteriores tiveram outras condições; não comprovam regressão.
+O observador passivo não inicia, sinaliza ou encerra o aplicativo.
+
+Foram observadas novas mensagens Crashpad `0xE9` no debug.log. O prefixo original
+do arquivo continua íntegro. Não há evidência suficiente para classificá-las como
+crash do aplicativo; consulta limitada a eventos Application 1000/1001 na última
+hora não retornou eventos correspondentes. Não foi aplicado remendo Crashpad.
+
+## Manutenção consolidada do agente — executada com autorização própria
+
+Backup protegido: **Agent-before-reliable-20261029T022318Z**, 31 arquivos.
+Manifesto SHA-256:
+`1cce3e7b5a7b83a20e524db5f4fb3c44659695ca727aaef8e7854d2bc3b3a860`.
+Inclui estado cifrado e recuperação privada de Run; conteúdo sensível não foi
+versionado. Fontes consolidados reutilizam `reliable_bootstrap.py`, hash
+`f3c764247fcd34907c916e7e6ef8aea7dca056d03f05cf3a0aaa18ecca443ee6`.
+
+1. Primeiro início 03:01:06 UTC, uma tentativa. Identidade, listener e HTTPS
+   autenticado aprovados; estabilidade confirmada por 104,76 s.
+2. Parada pelo evento local protegido às 03:03:19 UTC, código 0. Worker fechou
+   listener, concluiu encerramento e liberou mutex; supervisor encerrou. Porta
+   livre, mutexes readquiridos/liberados e banco íntegro. Nenhum taskkill/força.
+3. Segundo início 03:04:43 UTC para deixar a comunicação ativa. Autenticação
+   aprovada antes de qualquer alteração de inicialização automática.
+4. Somente o valor Run existente foi substituído, comparando o original e
+   conferindo a leitura após gravar. Hash anterior
+   `3139f837ebc03ab77c5c16bc00fcb76031fb6a50ef8ccbcd4a014d6c4b509dc5`;
+   novo `51c5c7be89b6f1e1ed134c2d4e5c398fe8cff088607fe203383383f12c1958dc`.
+   Comando absoluto com Python da venv e `-I -B`; não houve serviço, tarefa,
+   alteração de StartupApproved, firewall ou reboot/logoff.
+
+Isso homologa a parada cooperativa da implementação consolidada, não demonstra
+que o Windows já a despachou após login. O valor antigo apontava diretamente ao
+agente; logs antigos sem tentativa após o boot sugerem configuração antiga, mas
+não comprovam por si falha do Windows. Próximo login requer validação própria.
+Samsung não foi acessado; as identidades cifradas e certificados foram comparados
+ao backup e preservados. Não declarar confirmação física Android nesta sessão.
+
+## Testes e integridade
+
+- 29 suítes Node, **3557 verificações** aprovadas, incluindo UI, IPC, preload,
+  ciclo de vida, histórico, modo gamer e OpenRGB.
+- **24 testes Python** dos executores Steam/CS2 com processos substitutos.
+- **137 testes isolados** de confiabilidade do agente na fonte consolidada.
+- **542 inspeções** do pacote e comparação dos fontes locais autorizados.
+- Electron de desenvolvimento: 17 verificações em 100%, 17 em 125% e 18 em 150%.
+- Regressões GPU preservam 1,5 s de ingresso, 3/11 s de frescor e 10 s de falha
+  persistente após restauração. Nenhuma execução física adicional para testes.
+- Após instalação e uso: 118 arquivos iguais ao artefato, identidades do banco
+  iguais ao backup, config/certificados iguais, workbench-v1 preservado e backups
+  verificados. Geometria, cache, histórico e conversa NEX mudam normalmente pelo
+  uso; não alegar perfil inteiro byte a byte idêntico após essas sessões.
+
+Nenhum Steam/CS2, benchmark, WoL, energia ou escrita RGB executado. Nenhuma
+credencial, certificado ou grant criado. Android permaneceu congelado.
+
+## Pacotes e reversão
+
+NSIS r12: **105807090 bytes**,
+`7979f17fcfdb42b5d326d194b97e3ae3448ddcc29dc0d574abc63ce7bad9e543`.
+Portátil: **105516140 bytes**,
+`9a4a4e65e19349a60c3ab14584140d33c1b73730bb7837a9141e2271562a60df`.
+Ambos NotSigned; nenhum controle Windows foi contornado. Portátil não executado.
+Artefatos preservados em `.cache/artifacts/windows/desktop-dev9-consolidated-candidate-r12/`.
+
+Backup Windows: **Windows-before-dev9-20261029T021121Z**, 201 arquivos,
+403361107 bytes, ACL exclusiva. Manifesto:
+`f6131c8f01068abde895404fb87d16f5b1904a990c6ba8c01c9e80420034c02a`.
+Ele contém a dev.8 instalada antes desta atualização e 83 arquivos de perfil.
+Backups anteriores continuam preservados. Reversão não foi executada.
+
+Para reverter UI: fechar normalmente, verificar manifesto, guardar separadamente
+os dados atuais e restaurar a instalação correspondente à dev.8 sem apagar perfil
+ou arquivos externos. Usar journal de preservação do instalador; não remover
+backups. Não restaurar o banco do agente como parte da reversão do Electron.
+Para reverter o agente: autorização própria, parada cooperativa, restauração
+somente do valor Run anterior a partir de `run-recovery.json` protegido; verificar
+porta livre e identidade antes de qualquer início legado. Não sobrescrever
+certificados, dispositivos ou banco automaticamente.
+
+Pendências: retomada GPU com evidência confiável; login automático real;
+TLS 10054; avisos Crashpad; FPS ao vivo; teste autorizado do Modo Gamer;
+integração física de dispositivos e cliente desktop autenticado independente.
+Ações correspondentes exigem homologação própria, não nova instalação rotineira.
