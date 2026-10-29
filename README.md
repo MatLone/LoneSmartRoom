@@ -1,104 +1,99 @@
-# Lone Smart Room 2.0 — secure pairing and status
+# Lone Smart Room 2.0
 
-This is an isolated development copy. Stage 2 adds status-only HTTPS pairing in
-Python/Kotlin. Product package versions remain 1.4.0 pending the signing/update
-plan; the legacy agent 1.5 remains intact. Electron runtime is now 45.0.0 and
-electron-builder 26.15.3 after security remediation. WoL, its bridge/storage contract
-and legacy action implementations are preserved. No new power/AI/telemetry command
-is enabled. Current report: `docs/STAGE2.md`; stage-0/1 reports are historical.
+Central de controle e monitoramento do PC e do ambiente, com dashboard Windows,
+aplicativo Android e agente HTTPS autenticado. Projeto em desenvolvimento:
+interface presente no código não implica integração física homologada.
 
-## Layout
+## Três áreas oficiais
 
-- `apps/android`: functional Kotlin/WebView Android source, working build toolchain.
-- `apps/windows-ui`: Electron 1.4 interface; exact direct dependency versions + npm lock.
-- `agent/windows`: unchanged real Windows agent 1.5 and its mocked-executor tests.
-- `agent/windows/secure_*.py`: HTTPS status service, DPAPI, pairing and local management.
-- `contracts`: implemented v2 status/pairing contract and legacy boundary.
-- `scripts`: repeatable build and safe-test commands.
-- `tests`: source-integrity, interface, identity, security, and storage regression guards.
-- `docs`: baseline inventory, toolchain checksums, architecture and validation results.
-- `recovery` (ignored): source snapshots, original ZIPs, existing Android APK, manifest.
-- `.tools` / `.cache` (ignored): portable Git, dependencies, local build/signing state.
+- **Controles**: dispositivos, configurações e integrações RGB locais.
+- **Monitoramento PC**: CPU, GPU AMD, RAM, discos, histórico e diagnóstico.
+- **Gamer Launcher**: biblioteca, sessões, permissões e integrações de jogos.
 
-## Build and test (PowerShell, from this directory)
+A identidade oficial usa preto/grafite, vermelho #FF153F e apenas o E de LONE
+vermelho. NEX oferece consultas e propostas locais tipadas; texto livre não é uma
+API genérica de comandos.
 
-Prerequisites: Node 22.16.x / npm 10.9.x, Python 3.13.3, JDK 21 (Java/Kotlin bytecode
-target remains 17), Android SDK platform 35 and build tools 35.0.0. Tested versions
-and Gradle checksum pins are in `docs/toolchain.json`. No global tool installation
-or PATH mutation is required by these scripts.
+## Arquitetura e estrutura
+
+| Diretório | Conteúdo |
+| --- | --- |
+| `apps/windows-ui` | Electron, dashboard, preload restrito, widget, bandeja, Touch Panel, overlay, RGB e NEX |
+| `apps/android` | Kotlin, interface WebView, recursos, Gradle e cliente HTTPS |
+| `agent/windows` | HTTPS, HMAC, antirreplay, identidade, armazenamento e launchers |
+| `agent/development` | Ciclo de vida e integrações em desenvolvimento |
+| `monitoring` | Provedores, contratos, cache e Named Pipe protegido |
+| `telemetry` | Contratos e transporte autenticado de métricas |
+| `diagnostics` | Evidências e classificação de saúde somente leitura |
+| `native` | Ponte AMD ADLX |
+| `contracts` | Contratos versionados |
+| `third_party` | Fontes e licenças externas, incluindo ADLX |
+| `tests`, `scripts` | Testes, builds e inspeções |
+| `docs` | Arquitetura, evidências, limitações e procedimentos |
+
+No Windows, o processo principal intermedia operações permitidas. O renderer
+usa contextIsolation e preload restrito. Provedores alimentam coletor, cache e
+Named Pipe local. Cada amostra conserva origem, unidade, timestamp e validade;
+ausência de sensor nunca vira zero. Android usa HTTPS autenticado, pinagem e
+identidade persistente. Permissões de leitura e de comandos devem permanecer
+separadas; telemetria em desenvolvimento exige implantação coordenada.
+
+## Estado das funcionalidades
+
+O código inclui monitoramento básico e AMD, histórico, diagnóstico, ferramentas
+locais, biblioteca, NEX e painéis auxiliares. Integrações físicas têm limitações
+próprias: OpenRGB depende das capacidades e do readback; SignalRGB está em
+implementação e depende das permissões da API. FPS externo, automações e recursos
+por dispositivo não devem ser apresentados como reais sem fonte validada.
+
+Permanecem separadas as pendências TLS 10054, inicialização automática,
+encerramento cooperativo, avisos Crashpad e homologações físicas específicas.
+Não existe temperatura fictícia de CPU. Evidências antigas em docs não garantem
+o estado atual das instalações; consulte a branch e o relatório correspondente.
+
+## Requisitos e build sem credenciais privadas
+
+Consultar `docs/toolchain.json`, arquivos de versão e lockfiles. A base utiliza
+Node 22.16.x/npm 10.9.x, Python 3.13, JDK 21, Android SDK 35/build-tools 35.0.0 e
+Gradle Wrapper fixado. A ponte ADLX x64 requer MSVC e Windows SDK compatíveis.
+Respeitar as licenças e condições de redistribuição dos componentes externos.
+
+Com as ferramentas disponíveis, em PowerShell na raiz:
 
 ```powershell
+# Cria venv local e verifica hashes das dependências Python.
 .\scripts\prepare-agent.ps1
+
+# Assinatura debug isolada; não usa chave privada distribuída pelo Git.
 .\scripts\android-build.ps1
-.\scripts\test-safe.ps1
-.\scripts\test-android-packet.ps1
-.\scripts\android-build.ps1 -Tasks @('lintDebug')
+.\scripts\android-build.ps1 -Tasks @('lintDebug', 'testDebugUnitTest')
+
+# Prepara pacotes Windows; não instala a aplicação.
 .\scripts\windows-build.ps1
-.\scripts\test-electron.ps1
-python -B scripts/verify-preservation.py
+
+# Regressões Windows isoladas com substitutos.
+node scripts/test-windows-control-center.cjs
+
+# Auditoria offline de todas as refs e do trabalho pendente.
+python -B scripts/audit-publication.py
 ```
 
-Android script accepts `-JavaHome`, `-SdkRoot`, and `-Tasks`. Gradle 8.11.1 wrapper
-is committed; AGP is 8.10.1, Kotlin 2.0.21. Dependency downloads require network.
-The default task assembles the APK; lint is a separate check. The inherited API-26
-style error was fixed in values-v27 without changing the WoL emitter or disabling
-lint. Gradle artifact checksums are committed in
-`apps/android/gradle/verification-metadata.xml`.
-The Windows build uses `npm ci` and does not install or launch the generated app.
-Current exact npm versions remediate the recorded advisories; see the stage-2 audit.
-The Windows helper verifies the vendor bundle checksum and extracts Windows tools
-only, avoiding macOS symlinks without requiring Developer Mode or admin privileges.
+A chave original Android não pertence ao Git. Builds comuns usam chave debug
+isolada e não devem ser instalados sobre o app pareado. Atualizações compatíveis
+exigem a chave original local, conferência do certificado e autorização de
+implantação. Nunca desinstalar ou limpar dados para contornar uma assinatura.
 
-Outputs: Android `apps/android/app/build/outputs/apk/debug/`; Windows
-`apps/windows-ui/dist/`. Recovery files and generated binaries stay outside Git.
+Saídas ficam em `apps/android/app/build`, `apps/windows-ui/dist` e `.cache`.
+Scripts de validação física exigem revisão e autorização; nem todo script usa mocks.
+Clonar/compilar não autoriza iniciar agente, controlar hardware ou executar jogos.
 
-Builds are repeatable from pinned inputs, not claimed byte-for-byte deterministic:
-timestamps, packaging tools, caches and local debug signing may affect outputs.
-The new debug signing key is isolated in `.cache/android/`. Do NOT install its APK
-over the Samsung app until signing compatibility is verified. Do NOT uninstall,
-clear data, alter application ID, WebView origin, or WoL storage keys.
+## Publicação e dados locais
 
-An opt-in original-signed 2.0 candidate (versionCode 15) was prepared and verified.
-See `docs/ANDROID-COMPATIBLE-APK.md` for its exact path/hash, offline preparation
-command, tests and recovery plan. Ordinary builds still use the isolated key.
-After explicit authorization, version 2.0.0-dev.1 / 15 is installed on Samsung;
-WoL settings survived, and real Wi-Fi HTTPS pairing/status and credential reload
-passed. See `docs/SAMSUNG-INSTALLATION.md`. A subsequent single authorized sleep
-test also passed: the user confirmed wake via the Android app, and fresh Android
-HTTPS status passed after resume. Windows reported an Unknown wake source; see
-`docs/SUSPEND-WOL-TEST.md`. Additional power actions and new APK installations
-require their own authorization. The inherited visual header saying 1.4 is pending.
+Não versionar credenciais, certificados privados, keystores, bancos, pareamentos,
+grants, perfis pessoais, logs, dumps, dependências, caches ou instaladores gerados.
+O gitignore não remove dados já presentes no histórico. Auditar todas as branches
+e seus ancestrais antes do push. Sanear em cópia isolada preservando o original;
+não usar force push nem mirror para substituir trabalho remoto.
 
-## Safety and recovery
-
-App-control cycle 1 is implemented and tested with injected executors only.
-Steam/CS2 require separate local per-device grants and native Android confirmation.
-See `docs/APP-CONTROL-CYCLE1.md` and `contracts/app-launch-v2.md` for the v16 build,
-security limits and proposed physical test. No new Samsung install, real app launch
-or production permission grant was performed. Power commands remain blocked.
-
-Do not run the legacy agent, legacy firewall/autostart installers, key-display
-script, or real energy actions during automated verification. Agent tests bind only
-to loopback on an ephemeral port and injects an executor that records actions.
-No firewall, registry, existing app, or device is changed by that test.
-
-Existing legacy deployment scripts remain historical LAN configuration and were
-not applied. The secure agent has a separate per-user startup entry, independently
-of Electron, and refuses to listen before the configured interface is Private.
-The subsequent authorized LAN activation added a narrowly scoped Private-profile
-firewall rule; current activation evidence is in `docs/LAN-ACTIVATION.md`.
-Android cleartext traffic remains disabled.
-See `docs/STAGE2.md` for activation, revocation, signing and remaining physical tests.
-
-`recovery/manifest.json` identifies originals and copied files with SHA-256 hashes.
-`docs/baseline-inventory.json` is its shareable, path-independent inventory.
-`recovery/lone-smart-room-baseline.bundle` preserves the initial Git history;
-`recovery/baseline-commit.txt` identifies that commit. Verify a bundle with
-`git bundle verify`, and restore it into a new directory with `git clone`.
-The originals and recovery snapshots are not development targets. The local
-recovery folder is not an off-device backup: copy it to trusted backup storage
-before relying on it for disaster recovery. Do not publish recovery archives.
-
-Use local Git branches/commits for all changes; no remote is configured. Secrets,
-local.properties, runtime agent configuration, keys, outputs and caches are ignored.
-Before any remote publishing, review both tracked files and Git history.
+A preparação de publicação e seus impedimentos estão em
+[docs/GITHUB-PUBLICATION.md](docs/GITHUB-PUBLICATION.md).
