@@ -1,3 +1,5 @@
+> Relatório histórico anterior à autorização de saneamento. Estado atual: [PUBLICATION-STATUS.md](PUBLICATION-STATUS.md).
+
 # Publicação privada — preparação de 2026-10-29
 
 Destino existente: https://github.com/MatLone/LoneSmartRoom. O conector GitHub

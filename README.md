@@ -97,3 +97,7 @@ não usar force push nem mirror para substituir trabalho remoto.
 
 A preparação de publicação e seus impedimentos estão em
 [docs/GITHUB-PUBLICATION.md](docs/GITHUB-PUBLICATION.md).
+
+## Privacidade desta publicação
+
+Esta é uma cópia saneada do histórico. Consulte [o relatório de publicação](docs/PUBLICATION-STATUS.md). Defaults de rede e MAC são sintéticos e devem ser configurados localmente. Logs, recibos operacionais e capturas pessoais foram preservados apenas no backup local. O trabalho SignalRGB pendente está separado em feature/signalrgb-control.
